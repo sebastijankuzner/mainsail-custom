@@ -954,6 +954,21 @@ importers:
       '@mainsail/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@mainsail/core':
+        specifier: workspace:*
+        version: link:../core
+      '@mainsail/crypto-address-bech32m':
+        specifier: workspace:*
+        version: link:../crypto-address-bech32m
+      '@mainsail/crypto-block':
+        specifier: workspace:*
+        version: link:../crypto-block
+      '@mainsail/crypto-config':
+        specifier: workspace:*
+        version: link:../crypto-config
+      '@mainsail/crypto-hash-bcrypto':
+        specifier: workspace:*
+        version: link:../crypto-hash-bcrypto
       '@mainsail/crypto-key-pair-bls12-381':
         specifier: workspace:*
         version: link:../crypto-key-pair-bls12-381
@@ -966,9 +981,42 @@ importers:
       '@mainsail/crypto-signature-schnorr':
         specifier: workspace:*
         version: link:../crypto-signature-schnorr
+      '@mainsail/crypto-time':
+        specifier: workspace:*
+        version: link:../crypto-time
+      '@mainsail/crypto-transaction':
+        specifier: workspace:*
+        version: link:../crypto-transaction
+      '@mainsail/crypto-transaction-transfer':
+        specifier: workspace:*
+        version: link:../crypto-transaction-transfer
+      '@mainsail/crypto-validation':
+        specifier: workspace:*
+        version: link:../crypto-validation
+      '@mainsail/crypto-wif':
+        specifier: workspace:*
+        version: link:../crypto-wif
+      '@mainsail/fees':
+        specifier: workspace:*
+        version: link:../fees
+      '@mainsail/fees-static':
+        specifier: workspace:*
+        version: link:../fees-static
       '@mainsail/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@mainsail/serializer':
+        specifier: workspace:*
+        version: link:../serializer
+      '@mainsail/test-framework':
+        specifier: workspace:*
+        version: link:../test-framework
+      '@mainsail/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@mainsail/validation':
+        specifier: workspace:*
+        version: link:../validation
     devDependencies:
       '@types/chance':
         specifier: 1.1.3

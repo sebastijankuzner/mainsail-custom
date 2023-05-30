@@ -1,19 +1,20 @@
 import { readdirSync } from "fs";
+import { sep } from "path";
 import { run, mark, utils } from "micro-bmark";
+import { prepareSandbox } from "./prepare-sandbox";
 
 run(async () => {
-    const suites = readdirSync(__dirname)
+    const sandbox = await prepareSandbox();
+
+    const suites = readdirSync(__dirname + sep + 'bench')
         .filter((name) => name.endsWith(".js"))
-        .filter((name) => name !== "index.js")
-        .filter((name) => name !== "helpers.js")
         .sort();
 
     for (const suite of suites) {
-        for (const [label, callback] of Object.entries(require(`./${suite}`))) {
-            await mark(label, callback);
+        for (const [label, callback] of Object.entries(require(`.${sep}bench${sep}${suite}`))) {
+            await mark(label, async () => (callback as any)(sandbox));
         }
     }
 
     utils.logMem();
-    utils.getTime();
 });
