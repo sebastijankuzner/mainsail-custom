@@ -23,6 +23,8 @@ import { BlockFactory, Deserializer, IDFactory, Serializer } from "@mainsail/cry
 export interface ISandbox {
     readonly app: Application;
     readonly blockFactory: Contracts.Crypto.IBlockFactory;
+    readonly transactionFactory: Contracts.Crypto.ITransactionFactory;
+    readonly transactionSerializer: Contracts.Crypto.ITransactionSerializer;
 }
 
 export const prepareSandbox = async (): Promise<ISandbox> => {
@@ -53,5 +55,7 @@ export const prepareSandbox = async (): Promise<ISandbox> => {
     return {
         app: sandbox.app,
         blockFactory: sandbox.app.get<Contracts.Crypto.IBlockFactory>(Identifiers.Cryptography.Block.Factory),
+        transactionFactory: sandbox.app.get<Contracts.Crypto.ITransactionFactory>(Identifiers.Cryptography.Transaction.Factory),
+        transactionSerializer: sandbox.app.get<Contracts.Crypto.ITransactionSerializer>(Identifiers.Cryptography.Transaction.Serializer),
     };
 };

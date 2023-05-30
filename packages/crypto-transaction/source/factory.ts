@@ -35,6 +35,10 @@ export class TransactionFactory implements Contracts.Crypto.ITransactionFactory 
 		data.amount = BigNumber.make(data.amount);
 		data.fee = BigNumber.make(data.fee);
 
+		if (data.nonce) {
+			data.nonce = BigNumber.make(data.nonce);
+		}
+
 		return this.fromData(data);
 	}
 
