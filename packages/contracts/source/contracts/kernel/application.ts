@@ -10,7 +10,7 @@ export interface Application {
 
 	reboot(): void;
 
-	config<T = any>(key: string, value?: T): T | undefined;
+	config<T = any>(key: string, value?: T, defaultValue?: T): T | undefined;
 
 	namespace(): string;
 
