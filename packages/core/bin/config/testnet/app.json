@@ -64,6 +64,9 @@
 			"package": "@mainsail/crypto-transaction-vote"
 		},
 		{
+			"package": "@mainsail/crypto-worker"
+		},
+		{
 			"package": "@mainsail/logger-pino"
 		},
 		{
