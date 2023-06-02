@@ -1,5 +1,5 @@
 import { ChildProcess } from "child_process";
-import { Actions, Requests } from "./handler";
+import { Requests } from "./handler";
 
 export type SuccessReply = {
     id: number;
@@ -35,16 +35,18 @@ export class Subprocess<T> {
         return this.callbacks.size;
     }
 
-    // @ts-ignore
-    public sendAction<K extends Actions<T>>(method: K, ...args: Parameters<T[K]>): void {
+    // TODO: use type magic to infer args (didn't work when T is also using same signatures)
+    public sendAction(method: string, ...args: any): void {
+        // TODO: we have to make sure args are always serializable
         this.subprocess.send({ method, args });
     }
 
-    // @ts-ignore
-    public sendRequest<K extends Requests<T>>(method: K, ...args: Parameters<T[K]>): Promise<ReturnType<T[K]>> {
+    // TODO: use type magic to infer args (didn't work when T is also using same signatures)
+    public sendRequest(method: string, ...args: any): Promise<any> {
         return new Promise((resolve, reject) => {
             const id = this.lastId++;
             this.callbacks.set(id, { resolve, reject });
+            // TODO: we have to make sure args are always serializable and ideally don't copy
             this.subprocess.send({ id, method, args });
         });
     }

@@ -175,6 +175,9 @@
 		},
 		{
 			"package": "@mainsail/crypto-transaction-vote"
+		},
+		{
+			"package": "@mainsail/logger-pino"
 		}
 	]
 }

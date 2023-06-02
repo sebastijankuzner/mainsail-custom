@@ -999,6 +999,9 @@ importers:
       '@mainsail/crypto-wif':
         specifier: workspace:*
         version: link:../crypto-wif
+      '@mainsail/crypto-worker':
+        specifier: workspace:*
+        version: link:../crypto-worker
       '@mainsail/fees':
         specifier: workspace:*
         version: link:../fees

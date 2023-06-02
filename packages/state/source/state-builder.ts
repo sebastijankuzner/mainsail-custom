@@ -1,6 +1,6 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Application, Enums } from "@mainsail/kernel";
+import { Application, Enums, IpcWorker } from "@mainsail/kernel";
 import { BigNumber } from "@mainsail/utils";
 import lmdb from "lmdb";
 
@@ -33,6 +33,9 @@ export class StateBuilder {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.IConfiguration;
 
+	@inject(Identifiers.Ipc.WorkerPool)
+	private readonly workerPool!: IpcWorker.WorkerPool;
+
 	public async run(): Promise<void> {
 		this.events = this.app.get<Contracts.Kernel.EventDispatcher>(Identifiers.EventDispatcherService);
 
@@ -43,6 +46,12 @@ export class StateBuilder {
 				"blockchain",
 			)
 			.getRegisteredHandlers();
+
+
+		// TODO: remove
+		const worker = await this.workerPool.getWorker();
+		const x = await worker.transactionFactory("fromHex", "ff011e0100000000000000000000000000287bfebba4c7881a0509717e71b34b63f31e40021c321f89ae04f84be6d6ac3780969800000000000d5472616e73616374696f6e203700c2eb0b000000000000000005011d1f1d0e1d04181e0401140108090e051f07030c1a0b0c0f19111c100002031019011f020d0e00131c041719161615101b103045022100bac5b7699748a891b39ff5439e16ea1a694e93954b248be6b8082da01e5386310220129eb06a58b9f80d36ea3cdc903e6cc0240bbe1d371339ffe1");
+		console.log(x.data.id);
 
 		try {
 			this.logger.info(`State Generation - Bootstrap - Blocks: ${this.blockStorage.getCount({})}`);

@@ -1,8 +1,8 @@
 import { Ipc } from "@mainsail/kernel";
-import { CryptoWorkerScriptHandler } from "./worker-handler";
+import { WorkerScriptHandler } from "./worker-handler";
 
-console.log("running worker script");
-
-const ipcHandler = new Ipc.Handler(new CryptoWorkerScriptHandler());
+const ipcHandler = new Ipc.Handler(new WorkerScriptHandler());
 
 ipcHandler.handleRequest("boot");
+ipcHandler.handleRequest("blockFactory");
+ipcHandler.handleRequest("transactionFactory");

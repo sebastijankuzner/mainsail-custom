@@ -1,5 +1,5 @@
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Application } from "@mainsail/kernel";
+import { Application, IpcWorker } from "@mainsail/kernel";
 import { ServiceProvider as CoreCryptoTransaction } from "@mainsail/crypto-transaction";
 
 import crypto from "@mainsail/core/bin/config/testnet/crypto.json";
@@ -13,6 +13,7 @@ import { ServiceProvider as CoreCryptoTime } from "@mainsail/crypto-time";
 import { ServiceProvider as CoreCryptoTransactionTransfer } from "@mainsail/crypto-transaction-transfer";
 import { ServiceProvider as CoreCryptoValidation } from "@mainsail/crypto-validation";
 import { ServiceProvider as CoreCryptoWif } from "@mainsail/crypto-wif";
+import { ServiceProvider as CoreWorker } from "@mainsail/crypto-worker";
 import { ServiceProvider as CoreFees } from "@mainsail/fees";
 import { ServiceProvider as CoreFeesStatic } from "@mainsail/fees-static";
 import { ServiceProvider as CoreSerializer } from "@mainsail/serializer";
@@ -25,10 +26,18 @@ export interface ISandbox {
     readonly blockFactory: Contracts.Crypto.IBlockFactory;
     readonly transactionFactory: Contracts.Crypto.ITransactionFactory;
     readonly transactionSerializer: Contracts.Crypto.ITransactionSerializer;
+    readonly workerPool: IpcWorker.WorkerPool;
 }
 
 export const prepareSandbox = async (): Promise<ISandbox> => {
     const sandbox = new Sandbox();
+
+    // TODO: crypto-worker bootstraps it's own application container based on plugins.json
+    // - probably need to pass whole config on worker boot
+    // - even then it would still try to 'require' each plugin so maybe we need a different bootstrap for test env
+    // await sandbox.boot();
+    // sandbox.app.bind(Identifiers.ConfigFlags).toConstantValue({ network: "unitnet", token: "UARK" });
+    sandbox.app.bind(Identifiers.ConfigFlags).toConstantValue({ network: "testnet", token: "ark" });
 
     await sandbox.app.resolve(CoreSerializer).register();
     await sandbox.app.resolve(CoreValidation).register();
@@ -44,6 +53,7 @@ export const prepareSandbox = async (): Promise<ISandbox> => {
     await sandbox.app.resolve(CoreFeesStatic).register();
     await sandbox.app.resolve(CoreCryptoTransaction).register();
     await sandbox.app.resolve(CoreCryptoTransactionTransfer).register();
+    await sandbox.app.resolve(CoreWorker).register();
 
     sandbox.app.bind(Identifiers.Cryptography.Block.Serializer).to(Serializer);
     sandbox.app.bind(Identifiers.Cryptography.Block.Deserializer).to(Deserializer);
@@ -57,5 +67,6 @@ export const prepareSandbox = async (): Promise<ISandbox> => {
         blockFactory: sandbox.app.get<Contracts.Crypto.IBlockFactory>(Identifiers.Cryptography.Block.Factory),
         transactionFactory: sandbox.app.get<Contracts.Crypto.ITransactionFactory>(Identifiers.Cryptography.Transaction.Factory),
         transactionSerializer: sandbox.app.get<Contracts.Crypto.ITransactionSerializer>(Identifiers.Cryptography.Transaction.Serializer),
+        workerPool: sandbox.app.get<IpcWorker.WorkerPool>(Identifiers.Ipc.WorkerPool),
     };
 };
