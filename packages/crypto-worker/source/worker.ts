@@ -43,6 +43,14 @@ export class Worker implements IpcWorker.Worker {
         return this.ipcSubprocess.getQueueSize();
     }
 
+    public async consensusSignature<K extends Ipc.Requests<Contracts.Crypto.ISignature>>(method: K, ...args: Parameters<Contracts.Crypto.ISignature[K]>): Promise<ReturnType<Contracts.Crypto.ISignature[K]>> {
+        return this.ipcSubprocess.sendRequest("consensusSignature", method, args);
+    }
+
+    public async walletSignature<K extends Ipc.Requests<Contracts.Crypto.ISignature>>(method: K, ...args: Parameters<Contracts.Crypto.ISignature[K]>): Promise<ReturnType<Contracts.Crypto.ISignature[K]>> {
+        return this.ipcSubprocess.sendRequest("walletSignature", method, args);
+    }
+
     public async blockFactory<K extends Ipc.Requests<Contracts.Crypto.IBlockFactory>>(method: K, ...args: Parameters<Contracts.Crypto.IBlockFactory[K]>): Promise<ReturnType<Contracts.Crypto.IBlockFactory[K]>> {
         return this.ipcSubprocess.sendRequest("blockFactory", method, args);
     }

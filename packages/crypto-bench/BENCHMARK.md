@@ -18,4 +18,10 @@ sign-bls12-381 x 36 ops/sec @ 27ms/op
 verify-bls12-381 x 28 ops/sec @ 34ms/op
 sign-schnorr x 190 ops/sec @ 5ms/op
 verify-schnorr x 8,119 ops/sec @ 123μs/op ± 3.62% (min: 123μs, max: 123μs)
+
+worker-tx-factory-fromJson x 75 ops/sec @ 13ms/op
+worker-tx-factory-fromHex x 1,283 ops/sec @ 779μs/op ± 1.44% (min: 779μs, max: 779μs)
+worker-block-factory-fromData-json-with-tx x 19 ops/sec @ 50ms/op
+worker-bls12-381-verify x 26 ops/sec @ 38ms/op
+worker-schnorr-verify x 184 ops/sec @ 5ms/op
 ```

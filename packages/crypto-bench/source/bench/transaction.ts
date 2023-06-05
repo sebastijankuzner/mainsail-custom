@@ -8,8 +8,11 @@ exports["tx-factory-fromData"] = async (sandbox: ISandbox) => {
 }
 
 exports["tx-factory-fromJson"] = async (sandbox: ISandbox) => {
-    const tx = await sandbox.transactionFactory.fromJson(fixtures.transactions.json);
+    await sandbox.transactionFactory.fromJson(fixtures.transactions.json);
+}
 
+exports["tx-factory-serialize"] = async (sandbox: ISandbox) => {
+    const tx = await sandbox.transactionFactory.fromJson(fixtures.transactions.json);
     await sandbox.transactionSerializer.serialize(tx);
 }
 
