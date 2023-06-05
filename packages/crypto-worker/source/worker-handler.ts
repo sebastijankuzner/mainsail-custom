@@ -38,6 +38,9 @@ export class WorkerScriptHandler implements IpcWorker.WorkerScriptHandler {
 
         app.config("worker", true);
 
+        // relative to packages/kernel/source/bootstrap/load-service-providers.ts !
+        app.config("pluginPath", "../../../core/node_modules");
+
         await app.bootstrap({
             flags,
         });

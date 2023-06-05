@@ -27,17 +27,13 @@ export interface ISandbox {
     readonly transactionFactory: Contracts.Crypto.ITransactionFactory;
     readonly transactionSerializer: Contracts.Crypto.ITransactionSerializer;
     readonly workerPool: IpcWorker.WorkerPool;
+    readonly worker: IpcWorker.Worker;
 }
 
 export const prepareSandbox = async (): Promise<ISandbox> => {
     const sandbox = new Sandbox();
 
-    // TODO: crypto-worker bootstraps it's own application container based on plugins.json
-    // - probably need to pass whole config on worker boot
-    // - even then it would still try to 'require' each plugin so maybe we need a different bootstrap for test env
-    // await sandbox.boot();
-    // sandbox.app.bind(Identifiers.ConfigFlags).toConstantValue({ network: "unitnet", token: "UARK" });
-    sandbox.app.bind(Identifiers.ConfigFlags).toConstantValue({ network: "testnet", token: "ark" });
+    sandbox.app.bind(Identifiers.ConfigFlags).toConstantValue({ network: "testnet", token: "ark", env: "test" });
 
     await sandbox.app.resolve(CoreSerializer).register();
     await sandbox.app.resolve(CoreValidation).register();
@@ -55,6 +51,7 @@ export const prepareSandbox = async (): Promise<ISandbox> => {
     await sandbox.app.resolve(CoreCryptoTransactionTransfer).register();
     await sandbox.app.resolve(CoreWorker).register();
 
+    sandbox.app.bind(Identifiers.LogService).toConstantValue({ debug: () => { }, error: () => { }, info: () => { }, warning: () => { } });
     sandbox.app.bind(Identifiers.Cryptography.Block.Serializer).to(Serializer);
     sandbox.app.bind(Identifiers.Cryptography.Block.Deserializer).to(Deserializer);
     sandbox.app.bind(Identifiers.Cryptography.Block.IDFactory).to(IDFactory);
@@ -62,11 +59,15 @@ export const prepareSandbox = async (): Promise<ISandbox> => {
 
     sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration).setConfig(crypto);
 
+    const workerPool = sandbox.app.get<IpcWorker.WorkerPool>(Identifiers.Ipc.WorkerPool);
+    await workerPool.warmup(5);
+
     return {
         app: sandbox.app,
         blockFactory: sandbox.app.get<Contracts.Crypto.IBlockFactory>(Identifiers.Cryptography.Block.Factory),
         transactionFactory: sandbox.app.get<Contracts.Crypto.ITransactionFactory>(Identifiers.Cryptography.Transaction.Factory),
         transactionSerializer: sandbox.app.get<Contracts.Crypto.ITransactionSerializer>(Identifiers.Cryptography.Transaction.Serializer),
-        workerPool: sandbox.app.get<IpcWorker.WorkerPool>(Identifiers.Ipc.WorkerPool),
+        workerPool,
+        worker: await workerPool.getWorker(),
     };
 };

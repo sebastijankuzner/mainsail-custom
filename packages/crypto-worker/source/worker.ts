@@ -34,6 +34,11 @@ export class Worker implements IpcWorker.Worker {
         this.#booted = true;
     }
 
+    public async kill(signal?: number | NodeJS.Signals): Promise<boolean> {
+        // TODO: gracefull shutdown
+        return this.ipcSubprocess.kill(signal);
+    }
+
     public getQueueSize(): number {
         return this.ipcSubprocess.getQueueSize();
     }

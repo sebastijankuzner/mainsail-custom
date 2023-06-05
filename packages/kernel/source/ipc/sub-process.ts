@@ -31,6 +31,11 @@ export class Subprocess<T> {
         this.subprocess.on("message", this.onSubprocessMessage.bind(this));
     }
 
+    public kill(signal?: number | NodeJS.Signals): boolean {
+        // TODO: gracefull shutdown
+        return this.subprocess.kill(signal);
+    }
+
     public getQueueSize(): number {
         return this.callbacks.size;
     }

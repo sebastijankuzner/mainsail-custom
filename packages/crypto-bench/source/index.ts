@@ -17,4 +17,6 @@ run(async () => {
     }
 
     utils.logMem();
+
+    await sandbox.workerPool.shutdown();
 });

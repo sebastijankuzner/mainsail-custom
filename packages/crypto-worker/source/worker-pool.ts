@@ -1,9 +1,12 @@
-import { Identifiers } from "@mainsail/contracts";
+import { Contracts, Identifiers } from "@mainsail/contracts";
 import { IpcWorker, Types } from "@mainsail/kernel";
 import { inject, injectable, postConstruct } from "@mainsail/container";
 
 @injectable()
 export class WorkerPool implements IpcWorker.WorkerPool {
+    @inject(Identifiers.LogService)
+    private readonly logger: Contracts.Kernel.Logger;
+
     @inject(Identifiers.Ipc.WorkerFactory)
     private readonly createWorker!: IpcWorker.WorkerFactory;
 
@@ -20,6 +23,22 @@ export class WorkerPool implements IpcWorker.WorkerPool {
             const worker = this.createWorker();
             this.workers.push(worker);
         }
+    }
+
+    public async shutdown(signal?: number | NodeJS.Signals): Promise<void> {
+        await Promise.all(this.workers.map(worker => worker.kill(signal)));
+    }
+
+    public async warmup(minimumWorkers: number): Promise<void> {
+        const missingWorkers = Math.max(minimumWorkers - this.workers.length, 0);
+
+        for (let i = 0; i < missingWorkers; i++) {
+            const worker = this.createWorker();
+            this.workers.push(worker);
+        }
+
+        this.logger.info(`Warming up ${this.workers.length} workers`);
+        await Promise.all(this.workers.map(worker => worker.boot(this.flags)));
     }
 
     public async getWorker(): Promise<IpcWorker.Worker> {

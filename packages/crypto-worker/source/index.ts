@@ -1,6 +1,6 @@
 import { fork } from "child_process";
 import { injectable } from "@mainsail/container";
-import { Providers, Ipc } from "@mainsail/kernel";
+import { Providers, Ipc, IpcWorker } from "@mainsail/kernel";
 import { Identifiers } from "@mainsail/contracts";
 import { Worker } from "./worker";
 import { WorkerPool } from "./worker-pool";
@@ -24,4 +24,11 @@ export class ServiceProvider extends Providers.ServiceProvider {
             .toAutoFactory(Identifiers.Ipc.Worker);
     }
 
+    public async boot(): Promise<void> {
+        await this.app.get<IpcWorker.WorkerPool>(Identifiers.Ipc.WorkerPool).warmup(2);
+    }
+
+    public async dispose(): Promise<void> {
+        await this.app.get<IpcWorker.WorkerPool>(Identifiers.Ipc.WorkerPool).shutdown();
+    }
 }
