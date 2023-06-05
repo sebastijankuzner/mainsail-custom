@@ -5,7 +5,7 @@ import { inject, injectable, postConstruct } from "@mainsail/container";
 @injectable()
 export class WorkerPool implements IpcWorker.WorkerPool {
     @inject(Identifiers.LogService)
-    private readonly logger: Contracts.Kernel.Logger;
+    private readonly logger!: Contracts.Kernel.Logger;
 
     @inject(Identifiers.Ipc.WorkerFactory)
     private readonly createWorker!: IpcWorker.WorkerFactory;
@@ -13,7 +13,7 @@ export class WorkerPool implements IpcWorker.WorkerPool {
     private workers: IpcWorker.Worker[] = [];
 
     @inject(Identifiers.ConfigFlags)
-    private readonly flags: Types.KeyValuePair;
+    private readonly flags!: Types.KeyValuePair;
 
     @postConstruct()
     public initialize() {

@@ -37,7 +37,8 @@ export class LoadServiceProviders implements Bootstrapper {
 
 		const installedPlugins = await this.#discoverPlugins(this.app.dataPath("plugins"));
 
-		const pluginPath = this.app.config("pluginPath", undefined, "");
+		const pluginPath: string | undefined = this.app.config<string>("pluginPath", undefined, "");
+		assert.string(pluginPath);
 
 		for (const plugin of plugins) {
 			const installedPlugin = installedPlugins.find((installedPlugin) => installedPlugin.name === plugin.package);

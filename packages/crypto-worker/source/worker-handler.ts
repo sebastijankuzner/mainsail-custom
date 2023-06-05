@@ -8,18 +8,18 @@ class WorkerImpl {
     // private readonly logger: Contracts.Kernel.Logger;
 
     @inject(Identifiers.Cryptography.Block.Factory)
-    private readonly blockFactory: Contracts.Crypto.IBlockFactory;
+    private readonly blockFactory!: Contracts.Crypto.IBlockFactory;
 
     @inject(Identifiers.Cryptography.Transaction.Factory)
-    private readonly transactionFactory: Contracts.Crypto.ITransactionFactory;
+    private readonly transactionFactory!: Contracts.Crypto.ITransactionFactory;
 
     @inject(Identifiers.Cryptography.Signature)
     @tagged("type", "consensus")
-    private readonly consensusSignature: Contracts.Crypto.ISignature;
+    private readonly consensusSignature!: Contracts.Crypto.ISignature;
 
     @inject(Identifiers.Cryptography.Signature)
     @tagged("type", "wallet")
-    private readonly walletSignature: Contracts.Crypto.ISignature;
+    private readonly walletSignature!: Contracts.Crypto.ISignature;
 
     public async callConsensusSignature<K extends Ipc.Requests<Contracts.Crypto.ISignature>>(method: K, args: Parameters<Contracts.Crypto.ISignature[K]>): Promise<ReturnType<Contracts.Crypto.ISignature[K]>> {
         return this.#call(this.consensusSignature, method, args);
@@ -49,6 +49,7 @@ export class WorkerScriptHandler implements IpcWorker.WorkerScriptHandler {
     // @ts-ignore
     #app: Contracts.Kernel.Application;
 
+    // @ts-ignore
     #impl: WorkerImpl;
 
     public async boot(flags: Types.KeyValuePair): Promise<void> {
