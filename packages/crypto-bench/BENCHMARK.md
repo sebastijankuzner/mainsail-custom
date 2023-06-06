@@ -3,25 +3,26 @@
 ```
 $ pnpm run bench
 
-block-factory-fromData x 117 ops/sec @ 8ms/op
-block-factory-fromData-with-tx x 44 ops/sec @ 22ms/op
-block-factory-fromData-json x 124 ops/sec @ 8ms/op
-block-factory-fromData-json-with-tx x 108 ops/sec @ 9ms/op
-block-factory-fromHex x 189 ops/sec @ 5ms/op
-block-factory-fromHex-with-tx x 161 ops/sec @ 6ms/op
+block-factory-fromData x 137 ops/sec @ 7ms/op ± 1.95% (min: 6ms, max: 12ms)
+block-factory-fromData-with-tx x 112 ops/sec @ 8ms/op ± 2.26% (min: 6ms, max: 24ms)
+block-factory-fromData-json x 151 ops/sec @ 6ms/op ± 1.66% (min: 5ms, max: 9ms)
+block-factory-fromData-json-with-tx x 122 ops/sec @ 8ms/op ± 1.82% (min: 6ms, max: 11ms)
+block-factory-fromHex x 194 ops/sec @ 5ms/op ± 1.29% (min: 4ms, max: 8ms)
+block-factory-fromHex-with-tx x 168 ops/sec @ 5ms/op ± 2.00% (min: 4ms, max: 9ms)
 
-tx-factory-fromData x 179 ops/sec @ 5ms/op
-tx-factory-fromJson x 403 ops/sec @ 2ms/op
-tx-factory-fromHex x 1,048 ops/sec @ 953μs/op ± 1.30% (min: 953μs, max: 953μs)
+tx-factory-fromData x 1,729 ops/sec @ 578μs/op ± 12.70% (min: 200μs, max: 6ms)
+tx-factory-fromJson x 1,787 ops/sec @ 559μs/op ± 9.88% (min: 219μs, max: 3ms)
+tx-factory-serialize x 1,125 ops/sec @ 888μs/op ± 7.70% (min: 341μs, max: 3ms)
+tx-factory-fromHex x 3,696 ops/sec @ 270μs/op ± 12.85% (min: 77μs, max: 2ms)
 
-sign-bls12-381 x 36 ops/sec @ 27ms/op
-verify-bls12-381 x 28 ops/sec @ 34ms/op
-sign-schnorr x 190 ops/sec @ 5ms/op
-verify-schnorr x 8,119 ops/sec @ 123μs/op ± 3.62% (min: 123μs, max: 123μs)
+sign-bls12-381 x 3,177 ops/sec @ 314μs/op
+verify-bls12-381 x 1,041 ops/sec @ 959μs/op
+sign-schnorr x 16,675 ops/sec @ 59μs/op ± 64.66% (min: 37μs, max: 4ms)
+verify-schnorr x 30,342 ops/sec @ 32μs/op ± 2.56% (min: 31μs, max: 120μs)
 
-worker-tx-factory-fromJson x 75 ops/sec @ 13ms/op
-worker-tx-factory-fromHex x 1,283 ops/sec @ 779μs/op ± 1.44% (min: 779μs, max: 779μs)
-worker-block-factory-fromData-json-with-tx x 19 ops/sec @ 50ms/op
-worker-bls12-381-verify x 26 ops/sec @ 38ms/op
-worker-schnorr-verify x 184 ops/sec @ 5ms/op
+worker-tx-factory-fromJson x 959 ops/sec @ 1ms/op ± 13.04% (min: 273μs, max: 16ms)
+worker-tx-factory-fromHex x 2,026 ops/sec @ 493μs/op ± 8.57% (min: 144μs, max: 2ms)
+worker-block-factory-fromData-json-with-tx x 55 ops/sec @ 17ms/op ± 2.34% (min: 15ms, max: 59ms)
+worker-bls12-381-verify x 916 ops/sec @ 1ms/op
+worker-schnorr-verify x 12,255 ops/sec @ 81μs/op ± 48.91% (min: 53μs, max: 5ms)
 ```

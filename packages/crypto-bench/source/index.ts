@@ -12,7 +12,7 @@ run(async () => {
 
     for (const suite of suites) {
         for (const [label, callback] of Object.entries(require(`.${sep}bench${sep}${suite}`))) {
-            await mark(label, async () => (callback as any)(sandbox));
+            await mark(label, 250, async () => (callback as any)(sandbox));
         }
     }
 
