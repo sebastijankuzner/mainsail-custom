@@ -2,7 +2,7 @@ import * as SignatureBls12 from "@mainsail/crypto-signature-bls12-381";
 import * as SignatureSchnorr from "@mainsail/crypto-signature-schnorr";
 import * as KeyPairBls12 from "@mainsail/crypto-key-pair-bls12-381";
 import * as KeyPairSchnorr from "@mainsail/crypto-key-pair-schnorr";
-import { fixtures } from "../fixtures";
+import { fixtures, validatorPublicKeys, validatorSignatures } from "../fixtures";
 
 for (const [scheme, pair] of Object.entries({
     ["bls12-381"]: {
@@ -26,3 +26,11 @@ for (const [scheme, pair] of Object.entries({
         }
     };
 }
+
+exports["aggregate-signatures-bls12-381"] = async () => {
+    await new SignatureBls12.Signature().aggregate(validatorSignatures);
+};
+
+exports["aggregate-public-keys-bls12-381"] = async () => {
+    await new KeyPairBls12.PublicKeyFactory().aggregate(validatorPublicKeys);
+};

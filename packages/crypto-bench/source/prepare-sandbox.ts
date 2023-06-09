@@ -9,7 +9,6 @@ import { Configuration } from "@mainsail/crypto-config/source/configuration";
 import { ServiceProvider as CoreCryptoHashBcrypto } from "@mainsail/crypto-hash-bcrypto";
 import { ServiceProvider as CoreCryptoKeyPairSchnorr } from "@mainsail/crypto-key-pair-schnorr";
 import { ServiceProvider as CoreCryptoSignatureSchnorr } from "@mainsail/crypto-signature-schnorr";
-import { ServiceProvider as CoreCryptoTime } from "@mainsail/crypto-time";
 import { ServiceProvider as CoreCryptoTransactionTransfer } from "@mainsail/crypto-transaction-transfer";
 import { ServiceProvider as CoreCryptoValidation } from "@mainsail/crypto-validation";
 import { ServiceProvider as CoreCryptoWif } from "@mainsail/crypto-wif";
@@ -38,7 +37,6 @@ export const prepareSandbox = async (): Promise<ISandbox> => {
     await sandbox.app.resolve(CoreSerializer).register();
     await sandbox.app.resolve(CoreValidation).register();
     await sandbox.app.resolve(CoreCryptoConfig).register();
-    await sandbox.app.resolve(CoreCryptoTime).register();
     await sandbox.app.resolve(CoreCryptoValidation).register();
     await sandbox.app.resolve(CoreCryptoHashBcrypto).register();
     await sandbox.app.resolve(CoreCryptoSignatureSchnorr).register();

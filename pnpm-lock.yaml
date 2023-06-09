@@ -948,6 +948,9 @@ importers:
 
   packages/crypto-bench:
     dependencies:
+      '@chainsafe/blst':
+        specifier: ^0.2.8
+        version: 0.2.8
       '@mainsail/container':
         specifier: workspace:*
         version: link:../container
@@ -981,9 +984,6 @@ importers:
       '@mainsail/crypto-signature-schnorr':
         specifier: workspace:*
         version: link:../crypto-signature-schnorr
-      '@mainsail/crypto-time':
-        specifier: workspace:*
-        version: link:../crypto-time
       '@mainsail/crypto-transaction':
         specifier: workspace:*
         version: link:../crypto-transaction
