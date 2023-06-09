@@ -1,5 +1,7 @@
 import { Dayjs } from "dayjs";
 
+import { Queue } from "../kernel";
+
 export interface PeerPorts {
 	[name: string]: number;
 }
@@ -29,6 +31,9 @@ export interface Peer {
 	recentlyPinged(): boolean;
 
 	toBroadcast(): PeerBroadcast;
+
+	getTransactionsQueue(): Promise<Queue>;
+	dispose(): Promise<void>;
 }
 
 export interface PeerBroadcast {
@@ -38,8 +43,6 @@ export interface PeerBroadcast {
 
 export interface PeerState {
 	height: number | undefined;
-	forgingAllowed: boolean | undefined;
-	currentSlot: number | undefined;
 	header: Record<string, any>; // @@TODO rename, those are block headers but the name is horrible
 }
 

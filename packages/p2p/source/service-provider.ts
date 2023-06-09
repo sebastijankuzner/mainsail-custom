@@ -3,8 +3,9 @@ import { Providers, Services, Utils } from "@mainsail/kernel";
 import Joi from "joi";
 
 import { ValidateAndAcceptPeerAction } from "./actions";
+import { BlockDownloader } from "./block-downloader";
+import { Broadcaster } from "./broadcaster";
 import { ChunkCache } from "./chunk-cache";
-import { EventListener } from "./event-listener";
 import { NetworkMonitor } from "./network-monitor";
 import { Peer } from "./peer";
 import { PeerCommunicator } from "./peer-communicator";
@@ -12,7 +13,6 @@ import { PeerConnector } from "./peer-connector";
 import { PeerProcessor } from "./peer-processor";
 import { PeerRepository } from "./peer-repository";
 import { Server } from "./socket-server/server";
-import { TransactionBroadcaster } from "./transaction-broadcaster";
 import { makeFormats } from "./validation";
 
 export class ServiceProvider extends Providers.ServiceProvider {
@@ -31,8 +31,6 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	}
 
 	public async boot(): Promise<void> {
-		this.app.get<EventListener>(Identifiers.PeerEventListener).initialize();
-
 		await this.#buildServer();
 
 		await this.app.get<Server>(Identifiers.P2PServer).boot();
@@ -81,7 +79,10 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	#registerFactories(): void {
 		this.app
 			.bind(Identifiers.PeerFactory)
-			.toFactory<Peer>(() => (ip: string) => new Peer(ip, Number(this.config().get<number>("server.port"))!));
+			.toFactory<Peer>(
+				() => (ip: string) =>
+					this.app.resolve(Peer).init(ip, Number(this.config().getRequired<number>("server.port"))),
+			);
 	}
 
 	#registerServices(): void {
@@ -95,11 +96,11 @@ export class ServiceProvider extends Providers.ServiceProvider {
 
 		this.app.bind(Identifiers.PeerChunkCache).to(ChunkCache).inSingletonScope();
 
+		this.app.bind(Identifiers.PeerBlockDownloader).to(BlockDownloader).inSingletonScope();
+
 		this.app.bind(Identifiers.PeerNetworkMonitor).to(NetworkMonitor).inSingletonScope();
 
-		this.app.bind(Identifiers.PeerEventListener).to(EventListener).inSingletonScope();
-
-		this.app.bind(Identifiers.PeerTransactionBroadcaster).to(TransactionBroadcaster);
+		this.app.bind(Identifiers.PeerBroadcaster).to(Broadcaster);
 
 		this.app.bind<Server>(Identifiers.P2PServer).to(Server).inSingletonScope();
 	}

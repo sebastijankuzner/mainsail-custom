@@ -1,5 +1,5 @@
 import { inject, injectable } from "@mainsail/container";
-import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+import { Contracts, Exceptions, Identifiers, Utils } from "@mainsail/contracts";
 import { BigNumber } from "@mainsail/utils";
 
 import { sealBlock } from "./block";
@@ -19,10 +19,11 @@ export class BlockFactory implements Contracts.Crypto.IBlockFactory {
 	@inject(Identifiers.Cryptography.Validator)
 	private readonly validator!: Contracts.Crypto.IValidator;
 
-	public async make(data: Contracts.Crypto.IBlockData): Promise<Contracts.Crypto.IBlock> {
-		data.id = await this.idFactory.make(data);
+	public async make(data: Utils.Mutable<Contracts.Crypto.IBlockDataSerializable>): Promise<Contracts.Crypto.IBlock> {
+		const block = data as Utils.Mutable<Contracts.Crypto.IBlockData>;
+		block.id = await this.idFactory.make(data);
 
-		return this.fromData(data);
+		return this.fromData(block);
 	}
 
 	public async fromHex(hex: string): Promise<Contracts.Crypto.IBlock> {
@@ -35,7 +36,7 @@ export class BlockFactory implements Contracts.Crypto.IBlockFactory {
 
 	public async fromJson(json: Contracts.Crypto.IBlockJson): Promise<Contracts.Crypto.IBlock> {
 		// @ts-ignore
-		const data: Contracts.Crypto.IBlockData = { ...json };
+		const data: Utils.Mutable<Contracts.Crypto.IBlockData> = { ...json };
 		data.totalAmount = BigNumber.make(data.totalAmount);
 		data.totalFee = BigNumber.make(data.totalFee);
 		data.reward = BigNumber.make(data.reward);
@@ -57,14 +58,13 @@ export class BlockFactory implements Contracts.Crypto.IBlockFactory {
 		const serialized: Buffer = await this.serializer.serializeWithTransactions(data);
 
 		return sealBlock({
-			...(await this.deserializer.deserialize(serialized)),
+			...(await this.deserializer.deserializeWithTransactions(serialized)),
 			serialized: serialized.toString("hex"),
 		});
 	}
 
 	async #fromSerialized(serialized: Buffer): Promise<Contracts.Crypto.IBlock> {
-		const deserialized: { data: Contracts.Crypto.IBlockData; transactions: Contracts.Crypto.ITransaction[] } =
-			await this.deserializer.deserialize(serialized);
+		const deserialized = await this.deserializer.deserializeWithTransactions(serialized);
 
 		const validated: Contracts.Crypto.IBlockData | undefined = await this.#applySchema(deserialized.data);
 

@@ -1,67 +1,64 @@
 import { BigNumber } from "@mainsail/utils";
 
+import { Mutable } from "../../utils";
 import { ITransaction, ITransactionData, ITransactionJson } from "./transactions";
 
 export interface IBlockVerification {
-	verified: boolean;
-	errors: string[];
-	containsMultiSignatures: boolean;
+	readonly verified: boolean;
+	readonly errors: string[];
+	readonly containsMultiSignatures: boolean;
 }
 
 export type IBlockHeader = Exclude<IBlockData, "transactions">;
 
 export interface IBlock {
-	data: IBlockData;
-	header: IBlockHeader;
-	serialized: string;
-	transactions: ITransaction[];
+	readonly data: IBlockData;
+	readonly header: IBlockHeader;
+	readonly serialized: string;
+	readonly transactions: ITransaction[];
 }
 
 export interface IBlockData {
-	id: string;
+	readonly id: string;
 
-	timestamp: number;
-	version: number;
-	height: number;
-	previousBlock: string;
-	numberOfTransactions: number;
-	totalAmount: BigNumber;
-	totalFee: BigNumber;
-	reward: BigNumber;
-	payloadLength: number;
-	payloadHash: string;
-	generatorPublicKey: string;
+	readonly timestamp: number;
+	readonly version: number;
+	readonly height: number;
+	readonly previousBlock: string;
+	readonly numberOfTransactions: number;
+	readonly totalAmount: BigNumber;
+	readonly totalFee: BigNumber;
+	readonly reward: BigNumber;
+	readonly payloadLength: number;
+	readonly payloadHash: string;
+	readonly generatorPublicKey: string;
 
-	serialized?: string;
-	transactions: ITransactionData[];
+	readonly transactions: ITransactionData[];
 }
 
 export interface IBlockJson {
-	id: string;
+	readonly id: string;
 
-	timestamp: number;
-	version: number;
-	height: number;
-	previousBlock: string;
-	numberOfTransactions: number;
-	totalAmount: string;
-	totalFee: string;
-	reward: string;
-	payloadLength: number;
-	payloadHash: string;
-	generatorPublicKey: string;
+	readonly timestamp: number;
+	readonly version: number;
+	readonly height: number;
+	readonly previousBlock: string;
+	readonly numberOfTransactions: number;
+	readonly totalAmount: string;
+	readonly totalFee: string;
+	readonly reward: string;
+	readonly payloadLength: number;
+	readonly payloadHash: string;
+	readonly generatorPublicKey: string;
 
-	serialized?: string;
-	transactions: ITransactionJson[];
+	readonly serialized?: string;
+	readonly transactions: ITransactionJson[];
 }
 
-export interface IBlockDeserializer {
-	deserialize(serialized: Buffer): Promise<{ data: IBlockData; transactions: ITransaction[] }>;
-	deserializeHeader(serialized: Buffer): Promise<IBlockHeader>;
-}
+export type IBlockDataSerializable = Omit<IBlockData, "id">;
 
 export interface IBlockFactory {
-	make(data: any): Promise<IBlock>;
+	make(data: Mutable<IBlockDataSerializable>): Promise<IBlock>;
 
 	fromHex(hex: string): Promise<IBlock>;
 
@@ -72,14 +69,23 @@ export interface IBlockFactory {
 	fromData(data: IBlockData): Promise<IBlock>;
 }
 
-export type IBlockDataSerializable = Omit<IBlockData, "id">;
-
 export interface IBlockSerializer {
-	size(block: IBlock): number;
+	headerSize(): number;
+	totalSize(block: IBlockDataSerializable): number;
 
-	serialize(block: IBlockDataSerializable): Promise<Buffer>;
+	serializeHeader(block: IBlockDataSerializable): Promise<Buffer>;
 
 	serializeWithTransactions(block: IBlockDataSerializable): Promise<Buffer>;
+}
+
+export interface IBlockWithTransactions {
+	data: IBlockData;
+	transactions: ITransaction[];
+}
+
+export interface IBlockDeserializer {
+	deserializeHeader(serialized: Buffer): Promise<IBlockHeader>;
+	deserializeWithTransactions(serialized: Buffer): Promise<IBlockWithTransactions>;
 }
 
 export interface IBlockVerifier {

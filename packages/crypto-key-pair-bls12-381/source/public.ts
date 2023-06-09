@@ -1,6 +1,6 @@
+import { aggregatePubkeys, PublicKey } from "@chainsafe/blst";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { aggregatePubkeys, PublicKey } from "@chainsafe/blst";
 
 @injectable()
 export class PublicKeyFactory implements Contracts.Crypto.IPublicKeyFactory {
@@ -16,7 +16,9 @@ export class PublicKeyFactory implements Contracts.Crypto.IPublicKeyFactory {
 	}
 
 	public async fromMultiSignatureAsset(asset: Contracts.Crypto.IMultiSignatureAsset): Promise<string> {
-		return Buffer.from(aggregatePubkeys(asset.publicKeys.map(pub => PublicKey.fromBytes(Buffer.from(pub, "hex")))).toBytes()).toString("hex");
+		return Buffer.from(
+			aggregatePubkeys(asset.publicKeys.map((pub) => PublicKey.fromBytes(Buffer.from(pub, "hex")))).toBytes(),
+		).toString("hex");
 	}
 
 	public async verify(publicKey: string): Promise<boolean> {
@@ -30,6 +32,8 @@ export class PublicKeyFactory implements Contracts.Crypto.IPublicKeyFactory {
 	}
 
 	public async aggregate(publicKeys: Buffer[]): Promise<string> {
-		return Buffer.from(aggregatePubkeys(publicKeys.map(pub => PublicKey.fromBytes(pub))).toBytes()).toString("hex");
+		return Buffer.from(aggregatePubkeys(publicKeys.map((pub) => PublicKey.fromBytes(pub))).toBytes()).toString(
+			"hex",
+		);
 	}
 }

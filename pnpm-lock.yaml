@@ -381,6 +381,9 @@ importers:
       '@mainsail/crypto-config':
         specifier: workspace:*
         version: link:../crypto-config
+      '@mainsail/crypto-consensus-bls12-381':
+        specifier: workspace:*
+        version: link:../crypto-consensus-bls12-381
       '@mainsail/crypto-hash-bcrypto':
         specifier: workspace:*
         version: link:../crypto-hash-bcrypto
@@ -390,9 +393,6 @@ importers:
       '@mainsail/crypto-signature-schnorr':
         specifier: workspace:*
         version: link:../crypto-signature-schnorr
-      '@mainsail/crypto-time':
-        specifier: workspace:*
-        version: link:../crypto-time
       '@mainsail/crypto-transaction':
         specifier: workspace:*
         version: link:../crypto-transaction
@@ -475,6 +475,9 @@ importers:
       '@mainsail/utils':
         specifier: workspace:*
         version: link:../utils
+      dayjs:
+        specifier: 1.10.7
+        version: 1.10.7
       delay:
         specifier: 5.0.0
         version: 5.0.0
@@ -482,6 +485,9 @@ importers:
       '@mainsail/test-framework':
         specifier: workspace:*
         version: link:../test-framework
+      rewiremock:
+        specifier: 3.14.5
+        version: 3.14.5
       uvu:
         specifier: ^0.5.6
         version: 0.5.6
@@ -582,9 +588,6 @@ importers:
       '@mainsail/crypto-signature-schnorr':
         specifier: workspace:*
         version: link:../crypto-signature-schnorr
-      '@mainsail/crypto-time':
-        specifier: workspace:*
-        version: link:../crypto-time
       '@mainsail/crypto-transaction':
         specifier: workspace:*
         version: link:../crypto-transaction
@@ -624,12 +627,6 @@ importers:
       '@mainsail/fees-static':
         specifier: workspace:*
         version: link:../fees-static
-      '@mainsail/forger':
-        specifier: workspace:*
-        version: link:../forger
-      '@mainsail/forger-tracker':
-        specifier: workspace:*
-        version: link:../forger-tracker
       '@mainsail/kernel':
         specifier: workspace:*
         version: link:../kernel
@@ -1526,28 +1523,6 @@ importers:
         specifier: ^0.5.6
         version: 0.5.6
 
-  packages/crypto-time:
-    dependencies:
-      '@mainsail/container':
-        specifier: workspace:*
-        version: link:../container
-      '@mainsail/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@mainsail/kernel':
-        specifier: workspace:*
-        version: link:../kernel
-      dayjs:
-        specifier: 1.10.7
-        version: 1.10.7
-    devDependencies:
-      '@mainsail/crypto-config':
-        specifier: workspace:*
-        version: link:../crypto-config
-      uvu:
-        specifier: ^0.5.6
-        version: 0.5.6
-
   packages/crypto-transaction:
     dependencies:
       '@mainsail/container':
@@ -1954,6 +1929,9 @@ importers:
       '@mainsail/crypto-config':
         specifier: workspace:*
         version: link:../crypto-config
+      '@mainsail/crypto-consensus-bls12-381':
+        specifier: workspace:*
+        version: link:../crypto-consensus-bls12-381
       '@mainsail/crypto-hash-bcrypto':
         specifier: workspace:*
         version: link:../crypto-hash-bcrypto
@@ -2080,53 +2058,6 @@ importers:
       '@mainsail/utils':
         specifier: workspace:*
         version: link:../utils
-    devDependencies:
-      uvu:
-        specifier: ^0.5.6
-        version: 0.5.6
-
-  packages/forger:
-    dependencies:
-      '@mainsail/container':
-        specifier: workspace:*
-        version: link:../container
-      '@mainsail/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@mainsail/kernel':
-        specifier: workspace:*
-        version: link:../kernel
-      '@mainsail/p2p':
-        specifier: workspace:*
-        version: link:../p2p
-      '@mainsail/state':
-        specifier: workspace:*
-        version: link:../state
-      '@mainsail/utils':
-        specifier: workspace:*
-        version: link:../utils
-    devDependencies:
-      '@types/sinon':
-        specifier: ^10.0.14
-        version: 10.0.14
-      sinon:
-        specifier: ^15.0.4
-        version: 15.0.4
-      uvu:
-        specifier: ^0.5.6
-        version: 0.5.6
-
-  packages/forger-tracker:
-    dependencies:
-      '@mainsail/container':
-        specifier: workspace:*
-        version: link:../container
-      '@mainsail/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@mainsail/kernel':
-        specifier: workspace:*
-        version: link:../kernel
     devDependencies:
       uvu:
         specifier: ^0.5.6
@@ -2744,9 +2675,6 @@ importers:
       '@mainsail/crypto-config':
         specifier: workspace:*
         version: link:../crypto-config
-      '@mainsail/crypto-time':
-        specifier: workspace:*
-        version: link:../crypto-time
       '@types/better-sqlite3':
         specifier: 5.4.3
         version: 5.4.3
@@ -2778,6 +2706,9 @@ importers:
         specifier: workspace:*
         version: link:../utils
     devDependencies:
+      dayjs:
+        specifier: 1.11.8
+        version: 1.11.8
       uvu:
         specifier: ^0.5.6
         version: 0.5.6
@@ -2864,6 +2795,9 @@ importers:
       '@mainsail/utils':
         specifier: workspace:*
         version: link:../utils
+      dayjs:
+        specifier: 1.10.7
+        version: 1.10.7
       delay:
         specifier: 5.0.0
         version: 5.0.0
@@ -7954,6 +7888,10 @@ packages:
   /dayjs@1.11.7:
     resolution: {integrity: sha512-+Yw9U6YO5TQohxLcIkrXBeY73WP3ejHWVvx8XCk3gxvQDCTEmS48ZrSZCKciI7Bhl/uCMyxYtE9UqRILmFphkQ==}
     dev: false
+
+  /dayjs@1.11.8:
+    resolution: {integrity: sha512-LcgxzFoWMEPO7ggRv1Y2N31hUf2R0Vj7fuy/m+Bg1K8rr+KAs1AEy4y9jd5DXe8pbHgX+srkHNS7TH6Q6ZhYeQ==}
+    dev: true
 
   /dayjs@1.8.36:
     resolution: {integrity: sha512-3VmRXEtw7RZKAf+4Tv1Ym9AGeo8r8+CjDi26x+7SYQil1UqtqdaokhzoEJohqlzt0m5kacJSDhJQkG/LWhpRBw==}
