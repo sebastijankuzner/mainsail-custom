@@ -40,6 +40,10 @@ export class Proposal implements Contracts.Crypto.IProposal {
 		return this.#block;
 	}
 
+	set block(block: Contracts.Crypto.IBlock) {
+		this.#block = block;
+	}
+
 	get validatorIndex(): number {
 		return this.#validatorIndex;
 	}
