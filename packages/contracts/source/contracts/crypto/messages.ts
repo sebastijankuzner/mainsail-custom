@@ -73,26 +73,24 @@ export interface IMessageFactory {
 	makePrecommitFromBytes(data: Buffer): Promise<IPrecommit>;
 }
 
-export interface IMessageSerializeOptions {
-	excludeSignature?: boolean;
-}
-export interface IMessageSerializeProposalOptions extends IMessageSerializeOptions {}
-export interface IMessageSerializePrevoteOptions extends IMessageSerializeOptions {}
-export interface IMessageSerializePrecommitOptions extends IMessageSerializeOptions {}
+
 
 export type IMessageSerializableProposal = OptionalSignature<IProposalData>;
 export type IMessageSerializablePrevote = OptionalSignature<IPrevoteData>;
 export type IMessageSerializablePrecommit = OptionalSignature<IPrecommitData>;
 
+export interface IMessageSerializeOptions {
+	excludeSignature?: boolean;
+}
 export interface IMessageSerializer {
 	serializeProposal(
 		proposal: IMessageSerializableProposal,
-		options?: IMessageSerializeProposalOptions,
+		options?: IMessageSerializeOptions,
 	): Promise<Buffer>;
-	serializePrevote(prevote: IMessageSerializablePrevote, options?: IMessageSerializePrevoteOptions): Promise<Buffer>;
+	serializePrevote(prevote: IMessageSerializablePrevote, options?: IMessageSerializeOptions): Promise<Buffer>;
 	serializePrecommit(
 		precommit: IMessageSerializablePrecommit,
-		options?: IMessageSerializePrecommitOptions,
+		options?: IMessageSerializeOptions,
 	): Promise<Buffer>;
 }
 
