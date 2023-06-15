@@ -20,17 +20,12 @@ export class Handler implements Contracts.Consensus.IHandler {
 	@inject(Identifiers.Cryptography.Message.Serializer)
 	private readonly serialzier!: Contracts.Crypto.IMessageSerializer;
 
-	@inject(Identifiers.Cryptography.Message.Deserializer)
-	private readonly deserialzier!: Contracts.Crypto.IMessageDeserializer;
+	@inject(Identifiers.Cryptography.Message.Factory)
+	private readonly factory!: Contracts.Crypto.IMessageFactory;
 
-	// @inject(Identifiers.Cryptography.Block.Factory)
-	// private readonly blockFactory!: Contracts.Crypto.IBlockFactory;
-
-	async onProposal(proposal: Contracts.Crypto.IProposal): Promise<void> {
-		// const serialized = await this.serialzier.serializeProposal(p);
-		// const proposal = await this.deserialzier.deserializeProposal(serialized);
-
-		// proposal.block = await this.blockFactory.fromHex(proposal.block.serialized);
+	async onProposal(p: Contracts.Crypto.IProposal): Promise<void> {
+		const serialized = await this.serialzier.serializeProposal(p);
+		const proposal = await this.factory.makeProposalFromBytes(serialized);
 
 		if (!this.#isValidHeightAndRound(proposal)) {
 			return;
@@ -48,9 +43,9 @@ export class Handler implements Contracts.Consensus.IHandler {
 		}
 	}
 
-	async onPrevote(prevote: Contracts.Crypto.IPrevote): Promise<void> {
-		// const serialized = await this.serialzier.serializePrevote(p);
-		// const prevote = await this.deserialzier.deserializePrevote(serialized);
+	async onPrevote(p: Contracts.Crypto.IPrevote): Promise<void> {
+		const serialized = await this.serialzier.serializePrecommit(p);
+		const prevote = await this.factory.makePrevoteFromBytes(serialized);
 
 		if (!this.#isValidHeightAndRound(prevote)) {
 			return;
@@ -71,8 +66,7 @@ export class Handler implements Contracts.Consensus.IHandler {
 
 	async onPrecommit(p: Contracts.Crypto.IPrecommit): Promise<void> {
 		const serialized = await this.serialzier.serializePrecommit(p);
-		const precommit = await this.deserialzier.deserializePrecommit(serialized);
-
+		const precommit = await this.factory.makePrecommitFromBytes(serialized);
 
 
 		if (!this.#isValidHeightAndRound(precommit)) {
