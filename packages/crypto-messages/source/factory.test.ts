@@ -1,12 +1,27 @@
+import { Contracts, Identifiers } from "@mainsail/contracts";
+
 import crypto from "../../core/bin/config/testnet/crypto.json";
-import { describe, Factories, Sandbox } from "../../test-framework";
-import { blockData, serializedBlock } from "../test/fixtures/proposal";
-import { prepareSandbox } from "../test/helpers/prepare-sandbox";
-import { MessageFactory } from "./factory";
-import { Types } from "../../test-framework/source/factories";
-import { Verifier } from "./verifier";
-import { Contracts } from "@mainsail/contracts";
 import validatorsJson from "../../core/bin/config/testnet/validators.json";
+import { describe, Factories, Sandbox } from "../../test-framework";
+import { Types } from "../../test-framework/source/factories";
+import {
+	blockData,
+	precommitData,
+	precommitDataNoBlock,
+	prevoteData,
+	prevoteDataNoBlock,
+	proposalData,
+	serializedBlock,
+	serializedPrecommit,
+	serializedPrecommitNoBlock,
+	serializedPrevote,
+	serializedPrevoteNoBlock,
+	serializedProposal,
+} from "../test/fixtures/proposal";
+import { prepareSandbox } from "../test/helpers/prepare-sandbox";
+import { prepareWallet } from "../test/helpers/prepare-wallet";
+import { MessageFactory } from "./factory";
+import { Verifier } from "./verifier";
 
 describe<{
 	sandbox: Sandbox;
@@ -16,15 +31,23 @@ describe<{
 }>("Factory", ({ it, assert, beforeEach }) => {
 	beforeEach(async (context) => {
 		await prepareSandbox(context);
+
+		const wallet = await prepareWallet(context);
+		const validatorSet = {
+			getActiveValidators: () => [wallet],
+		};
+
+		context.sandbox.app.bind(Identifiers.ValidatorSet).toConstantValue(validatorSet);
+
 		context.factory = context.sandbox.app.resolve(MessageFactory);
 		context.verifier = context.sandbox.app.resolve(Verifier);
 
 		const identityFactory = await Factories.factory("Identity", crypto);
 		const identity = await identityFactory
 			.withOptions({
-				passphrase: validatorsJson.secrets[0],
-				keyType: "consensus",
 				app: context.sandbox.app,
+				keyType: "consensus",
+				passphrase: validatorsJson.secrets[0],
 			})
 			.make<Types.Identity>();
 
@@ -32,11 +55,14 @@ describe<{
 	});
 
 	it("#makeProposal - should correctly make signed proposal", async ({ factory, identity, verifier }) => {
-		const block: Contracts.Crypto.IBlock = {
-			header: { ...blockData },
-			serialized: serializedBlock,
-			transactions: [],
-			data: blockData,
+		const block: Contracts.Crypto.IProposedBlock = {
+			block: {
+				data: blockData,
+				header: { ...blockData },
+				serialized: serializedBlock,
+				transactions: [],
+			},
+			serialized: "",
 		};
 
 		const proposal = await factory.makeProposal(
@@ -51,10 +77,10 @@ describe<{
 
 		assert.equal(
 			proposal.signature,
-			"8de4ef3411e8ad5d90ca57077a1dabe1c0a680d69e621d182e618678fccd47ec18d6cca8f6e711f9329c70d8253c5a33032068e766004ea161792fe3ea17ce7e93307e9045e2586a4f06407224a6ee9faab6a421b28b715d77a9ec5b8ef6837d",
+			"a0e335c16132d3049c10ae2d013b8acd4404c79894787578fef37b8a5a0844bda59cdd13f24f19eb7908763b6f42184f010747c8f3011b0abfb907d830fbb6336e2151a72df426215e291bc79a4c194b4843eb260d5fb1081f3460feba09d226",
 		);
 
-		const { verified, errors } = await verifier.verifyProposal(proposal.toData());
+		const { verified, errors } = await verifier.verifyProposal(proposal);
 		assert.equal(errors, []);
 		assert.true(verified);
 	});
@@ -62,9 +88,10 @@ describe<{
 	it("#makePrecommit - should correctly make signed precommit", async ({ factory, identity, verifier }) => {
 		const precommit = await factory.makePrecommit(
 			{
+				type: Contracts.Crypto.MessageType.Precommit,
+				blockId: blockData.id,
 				height: 1,
 				round: 1,
-				blockId: blockData.id,
 				validatorIndex: 0,
 			},
 			identity.keys,
@@ -72,10 +99,10 @@ describe<{
 
 		assert.equal(
 			precommit.signature,
-			"98c038d18ceca69b37759bab0a83e6d40d129b7885686de0f0b651f401fab7970f9c2d5bb9a6d0cf56377f13175a56c516fed75e56f7fbe2c610f19791af5bdec74abf79c9292019134983a8ebb9d8c51fcabd55571791fdf25a4615a6421fe9",
+			"b58caa80f1fefffd2fc890fc21462a021d3cb3575368d6e349b9bbff9d8425dc407f915e81af33f5b20c8335d4ec02c3159463bd05a218feb0e4ca2ba368040cdfdf440de3a3b73c7e4e6820196f208ca81cea992fada3d29812339e2e31a77c",
 		);
 
-		const { verified, errors } = await verifier.verifyPrecommit(precommit.toData());
+		const { verified, errors } = await verifier.verifyPrecommit(precommit);
 		assert.equal(errors, []);
 		assert.true(verified);
 	});
@@ -83,9 +110,10 @@ describe<{
 	it("#makePrecommit - should correctly make signed precommit no block", async ({ factory, identity, verifier }) => {
 		const precommit = await factory.makePrecommit(
 			{
+				type: Contracts.Crypto.MessageType.Precommit,
+				blockId: undefined,
 				height: 1,
 				round: 1,
-				blockId: undefined,
 				validatorIndex: 0,
 			},
 			identity.keys,
@@ -93,10 +121,10 @@ describe<{
 
 		assert.equal(
 			precommit.signature,
-			"938354609ccf7ad10eca105f5f2990c847c3f0dc11ae7b75ef5512b32621ab8a21c1f34e22da54bd821d29edbc809c8007b49b4d04dc1df04aa0d328e07718f469f440f5b7de21d4fb5e85b40af925db73fc87df84b372dd31d66145390a334b",
+			"904c8055242bd7736a1cf7ce20c8fedeee5f2f8fe3f6cab6a166c36c1be0f616c2b7a333912becfa3ecb799c8cd420a012bf41018f5c52f67a2858a6d5bd016e8ef6f56a84d8a734ba6ce5f9a5260201fd9d73ce8688ff0019df2c07a1c33c4d",
 		);
 
-		const { verified, errors } = await verifier.verifyPrecommit(precommit.toData());
+		const { verified, errors } = await verifier.verifyPrecommit(precommit);
 		assert.equal(errors, []);
 		assert.true(verified);
 	});
@@ -104,9 +132,10 @@ describe<{
 	it("#makePrevote - should correctly make signed prevote", async ({ factory, identity, verifier }) => {
 		const prevote = await factory.makePrevote(
 			{
+				type: Contracts.Crypto.MessageType.Prevote,
+				blockId: blockData.id,
 				height: 1,
 				round: 1,
-				blockId: blockData.id,
 				validatorIndex: 0,
 			},
 			identity.keys,
@@ -114,10 +143,10 @@ describe<{
 
 		assert.equal(
 			prevote.signature,
-			"98c038d18ceca69b37759bab0a83e6d40d129b7885686de0f0b651f401fab7970f9c2d5bb9a6d0cf56377f13175a56c516fed75e56f7fbe2c610f19791af5bdec74abf79c9292019134983a8ebb9d8c51fcabd55571791fdf25a4615a6421fe9",
+			"aa33ad938e8d8ef0446faa6548e2bd57f0be6cc8f924ea31d4432f0de0a8a76d24cf277af818098a289b28343d724f61127595eb1258b68487abf4921af7ddb1ef4313aa8307b6721f916b6ee1385c722d773edb8f34864015369f7b9c7bb14e",
 		);
 
-		const { verified, errors } = await verifier.verifyPrevote(prevote.toData());
+		const { verified, errors } = await verifier.verifyPrevote(prevote);
 		assert.equal(errors, []);
 		assert.true(verified);
 	});
@@ -125,9 +154,10 @@ describe<{
 	it("#makePrevote - should correctly make signed prevote no block", async ({ factory, identity, verifier }) => {
 		const prevote = await factory.makePrevote(
 			{
+				type: Contracts.Crypto.MessageType.Prevote,
+				blockId: undefined,
 				height: 1,
 				round: 1,
-				blockId: undefined,
 				validatorIndex: 0,
 			},
 			identity.keys,
@@ -135,11 +165,43 @@ describe<{
 
 		assert.equal(
 			prevote.signature,
-			"938354609ccf7ad10eca105f5f2990c847c3f0dc11ae7b75ef5512b32621ab8a21c1f34e22da54bd821d29edbc809c8007b49b4d04dc1df04aa0d328e07718f469f440f5b7de21d4fb5e85b40af925db73fc87df84b372dd31d66145390a334b",
+			"927628d67c385fe216aa800def9cce0c09f5f9fbf836583d7c07ab6a98e1b5681802c92f81ad54984236a07fa389dbab1519f3c91ad39a505a61c3624a88c65da71fe721d7af0ed452516771b94d027be713dba68e14fa2c9680e35b63f0e038",
 		);
 
-		const { verified, errors } = await verifier.verifyPrevote(prevote.toData());
+		const { verified, errors } = await verifier.verifyPrevote(prevote);
 		assert.equal(errors, []);
 		assert.true(verified);
+	});
+
+	it.skip("#makeProposalFromBytes - should be ok", async ({ factory, identity, verifier }) => {
+		const proposal = await factory.makeProposalFromBytes(Buffer.from(serializedProposal, "hex"));
+
+		assert.equal(proposal.toData(), proposalData);
+	});
+
+	it("#makePrevoteFromBytes - should be ok", async ({ factory, identity, verifier }) => {
+		const prevote = await factory.makePrevoteFromBytes(Buffer.from(serializedPrevote, "hex"));
+
+		assert.equal(prevote.toData(), prevoteData);
+	});
+
+	it("#makePrevoteFromBytes - should be ok with no block", async ({ factory, identity, verifier }) => {
+		const prevote = await factory.makePrevoteFromBytes(Buffer.from(serializedPrevoteNoBlock, "hex"));
+
+		console.log(prevote.toSignatureData());
+
+		assert.equal(prevote.toData(), prevoteDataNoBlock);
+	});
+
+	it("#makePrecommitFromBytes - should be ok", async ({ factory, identity, verifier }) => {
+		const precommit = await factory.makePrecommitFromBytes(Buffer.from(serializedPrecommit, "hex"));
+
+		assert.equal(precommit.toData(), precommitData);
+	});
+
+	it("#makePrecommitFromBytes - should be ok with no block", async ({ factory, identity, verifier }) => {
+		const precommit = await factory.makePrecommitFromBytes(Buffer.from(serializedPrecommitNoBlock, "hex"));
+
+		assert.equal(precommit.toData(), precommitDataNoBlock);
 	});
 });

@@ -18,6 +18,9 @@ export class Validator implements Contracts.Consensus.IValidator {
 	@inject(Identifiers.Cryptography.Block.Factory)
 	private readonly blockFactory!: Contracts.Crypto.IBlockFactory;
 
+	@inject(Identifiers.Cryptography.Block.Serializer)
+	private readonly blockSerializer!: Contracts.Crypto.IBlockSerializer;
+
 	@inject(Identifiers.Cryptography.HashFactory)
 	private readonly hashFactory!: Contracts.Crypto.IHashFactory;
 
@@ -30,18 +33,15 @@ export class Validator implements Contracts.Consensus.IValidator {
 	@inject(Identifiers.Cryptography.Message.Factory)
 	private readonly messagesFactory!: Contracts.Crypto.IMessageFactory;
 
+	@inject(Identifiers.ValidatorSet)
+	private readonly validatorSet!: Contracts.ValidatorSet.IValidatorSet;
+
 	#keyPair!: Contracts.Crypto.IKeyPair;
 	#walletPublicKey!: string;
-	#validatorIndex!: number;
 
-	public configure(
-		walletPublicKey: string,
-		keyPair: Contracts.Crypto.IKeyPair,
-		validatorIndex: number,
-	): Contracts.Consensus.IValidator {
+	public configure(walletPublicKey: string, keyPair: Contracts.Crypto.IKeyPair): Contracts.Consensus.IValidator {
 		this.#walletPublicKey = walletPublicKey;
 		this.#keyPair = keyPair;
-		this.#validatorIndex = validatorIndex;
 
 		return this;
 	}
@@ -60,10 +60,19 @@ export class Validator implements Contracts.Consensus.IValidator {
 		height: number,
 		round: number,
 		block: Contracts.Crypto.IBlock,
-		validRound: number | undefined,
+		lockProof?: Contracts.Crypto.IProposalLockProof,
+		validRound?: number,
 	): Promise<Contracts.Crypto.IProposal> {
+		const serializedProposedBlock = await this.blockSerializer.serializeProposed({ block, lockProof });
 		return this.messagesFactory.makeProposal(
-			{ block, height, round, validRound, validatorIndex: this.#validatorIndex },
+			{
+				block: { block, lockProof, serialized: serializedProposedBlock.toString("hex") },
+				height,
+				lockProof,
+				round,
+				validRound,
+				validatorIndex: this.validatorSet.getValidatorIndexByPublicKey(this.#walletPublicKey),
+			},
 			this.#keyPair,
 		);
 	}
@@ -74,7 +83,13 @@ export class Validator implements Contracts.Consensus.IValidator {
 		blockId: string | undefined,
 	): Promise<Contracts.Crypto.IPrevote> {
 		return this.messagesFactory.makePrevote(
-			{ blockId, height, round, validatorIndex: this.#validatorIndex },
+			{
+				blockId,
+				height,
+				round,
+				type: Contracts.Crypto.MessageType.Prevote,
+				validatorIndex: this.validatorSet.getValidatorIndexByPublicKey(this.#walletPublicKey),
+			},
 			this.#keyPair,
 		);
 	}
@@ -85,7 +100,13 @@ export class Validator implements Contracts.Consensus.IValidator {
 		blockId: string | undefined,
 	): Promise<Contracts.Crypto.IPrecommit> {
 		return this.messagesFactory.makePrecommit(
-			{ blockId, height, round, validatorIndex: this.#validatorIndex },
+			{
+				blockId,
+				height,
+				round,
+				type: Contracts.Crypto.MessageType.Precommit,
+				validatorIndex: this.validatorSet.getValidatorIndexByPublicKey(this.#walletPublicKey),
+			},
 			this.#keyPair,
 		);
 	}

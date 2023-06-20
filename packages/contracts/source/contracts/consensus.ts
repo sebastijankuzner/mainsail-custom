@@ -1,4 +1,4 @@
-import { IBlock, ICommittedBlock, IKeyPair, IPrecommit, IPrevote, IProposal } from "./crypto";
+import { IBlock, ICommittedBlock, IKeyPair, IPrecommit, IPrevote, IProposal, IProposalLockProof } from "./crypto";
 import { WalletRepositoryClone } from "./state";
 
 // TODO: Move to crypto
@@ -26,15 +26,24 @@ export interface IRoundState {
 	hasMajorityPrecommits(): boolean;
 	hasMajorityPrecommitsAny(): boolean;
 	hasMinorityPrevotesOrPrecommits(): boolean;
+	getValidatorsSignedPrevote(): boolean[];
+	getValidatorsSignedPrecommit(): boolean[];
+	hasValidProposalLockProof(): Promise<boolean>;
 	aggregateMajorityPrevotes(): Promise<IValidatorSetMajority>;
 	aggregateMajorityPrecommits(): Promise<IValidatorSetMajority>;
+	getProposalLockProof(): Promise<IProposalLockProof>;
 	getProposedCommitBlock(): Promise<ICommittedBlock>;
+}
+
+export interface IRoundStateRepository {
+	getRoundState(height: number, round: number): Promise<IRoundState>;
 }
 
 export interface IConsensusService {
 	run(): Promise<void>;
 	getHeight(): number;
 	getRound(): number;
+	getStep(): Step;
 	onProposal(roundState: IRoundState): Promise<void>;
 	onProposalLocked(roudnState: IRoundState): Promise<void>;
 	onMajorityPrevote(roundState: IRoundState): Promise<void>;
@@ -55,6 +64,7 @@ export interface IHandler {
 }
 
 export interface IScheduler {
+	delayStart(): Promise<void>;
 	delayProposal(): Promise<void>;
 	scheduleTimeoutPropose(height: number, round: number): Promise<void>;
 	scheduleTimeoutPrevote(height: number, round: number): Promise<void>;
@@ -63,10 +73,16 @@ export interface IScheduler {
 }
 
 export interface IValidator {
-	configure(publicKey: string, keyPair: IKeyPair, validatorIndex: number): IValidator;
+	configure(publicKey: string, keyPair: IKeyPair): IValidator;
 	getConsensusPublicKey(): string;
 	prepareBlock(height: number, round: number): Promise<IBlock>;
-	propose(height: number, round: number, block: IBlock, validRound: number | undefined): Promise<IProposal>;
+	propose(
+		height: number,
+		round: number,
+		block: IBlock,
+		lockProof?: IProposalLockProof,
+		validRound?: number,
+	): Promise<IProposal>;
 	prevote(height: number, round: number, blockId: string | undefined): Promise<IPrevote>;
 	precommit(height: number, round: number, blockId: string | undefined): Promise<IPrecommit>;
 }
@@ -74,4 +90,10 @@ export interface IValidator {
 export interface IValidatorRepository {
 	getValidator(publicKey: string): IValidator | undefined;
 	getValidators(publicKeys: string[]): IValidator[];
+}
+
+export enum Step {
+	Propose = 0,
+	Prevote = 1,
+	Precommit = 2,
 }
