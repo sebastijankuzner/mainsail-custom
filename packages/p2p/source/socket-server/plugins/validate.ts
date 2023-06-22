@@ -6,7 +6,9 @@ import { isValidVersion } from "../../utils";
 import {
 	GetBlocksRoute,
 	GetCommonBlocksRoute,
+	GetMessagesRoute,
 	GetPeersRoute,
+	GetProposalRoute,
 	GetStatusRoute,
 	PostBlockRoute,
 	PostPrecommitRoute,
@@ -24,13 +26,15 @@ export class ValidatePlugin {
 		const allRoutesConfigByPath = {
 			...this.app.resolve(GetBlocksRoute).getRoutesConfigByPath(),
 			...this.app.resolve(GetCommonBlocksRoute).getRoutesConfigByPath(),
+			...this.app.resolve(GetMessagesRoute).getRoutesConfigByPath(),
 			...this.app.resolve(GetPeersRoute).getRoutesConfigByPath(),
+			...this.app.resolve(GetProposalRoute).getRoutesConfigByPath(),
 			...this.app.resolve(GetStatusRoute).getRoutesConfigByPath(),
 			...this.app.resolve(PostBlockRoute).getRoutesConfigByPath(),
-			...this.app.resolve(PostTransactionsRoute).getRoutesConfigByPath(),
-			...this.app.resolve(PostProposalRoute).getRoutesConfigByPath(),
-			...this.app.resolve(PostPrevoteRoute).getRoutesConfigByPath(),
 			...this.app.resolve(PostPrecommitRoute).getRoutesConfigByPath(),
+			...this.app.resolve(PostPrevoteRoute).getRoutesConfigByPath(),
+			...this.app.resolve(PostProposalRoute).getRoutesConfigByPath(),
+			...this.app.resolve(PostTransactionsRoute).getRoutesConfigByPath(),
 		};
 
 		server.ext({

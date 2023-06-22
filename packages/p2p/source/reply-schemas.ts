@@ -33,6 +33,25 @@ export const replySchemas = {
 		required: ["common"],
 		type: "object",
 	},
+	getMessages: {
+		properties: {
+			// TODO: Improve this schema
+			precommits: {
+				items: {
+					$ref: "hex",
+				},
+				type: "array",
+			},
+			prevotes: {
+				items: {
+					$ref: "hex",
+				},
+				type: "array",
+			},
+		},
+		required: ["precommits", "prevotes"],
+		type: "object",
+	},
 	getPeers: {
 		items: {
 			properties: {
@@ -59,6 +78,15 @@ export const replySchemas = {
 		},
 		maxItems: constants.MAX_PEERS_GETPEERS,
 		type: "array",
+	},
+	getProposal: {
+		properties: {
+			proposal: {
+				type: "string",
+			},
+		},
+		required: ["proposal"],
+		type: "object",
 	},
 	getStatus: {
 		additionalProperties: false,

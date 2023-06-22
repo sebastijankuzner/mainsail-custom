@@ -710,6 +710,210 @@ export namespace getCommonBlocks {
     }
 }
 
+/** Namespace getMessages. */
+export namespace getMessages {
+
+    /** Properties of a GetMessagesRequest. */
+    interface IGetMessagesRequest {
+
+        /** GetMessagesRequest headers */
+        headers?: (shared.IHeaders|null);
+    }
+
+    /** Represents a GetMessagesRequest. */
+    class GetMessagesRequest implements IGetMessagesRequest {
+
+        /**
+         * Constructs a new GetMessagesRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: getMessages.IGetMessagesRequest);
+
+        /** GetMessagesRequest headers. */
+        public headers?: (shared.IHeaders|null);
+
+        /**
+         * Creates a new GetMessagesRequest instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns GetMessagesRequest instance
+         */
+        public static create(properties?: getMessages.IGetMessagesRequest): getMessages.GetMessagesRequest;
+
+        /**
+         * Encodes the specified GetMessagesRequest message. Does not implicitly {@link getMessages.GetMessagesRequest.verify|verify} messages.
+         * @param message GetMessagesRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: getMessages.IGetMessagesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified GetMessagesRequest message, length delimited. Does not implicitly {@link getMessages.GetMessagesRequest.verify|verify} messages.
+         * @param message GetMessagesRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: getMessages.IGetMessagesRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a GetMessagesRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns GetMessagesRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): getMessages.GetMessagesRequest;
+
+        /**
+         * Decodes a GetMessagesRequest message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns GetMessagesRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): getMessages.GetMessagesRequest;
+
+        /**
+         * Verifies a GetMessagesRequest message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a GetMessagesRequest message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns GetMessagesRequest
+         */
+        public static fromObject(object: { [k: string]: any }): getMessages.GetMessagesRequest;
+
+        /**
+         * Creates a plain object from a GetMessagesRequest message. Also converts values to other types if specified.
+         * @param message GetMessagesRequest
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: getMessages.GetMessagesRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this GetMessagesRequest to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for GetMessagesRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a GetMessagesResponse. */
+    interface IGetMessagesResponse {
+
+        /** GetMessagesResponse prevotes */
+        prevotes?: (string[]|null);
+
+        /** GetMessagesResponse precommits */
+        precommits?: (string[]|null);
+    }
+
+    /** Represents a GetMessagesResponse. */
+    class GetMessagesResponse implements IGetMessagesResponse {
+
+        /**
+         * Constructs a new GetMessagesResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: getMessages.IGetMessagesResponse);
+
+        /** GetMessagesResponse prevotes. */
+        public prevotes: string[];
+
+        /** GetMessagesResponse precommits. */
+        public precommits: string[];
+
+        /**
+         * Creates a new GetMessagesResponse instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns GetMessagesResponse instance
+         */
+        public static create(properties?: getMessages.IGetMessagesResponse): getMessages.GetMessagesResponse;
+
+        /**
+         * Encodes the specified GetMessagesResponse message. Does not implicitly {@link getMessages.GetMessagesResponse.verify|verify} messages.
+         * @param message GetMessagesResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: getMessages.IGetMessagesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified GetMessagesResponse message, length delimited. Does not implicitly {@link getMessages.GetMessagesResponse.verify|verify} messages.
+         * @param message GetMessagesResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: getMessages.IGetMessagesResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a GetMessagesResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns GetMessagesResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): getMessages.GetMessagesResponse;
+
+        /**
+         * Decodes a GetMessagesResponse message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns GetMessagesResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): getMessages.GetMessagesResponse;
+
+        /**
+         * Verifies a GetMessagesResponse message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a GetMessagesResponse message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns GetMessagesResponse
+         */
+        public static fromObject(object: { [k: string]: any }): getMessages.GetMessagesResponse;
+
+        /**
+         * Creates a plain object from a GetMessagesResponse message. Also converts values to other types if specified.
+         * @param message GetMessagesResponse
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: getMessages.GetMessagesResponse, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this GetMessagesResponse to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for GetMessagesResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+}
+
 /** Namespace getPeers. */
 export namespace getPeers {
 
@@ -1011,6 +1215,204 @@ export namespace getPeers {
              */
             public static getTypeUrl(typeUrlPrefix?: string): string;
         }
+    }
+}
+
+/** Namespace getProposal. */
+export namespace getProposal {
+
+    /** Properties of a GetProposalRequest. */
+    interface IGetProposalRequest {
+
+        /** GetProposalRequest headers */
+        headers?: (shared.IHeaders|null);
+    }
+
+    /** Represents a GetProposalRequest. */
+    class GetProposalRequest implements IGetProposalRequest {
+
+        /**
+         * Constructs a new GetProposalRequest.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: getProposal.IGetProposalRequest);
+
+        /** GetProposalRequest headers. */
+        public headers?: (shared.IHeaders|null);
+
+        /**
+         * Creates a new GetProposalRequest instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns GetProposalRequest instance
+         */
+        public static create(properties?: getProposal.IGetProposalRequest): getProposal.GetProposalRequest;
+
+        /**
+         * Encodes the specified GetProposalRequest message. Does not implicitly {@link getProposal.GetProposalRequest.verify|verify} messages.
+         * @param message GetProposalRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: getProposal.IGetProposalRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified GetProposalRequest message, length delimited. Does not implicitly {@link getProposal.GetProposalRequest.verify|verify} messages.
+         * @param message GetProposalRequest message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: getProposal.IGetProposalRequest, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a GetProposalRequest message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns GetProposalRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): getProposal.GetProposalRequest;
+
+        /**
+         * Decodes a GetProposalRequest message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns GetProposalRequest
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): getProposal.GetProposalRequest;
+
+        /**
+         * Verifies a GetProposalRequest message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a GetProposalRequest message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns GetProposalRequest
+         */
+        public static fromObject(object: { [k: string]: any }): getProposal.GetProposalRequest;
+
+        /**
+         * Creates a plain object from a GetProposalRequest message. Also converts values to other types if specified.
+         * @param message GetProposalRequest
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: getProposal.GetProposalRequest, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this GetProposalRequest to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for GetProposalRequest
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
+    }
+
+    /** Properties of a GetProposalResponse. */
+    interface IGetProposalResponse {
+
+        /** GetProposalResponse proposal */
+        proposal?: (string|null);
+    }
+
+    /** Represents a GetProposalResponse. */
+    class GetProposalResponse implements IGetProposalResponse {
+
+        /**
+         * Constructs a new GetProposalResponse.
+         * @param [properties] Properties to set
+         */
+        constructor(properties?: getProposal.IGetProposalResponse);
+
+        /** GetProposalResponse proposal. */
+        public proposal: string;
+
+        /**
+         * Creates a new GetProposalResponse instance using the specified properties.
+         * @param [properties] Properties to set
+         * @returns GetProposalResponse instance
+         */
+        public static create(properties?: getProposal.IGetProposalResponse): getProposal.GetProposalResponse;
+
+        /**
+         * Encodes the specified GetProposalResponse message. Does not implicitly {@link getProposal.GetProposalResponse.verify|verify} messages.
+         * @param message GetProposalResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encode(message: getProposal.IGetProposalResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Encodes the specified GetProposalResponse message, length delimited. Does not implicitly {@link getProposal.GetProposalResponse.verify|verify} messages.
+         * @param message GetProposalResponse message or plain object to encode
+         * @param [writer] Writer to encode to
+         * @returns Writer
+         */
+        public static encodeDelimited(message: getProposal.IGetProposalResponse, writer?: $protobuf.Writer): $protobuf.Writer;
+
+        /**
+         * Decodes a GetProposalResponse message from the specified reader or buffer.
+         * @param reader Reader or buffer to decode from
+         * @param [length] Message length if known beforehand
+         * @returns GetProposalResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decode(reader: ($protobuf.Reader|Uint8Array), length?: number): getProposal.GetProposalResponse;
+
+        /**
+         * Decodes a GetProposalResponse message from the specified reader or buffer, length delimited.
+         * @param reader Reader or buffer to decode from
+         * @returns GetProposalResponse
+         * @throws {Error} If the payload is not a reader or valid buffer
+         * @throws {$protobuf.util.ProtocolError} If required fields are missing
+         */
+        public static decodeDelimited(reader: ($protobuf.Reader|Uint8Array)): getProposal.GetProposalResponse;
+
+        /**
+         * Verifies a GetProposalResponse message.
+         * @param message Plain object to verify
+         * @returns `null` if valid, otherwise the reason why it is not
+         */
+        public static verify(message: { [k: string]: any }): (string|null);
+
+        /**
+         * Creates a GetProposalResponse message from a plain object. Also converts values to their respective internal types.
+         * @param object Plain object
+         * @returns GetProposalResponse
+         */
+        public static fromObject(object: { [k: string]: any }): getProposal.GetProposalResponse;
+
+        /**
+         * Creates a plain object from a GetProposalResponse message. Also converts values to other types if specified.
+         * @param message GetProposalResponse
+         * @param [options] Conversion options
+         * @returns Plain object
+         */
+        public static toObject(message: getProposal.GetProposalResponse, options?: $protobuf.IConversionOptions): { [k: string]: any };
+
+        /**
+         * Converts this GetProposalResponse to JSON.
+         * @returns JSON object
+         */
+        public toJSON(): { [k: string]: any };
+
+        /**
+         * Gets the default type url for GetProposalResponse
+         * @param [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
+         * @returns The default type url
+         */
+        public static getTypeUrl(typeUrlPrefix?: string): string;
     }
 }
 

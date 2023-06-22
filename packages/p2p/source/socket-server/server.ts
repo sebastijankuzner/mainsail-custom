@@ -12,7 +12,9 @@ import { ValidatePlugin } from "./plugins/validate";
 import {
 	GetBlocksRoute,
 	GetCommonBlocksRoute,
+	GetMessagesRoute,
 	GetPeersRoute,
+	GetProposalRoute,
 	GetStatusRoute,
 	PostBlockRoute,
 	PostPrecommitRoute,
@@ -51,13 +53,15 @@ export class Server {
 
 		this.app.resolve(GetBlocksRoute).register(this.server);
 		this.app.resolve(GetCommonBlocksRoute).register(this.server);
+		this.app.resolve(GetMessagesRoute).register(this.server);
 		this.app.resolve(GetPeersRoute).register(this.server);
+		this.app.resolve(GetProposalRoute).register(this.server);
 		this.app.resolve(GetStatusRoute).register(this.server);
 		this.app.resolve(PostBlockRoute).register(this.server);
-		this.app.resolve(PostTransactionsRoute).register(this.server);
-		this.app.resolve(PostProposalRoute).register(this.server);
-		this.app.resolve(PostPrevoteRoute).register(this.server);
 		this.app.resolve(PostPrecommitRoute).register(this.server);
+		this.app.resolve(PostPrevoteRoute).register(this.server);
+		this.app.resolve(PostProposalRoute).register(this.server);
+		this.app.resolve(PostTransactionsRoute).register(this.server);
 
 		// onPreAuth
 		this.app.resolve(RateLimitPlugin).register(this.server);

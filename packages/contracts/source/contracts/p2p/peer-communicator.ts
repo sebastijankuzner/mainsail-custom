@@ -15,6 +15,8 @@ export interface PeerCommunicator {
 	pingPorts(peer: Peer): Promise<void>;
 
 	getPeers(peer: Peer): Promise<any>;
+	getMessages(peer: Peer): Promise<any>;
+	getProposal(peer: Peer): Promise<any>;
 
 	hasCommonBlocks(peer: Peer, ids: string[], timeoutMsec?: number): Promise<any>;
 
