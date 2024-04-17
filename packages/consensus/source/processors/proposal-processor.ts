@@ -33,10 +33,7 @@ export class ProposalProcessor extends AbstractProcessor implements Contracts.Co
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
 
-	async process(
-		proposal: Contracts.Crypto.Proposal,
-		broadcast = false,
-	): Promise<Contracts.Consensus.ProcessorResult> {
+	async process(proposal: Contracts.Crypto.Proposal, broadcast = true): Promise<Contracts.Consensus.ProcessorResult> {
 		return this.commitLock.runNonExclusive(async () => {
 			this.logger.info(`!!!Processing proposal ${proposal.height}/${proposal.round}`);
 

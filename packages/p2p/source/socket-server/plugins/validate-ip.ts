@@ -28,7 +28,7 @@ export class ValidateIpPlugin extends BasePlugin {
 
 		server.ext({
 			method: async (request: Contracts.P2P.Request, h: ResponseToolkit) => {
-				if (request.path.includes("postProposal")) {
+				if (request.path == "/postProposal") {
 					this.logger.info("!!!Proposal route received");
 				}
 
