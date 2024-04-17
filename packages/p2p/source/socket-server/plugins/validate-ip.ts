@@ -18,6 +18,9 @@ export class ValidateIpPlugin extends BasePlugin {
 	@inject(Identifiers.P2P.Peer.Processor)
 	private readonly peerProcessor!: Contracts.P2P.PeerProcessor;
 
+	@inject(Identifiers.Services.Log.Service)
+	private readonly logger!: Contracts.Kernel.Logger;
+
 	public register(server) {
 		if (this.configuration.getRequired("developmentMode.enabled")) {
 			return;
@@ -25,6 +28,10 @@ export class ValidateIpPlugin extends BasePlugin {
 
 		server.ext({
 			method: async (request: Contracts.P2P.Request, h: ResponseToolkit) => {
+				if (request.path.includes("postProposal")) {
+					this.logger.info("!!!Proposal route received");
+				}
+
 				const ip = getPeerIp(request);
 
 				if (this.peerDisposer.isBanned(ip)) {

@@ -131,9 +131,14 @@ export class Consensus implements Contracts.Consensus.Service {
 				return;
 			}
 
-			if (!roundState.hasProcessorResult() && roundState.hasProposal()) {
-				const result = await this.processor.process(roundState);
-				roundState.setProcessorResult(result);
+			const proposal = roundState.getProposal();
+			if (!roundState.hasProcessorResult() && proposal) {
+				try {
+					await proposal.deserializeData();
+					roundState.setProcessorResult(await this.processor.process(roundState));
+				} catch {
+					roundState.setProcessorResult(false);
+				}
 			}
 
 			await this.onProposal(roundState);
@@ -215,7 +220,7 @@ export class Consensus implements Contracts.Consensus.Service {
 
 		this.#step = Contracts.Consensus.Step.Prevote;
 
-		const { block } = proposal.block;
+		const { block } = proposal.getData();
 		this.logger.info(`Received proposal ${this.#height}/${this.#round} blockId: ${block.data.id}`);
 		await this.eventDispatcher.dispatch(Enums.ConsensusEvent.ProposalAccepted, this.getState());
 
@@ -228,14 +233,14 @@ export class Consensus implements Contracts.Consensus.Service {
 			this.#step !== Contracts.Consensus.Step.Propose ||
 			this.#isInvalidRoundState(roundState) ||
 			!proposal ||
-			!proposal.block.lockProof ||
+			!proposal.getData().lockProof ||
 			proposal.validRound === undefined ||
 			proposal.validRound >= this.#round
 		) {
 			return;
 		}
 
-		const { block } = proposal.block;
+		const { block } = proposal.getData();
 		this.#step = Contracts.Consensus.Step.Prevote;
 
 		this.logger.info(`Received proposal ${this.#height}/${this.#round} with locked blockId: ${block.data.id}`);
@@ -263,7 +268,7 @@ export class Consensus implements Contracts.Consensus.Service {
 			return;
 		}
 
-		const { block } = proposal.block;
+		const { block } = proposal.getData();
 
 		this.logger.info(`Received +2/3 prevotes for ${this.#height}/${this.#round} blockId: ${block.data.id}`);
 
@@ -455,12 +460,18 @@ export class Consensus implements Contracts.Consensus.Service {
 		const block = await registeredProposer.prepareBlock(roundState.proposer.getWalletPublicKey(), this.#round);
 		this.logger.info(`Proposing new block ${this.#height}/${this.#round} with blockId: ${block.data.id}`);
 
-		return registeredProposer.propose(
+		const t1 = performance.now();
+
+		const proposal = await registeredProposer.propose(
 			this.validatorSet.getValidatorIndexByWalletPublicKey(roundState.proposer.getWalletPublicKey()),
 			this.#round,
 			undefined,
 			block,
 		);
+
+		this.logger.info(`!!!Created proposal in ${performance.now() - t1}ms`);
+
+		return proposal;
 	}
 
 	public async prevote(value?: string): Promise<void> {

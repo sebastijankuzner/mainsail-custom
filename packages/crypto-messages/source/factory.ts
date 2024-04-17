@@ -1,6 +1,5 @@
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { IpcWorker } from "@mainsail/kernel";
 import { ByteBuffer } from "@mainsail/utils";
 
 import { Precommit } from "./precommit.js";
@@ -9,6 +8,13 @@ import { Proposal } from "./proposal.js";
 
 @injectable()
 export class MessageFactory implements Contracts.Crypto.MessageFactory {
+	@inject(Identifiers.Application.Instance)
+	private readonly app!: Contracts.Kernel.Application;
+
+	@inject(Identifiers.Cryptography.Signature.Instance)
+	@tagged("type", "consensus")
+	private readonly consensusSignature!: Contracts.Crypto.Signature;
+
 	@inject(Identifiers.Cryptography.Message.Serializer)
 	private readonly serializer!: Contracts.Crypto.MessageSerializer;
 
@@ -18,20 +24,18 @@ export class MessageFactory implements Contracts.Crypto.MessageFactory {
 	@inject(Identifiers.Cryptography.Block.Factory)
 	private readonly blockFactory!: Contracts.Crypto.BlockFactory;
 
+	@inject(Identifiers.Cryptography.Block.Deserializer)
+	private readonly blockDeserializer!: Contracts.Crypto.BlockDeserializer;
+
 	@inject(Identifiers.Cryptography.Validator)
 	private readonly validator!: Contracts.Crypto.Validator;
-
-	@inject(Identifiers.CryptoWorker.WorkerPool)
-	private readonly workerPool!: IpcWorker.WorkerPool;
 
 	public async makeProposal(
 		data: Contracts.Crypto.MakeProposalData,
 		keyPair: Contracts.Crypto.KeyPair,
 	): Promise<Contracts.Crypto.Proposal> {
-		const worker = await this.workerPool.getWorker();
-
 		const bytes = await this.serializer.serializeProposal(data, { includeSignature: false });
-		const signature = await worker.consensusSignature("sign", bytes, Buffer.from(keyPair.privateKey, "hex"));
+		const signature = await this.consensusSignature.sign(bytes, Buffer.from(keyPair.privateKey, "hex"));
 		const serialized = Buffer.concat([bytes, Buffer.from(signature, "hex")]);
 		return this.makeProposalFromBytes(serialized);
 	}
@@ -42,32 +46,54 @@ export class MessageFactory implements Contracts.Crypto.MessageFactory {
 	}
 
 	public async makeProposalFromData(
-		data: Contracts.Crypto.ProposalData,
+		proposalData: Contracts.Crypto.ProposalData,
 		serialized?: Buffer,
 	): Promise<Contracts.Crypto.Proposal> {
-		this.#applySchema("proposal", data);
-		const block = await this.#makeProposedBlockFromBytes(Buffer.from(data.block.serialized, "hex"));
+		this.#applySchema("proposal", proposalData);
+		const header = await this.#getBlockHeaderFromProposedData(Buffer.from(proposalData.data.serialized, "hex"));
 
 		if (!serialized) {
-			serialized = await this.serializer.serializeProposal(data, { includeSignature: true });
+			serialized = await this.serializer.serializeProposal(proposalData, { includeSignature: true });
 		}
 
-		return new Proposal({ ...data, block, serialized });
+		return this.app.resolve<Proposal>(Proposal).initialize({
+			...proposalData,
+			dataSerialized: proposalData.data.serialized,
+			height: header.height,
+			serialized,
+		});
+	}
+
+	async makeProposedDataFromBytes(bytes: Buffer): Promise<Contracts.Crypto.ProposedData> {
+		const buffer = ByteBuffer.fromBuffer(bytes);
+
+		const lockProofLength = buffer.readUint8();
+		let lockProof: Contracts.Crypto.AggregatedSignature | undefined;
+		if (lockProofLength > 0) {
+			const lockProofBuffer = buffer.readBytes(lockProofLength);
+			lockProof = await this.deserializer.deserializeLockProof(lockProofBuffer);
+		}
+
+		const block = await this.blockFactory.fromBytes(buffer.getRemainder());
+
+		return {
+			block,
+			lockProof,
+			serialized: bytes.toString("hex"),
+		};
 	}
 
 	public async makePrevote(
 		data: Contracts.Crypto.MakePrevoteData,
 		keyPair: Contracts.Crypto.KeyPair,
 	): Promise<Contracts.Crypto.Prevote> {
-		const worker = await this.workerPool.getWorker();
-
 		const bytes = await this.serializer.serializePrevoteForSignature({
 			blockId: data.blockId,
 			height: data.height,
 			round: data.round,
 			type: data.type,
 		});
-		const signature = await worker.consensusSignature("sign", bytes, Buffer.from(keyPair.privateKey, "hex"));
+		const signature = await this.consensusSignature.sign(bytes, Buffer.from(keyPair.privateKey, "hex"));
 		const serialized = await this.serializer.serializePrevote({ ...data, signature });
 		return this.makePrevoteFromBytes(serialized);
 	}
@@ -94,15 +120,13 @@ export class MessageFactory implements Contracts.Crypto.MessageFactory {
 		data: Contracts.Crypto.MakePrecommitData,
 		keyPair: Contracts.Crypto.KeyPair,
 	): Promise<Contracts.Crypto.Precommit> {
-		const worker = await this.workerPool.getWorker();
-
 		const bytes = await this.serializer.serializePrecommitForSignature({
 			blockId: data.blockId,
 			height: data.height,
 			round: data.round,
 			type: data.type,
 		});
-		const signature = await worker.consensusSignature("sign", bytes, Buffer.from(keyPair.privateKey, "hex"));
+		const signature = await this.consensusSignature.sign(bytes, Buffer.from(keyPair.privateKey, "hex"));
 
 		const serialized = await this.serializer.serializePrecommit({ ...data, signature });
 		return this.makePrecommitFromBytes(serialized);
@@ -126,23 +150,14 @@ export class MessageFactory implements Contracts.Crypto.MessageFactory {
 		return new Precommit({ ...data, serialized });
 	}
 
-	async #makeProposedBlockFromBytes(bytes: Buffer): Promise<Contracts.Crypto.ProposedBlock> {
+	// Performance can be improved by returning only a block height
+	async #getBlockHeaderFromProposedData(bytes: Buffer): Promise<Contracts.Crypto.BlockHeader> {
 		const buffer = ByteBuffer.fromBuffer(bytes);
 
 		const lockProofLength = buffer.readUint8();
-		let lockProof: Contracts.Crypto.AggregatedSignature | undefined;
-		if (lockProofLength > 0) {
-			const lockProofBuffer = buffer.readBytes(lockProofLength);
-			lockProof = await this.deserializer.deserializeLockProof(lockProofBuffer);
-		}
+		buffer.skip(lockProofLength);
 
-		const block = await this.blockFactory.fromBytes(buffer.getRemainder());
-
-		return {
-			block,
-			lockProof,
-			serialized: bytes.toString("hex"),
-		};
+		return this.blockDeserializer.deserializeHeader(buffer.getRemainder());
 	}
 
 	#applySchema<T>(schema: string, data: T): T {
