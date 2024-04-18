@@ -13,7 +13,7 @@ export const defaults = {
 		enabled: Environment.isTrue(Constants.EnvironmentVariables.CORE_P2P_DEVELOPMENT_MODE_ENABLED),
 	},
 	getBlocksTimeout: 30_000,
-	maxPeersBroadcast: Environment.get(Constants.EnvironmentVariables.CORE_P2P_MAX_PEERS_BROADCAST, 4),
+	maxPeersBroadcast: Environment.get(Constants.EnvironmentVariables.CORE_P2P_MAX_PEERS_BROADCAST, 3),
 	maxSameSubnetPeers: Environment.get(Constants.EnvironmentVariables.CORE_P2P_MAX_PEERS_SAME_SUBNET, 5),
 	minimumNetworkReach: Environment.get(Constants.EnvironmentVariables.CORE_P2P_MIN_NETWORK_REACH, 20),
 	minimumVersions: ["^0.0.1"],
