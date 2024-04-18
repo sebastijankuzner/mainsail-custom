@@ -151,6 +151,8 @@ export class Validator implements Contracts.Validator.Validator {
 		const previousBlock = this.stateService.getStore().getLastBlock();
 		const height = previousBlock.data.height + 1;
 
+		const newTimestamp = previousBlock.data.timestamp + 8000;
+
 		return this.blockFactory.make({
 			generatorPublicKey,
 			height,
@@ -160,7 +162,7 @@ export class Validator implements Contracts.Validator.Validator {
 			previousBlock: previousBlock.data.id,
 			reward: BigNumber.make(this.cryptoConfiguration.getMilestone(height).reward),
 			round,
-			timestamp: dayjs().valueOf(),
+			timestamp: newTimestamp > dayjs().valueOf() ? newTimestamp : dayjs().valueOf(),
 			totalAmount: totals.amount,
 			totalFee: totals.fee,
 			transactions: transactionData,

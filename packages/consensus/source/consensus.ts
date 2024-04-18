@@ -60,6 +60,8 @@ export class Consensus implements Contracts.Consensus.Service {
 	#isDisposed = false;
 	#pendingJobs = new Set<string>();
 
+	#proposal?: Contracts.Crypto.Proposal;
+
 	// Handler lock is different than commit lock. It is used to prevent parallel processing and it is similar to queue.
 	readonly #handlerLock = new Utils.Lock();
 
@@ -202,9 +204,22 @@ export class Consensus implements Contracts.Consensus.Service {
 		}
 
 		this.scheduler.scheduleTimeoutStartRound();
+
+		// New part
+		const roundState = this.roundStateRepository.getRoundState(this.#height, this.#round);
+		await this.propose(roundState);
 	}
 
 	public async onTimeoutStartRound(): Promise<void> {
+		// const roundState = this.roundStateRepository.getRoundState(this.#height, this.#round);
+		// this.logger.info(`>> Starting new round: ${this.#height}/${this.#round} with proposer: ${roundState.proposer}`);
+
+		// await this.eventDispatcher.dispatch(Enums.ConsensusEvent.RoundStarted, this.getState());
+
+		// this.scheduler.scheduleTimeoutPropose(this.#height, this.#round);
+
+		// await this.propose(roundState);
+
 		const roundState = this.roundStateRepository.getRoundState(this.#height, this.#round);
 		this.logger.info(`>> Starting new round: ${this.#height}/${this.#round} with proposer: ${roundState.proposer}`);
 
@@ -212,7 +227,7 @@ export class Consensus implements Contracts.Consensus.Service {
 
 		this.scheduler.scheduleTimeoutPropose(this.#height, this.#round);
 
-		await this.propose(roundState);
+		await this.pushPropose();
 	}
 
 	protected async onProposal(roundState: Contracts.Consensus.RoundState): Promise<void> {
@@ -438,9 +453,16 @@ export class Consensus implements Contracts.Consensus.Service {
 
 		this.logger.info(`Found registered proposer: ${roundState.proposer}`);
 
-		const proposal = await this.#makeProposal(roundState, registeredProposer);
+		this.#proposal = await this.#makeProposal(roundState, registeredProposer);
 
-		void this.proposalProcessor.process(proposal);
+		//
+	}
+
+	public async pushPropose(): Promise<void> {
+		if (this.#proposal) {
+			void this.proposalProcessor.process(this.#proposal);
+			this.#proposal = undefined;
+		}
 	}
 
 	async #makeProposal(
