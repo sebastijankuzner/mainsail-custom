@@ -1,5 +1,6 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+import { performance } from "perf_hooks";
 
 @injectable()
 export class Collator implements Contracts.TransactionPool.Collator {
@@ -32,9 +33,14 @@ export class Collator implements Contracts.TransactionPool.Collator {
 		const candidateTransactions: Contracts.Crypto.Transaction[] = [];
 		const validator: Contracts.State.TransactionValidator = this.createTransactionValidator();
 		const failedTransactions: Contracts.Crypto.Transaction[] = [];
+		const startTime = performance.now();
 
 		for (const transaction of await this.poolQuery.getFromHighestPriority().all()) {
-			if (candidateTransactions.length === milestone.block.maxTransactions) {
+			// if (candidateTransactions.length === milestone.block.maxTransactions) {
+			// 	break;
+			// }
+
+			if (performance.now() - startTime > 3000) {
 				break;
 			}
 
