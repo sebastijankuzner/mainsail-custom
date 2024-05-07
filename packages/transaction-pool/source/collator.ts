@@ -1,5 +1,6 @@
 import { inject, injectable } from "@mainsail/container";
-import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+// @ts-ignore
+import { Contracts, Identifiers } from "@mainsail/contracts";
 import { TransferBuilder } from "@mainsail/crypto-transaction-transfer";
 import { performance } from "perf_hooks";
 
@@ -19,6 +20,7 @@ export class Collator implements Contracts.TransactionPool.Collator {
 	private readonly pool!: Contracts.TransactionPool.Service;
 
 	@inject(Identifiers.TransactionPool.ExpirationService)
+	// @ts-ignore
 	private readonly expirationService!: Contracts.TransactionPool.ExpirationService;
 
 	@inject(Identifiers.TransactionPool.Query)
@@ -37,41 +39,79 @@ export class Collator implements Contracts.TransactionPool.Collator {
 	@inject(Identifiers.Cryptography.Block.Serializer)
 	private readonly blockSerializer!: Contracts.Crypto.BlockSerializer;
 
+	private cache: Contracts.Crypto.Transaction[] = [];
+	private secretId = 0;
+	private continue = true;
+
+	public initialize(): void {
+		console.log("Collator initialized");
+
+		void this.#build();
+	}
+
 	public async getBlockCandidateTransactions(): Promise<Contracts.Crypto.Transaction[]> {
+		await new Promise((resolve) => setTimeout(resolve, 2500));
+
+		this.continue = false;
+
+		await new Promise((resolve) => setTimeout(resolve, 200));
+
+		const result = this.cache;
+		this.cache = [];
+
+		void this.#build();
+
+		return result;
+	}
+
+	async #build(): Promise<void> {
+		this.continue = true;
+		this.cache = await this.#getBlockCandidateTransactions();
+	}
+
+	async #getBlockCandidateTransactions(): Promise<Contracts.Crypto.Transaction[]> {
 		const milestone = this.configuration.getMilestone();
 
 		let bytesLeft: number = milestone.block.maxPayload - this.blockSerializer.headerSize();
 
 		const candidateTransactions: Contracts.Crypto.Transaction[] = [];
+		// @ts-ignore
 		const validator: Contracts.State.TransactionValidator = this.createTransactionValidator();
 		const failedTransactions: Contracts.Crypto.Transaction[] = [];
+		// @ts-ignore
 		const startTime = performance.now();
 
 		const store = this.stateService.getStore();
 
 		const secrets = this.app.config("validators.secrets");
-		const secret = secrets[0];
+		const secret = secrets[this.secretId++ % secrets.length];
 
 		const address = await this.addressFactory.fromMnemonic(secret);
 
 		let walletNonce = store.walletRepository.findByAddress(address).getNonce();
 
-		while (true) {
-			// if (candidateTransactions.length === milestone.block.maxTransactions) {
-			// 	break;
-			// }
+		const count = 0;
 
-			// if (candidateTransactions.length === 5000) {
-			// 	break;
-			// }
+		while (this.continue) {
+			if (count % 300 === 0) {
+				await new Promise((resolve) => setTimeout(resolve, 0));
+			}
 
-			if (store.getLastHeight() < 3) {
+			if (candidateTransactions.length === milestone.block.maxTransactions) {
 				break;
 			}
 
-			if (performance.now() - startTime > 3000) {
-				break;
-			}
+			// if (candidateTransactions.length === 15_000) {
+			// 	break;
+			// }
+
+			// if (store.getLastHeight() < 3) {
+			// 	break;
+			// }
+
+			// if (performance.now() - startTime > 3000) {
+			// 	break;
+			// }
 
 			walletNonce = walletNonce.plus(1);
 
@@ -89,16 +129,16 @@ export class Collator implements Contracts.TransactionPool.Collator {
 			}
 
 			try {
-				if (await this.expirationService.isExpired(transaction)) {
-					const expirationHeight: number = await this.expirationService.getExpirationHeight(transaction);
-					throw new Exceptions.TransactionHasExpiredError(transaction, expirationHeight);
-				}
+				// if (await this.expirationService.isExpired(transaction)) {
+				// 	const expirationHeight: number = await this.expirationService.getExpirationHeight(transaction);
+				// 	throw new Exceptions.TransactionHasExpiredError(transaction, expirationHeight);
+				// }
 
 				if (bytesLeft - 4 - transaction.serialized.length < 0) {
 					break;
 				}
 
-				await validator.validate(transaction);
+				// await validator.validate(transaction);
 				candidateTransactions.push(transaction);
 
 				bytesLeft -= 4;
@@ -115,6 +155,10 @@ export class Collator implements Contracts.TransactionPool.Collator {
 				await this.pool.removeTransaction(failedTransaction);
 			}
 		})();
+
+		this.logger.info(
+			`!!!Collated ${candidateTransactions.length} transactions in ${performance.now() - startTime}ms`,
+		);
 
 		return candidateTransactions;
 	}

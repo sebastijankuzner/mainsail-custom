@@ -53,7 +53,7 @@ export class ServiceProvider extends Providers.ServiceProvider {
 			.bind(Identifiers.TransactionPool.TransactionValidator.Factory)
 			.toAutoFactory(Identifiers.TransactionPool.TransactionValidator.Instance);
 
-		this.app.bind(Identifiers.TransactionPool.Collator).to(Collator);
+		this.app.bind(Identifiers.TransactionPool.Collator).to(Collator).inSingletonScope();
 		this.app.bind(Identifiers.TransactionPool.ExpirationService).to(ExpirationService);
 		this.app.bind(Identifiers.TransactionPool.Mempool).to(Mempool).inSingletonScope();
 		this.app.bind(Identifiers.TransactionPool.Processor).to(Processor);

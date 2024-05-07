@@ -56,6 +56,9 @@ export class Bootstrapper {
 	@optional()
 	private readonly apiSync?: Contracts.ApiSync.Service;
 
+	@inject(Identifiers.TransactionPool.Collator)
+	private readonly collator!: Contracts.TransactionPool.Collator;
+
 	#store!: Contracts.State.Store;
 
 	@postConstruct()
@@ -91,6 +94,8 @@ export class Bootstrapper {
 			await this.transactionPool.reAddTransactions();
 
 			void this.consensus.run();
+
+			this.collator.initialize();
 
 			await this.p2pServer.boot();
 			await this.p2pService.boot();
