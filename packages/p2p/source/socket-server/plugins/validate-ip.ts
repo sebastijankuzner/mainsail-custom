@@ -19,6 +19,7 @@ export class ValidateIpPlugin extends BasePlugin {
 	private readonly peerProcessor!: Contracts.P2P.PeerProcessor;
 
 	@inject(Identifiers.Services.Log.Service)
+	// @ts-ignore
 	private readonly logger!: Contracts.Kernel.Logger;
 
 	public register(server) {
@@ -29,7 +30,7 @@ export class ValidateIpPlugin extends BasePlugin {
 		server.ext({
 			method: async (request: Contracts.P2P.Request, h: ResponseToolkit) => {
 				if (request.path == "/postProposal") {
-					this.logger.info("!!!Proposal route received");
+					// this.logger.info("!!!Proposal route received");
 				}
 
 				const ip = getPeerIp(request);

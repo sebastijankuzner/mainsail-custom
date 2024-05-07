@@ -68,8 +68,6 @@ export class ProposalProcessor extends AbstractProcessor implements Contracts.Co
 
 			// await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-			this.logger.info(`!!!Processing proposal ${proposal.height}/${proposal.round}`);
-
 			void this.getConsensus().handle(roundState);
 
 			return Contracts.Consensus.ProcessorResult.Accepted;

@@ -54,9 +54,9 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 				result.errors.push("Invalid number of transactions");
 			}
 
-			if (block.transactions.length > constants.block.maxTransactions && blockData.height > 0) {
-				result.errors.push("Transactions length is too high");
-			}
+			// if (block.transactions.length > constants.block.maxTransactions && blockData.height > 0) {
+			// 	result.errors.push("Transactions length is too high");
+			// }
 
 			// Checking if transactions of the block adds up to block values.
 			const appliedTransactions: Record<string, Contracts.Crypto.TransactionData> = {};

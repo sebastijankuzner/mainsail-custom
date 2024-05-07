@@ -24,6 +24,7 @@
 	"dependencies": {
 		"@mainsail/container": "workspace:*",
 		"@mainsail/contracts": "workspace:*",
+		"@mainsail/crypto-transaction-transfer": "workspace:*",
 		"@mainsail/kernel": "workspace:*",
 		"better-sqlite3": "9.4.3",
 		"fs-extra": "11.2.0",

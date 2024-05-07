@@ -51,11 +51,13 @@ export class Broadcaster implements Contracts.P2P.Broadcaster {
 	async broadcastProposal(proposal: Contracts.Crypto.Proposal): Promise<void> {
 		this.state.resetLastMessageTime();
 
-		this.logger.info(`!!!Broadcasting proposal ${proposal.height}/${proposal.round}`);
+		const peers = this.#getPeersForBroadcast();
 
-		const promises = this.#getPeersForBroadcast().map((peer) =>
-			this.communicator.postProposal(peer, proposal.serialized),
+		this.logger.info(
+			`!!!Broadcasting proposal ${proposal.height}/${proposal.round} to ${peers.map((peer) => peer.ip).join(", ")}`,
 		);
+
+		const promises = peers.map((peer) => this.communicator.postProposal(peer, proposal.serialized));
 
 		await Promise.all(promises);
 	}

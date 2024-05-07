@@ -9,6 +9,7 @@ export class Selector implements Contracts.Proposer.Selector {
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
 	@inject(Identifiers.State.Service)
+	// @ts-ignore
 	private readonly stateService!: Contracts.State.Service;
 
 	public async onCommit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
@@ -26,6 +27,17 @@ export class Selector implements Contracts.Proposer.Selector {
 		];
 		Utils.assert.defined<number>(result);
 		return result;
+
+		// switch ((this.stateService.getStore().getTotalRound() + round) % 3) {
+		// 	case 0:
+		// 		return 49 - 1;
+		// 	case 1:
+		// 		return 53 - 1;
+		// 	default:
+		// 		return 31 - 1;
+		// }
+
+		// return 48;
 	}
 
 	#updateValidatorMatrix(unit: Contracts.Processor.ProcessableUnit): void {

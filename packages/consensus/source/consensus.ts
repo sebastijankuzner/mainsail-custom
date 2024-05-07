@@ -143,10 +143,22 @@ export class Consensus implements Contracts.Consensus.Service {
 			}
 
 			const proposal = roundState.getProposal();
-			if (!roundState.hasProcessorResult() && proposal) {
+			if (
+				!roundState.hasProcessorResult() &&
+				proposal &&
+				this.#step === Contracts.Consensus.Step.Propose &&
+				roundState.round === this.#round &&
+				roundState.height === this.#height
+			) {
 				try {
+					const t1 = performance.now();
+
 					await proposal.deserializeData();
 					roundState.setProcessorResult(await this.processor.process(roundState));
+
+					this.logger.info(
+						`!!!Processed proposal ${this.#height}/${this.#round} in ${performance.now() - t1}ms`,
+					);
 				} catch {
 					roundState.setProcessorResult(false);
 				}
@@ -317,8 +329,10 @@ export class Consensus implements Contracts.Consensus.Service {
 			return;
 		}
 
-		this.scheduler.scheduleTimeoutPrevote(this.#height, this.#round);
-		await this.eventDispatcher.dispatch(Enums.ConsensusEvent.PrevotedAny, this.getState());
+		if (this.scheduler.scheduleTimeoutPrevote(this.#height, this.#round)) {
+			this.logger.info(`Received +2/3 prevotes for ${this.#height}/${this.#round} blockId: any`);
+			await this.eventDispatcher.dispatch(Enums.ConsensusEvent.PrevotedAny, this.getState());
+		}
 	}
 
 	protected async onMajorityPrevoteNull(roundState: Contracts.Consensus.RoundState): Promise<void> {
@@ -339,8 +353,10 @@ export class Consensus implements Contracts.Consensus.Service {
 			return;
 		}
 
-		this.scheduler.scheduleTimeoutPrecommit(this.#height, this.#round);
-		await this.eventDispatcher.dispatch(Enums.ConsensusEvent.PrecommitedAny, this.getState());
+		if (this.scheduler.scheduleTimeoutPrecommit(this.#height, this.#round)) {
+			this.logger.info(`Received +2/3 precommit for ${this.#height}/${this.#round} blockId: any`);
+			await this.eventDispatcher.dispatch(Enums.ConsensusEvent.PrecommitedAny, this.getState());
+		}
 	}
 
 	protected async onMajorityPrecommit(roundState: Contracts.Processor.ProcessableUnit): Promise<void> {
@@ -356,6 +372,7 @@ export class Consensus implements Contracts.Consensus.Service {
 			this.logger.info(
 				`Block ${block.data.id} on height ${this.#height} received +2/3 precommits but is invalid`,
 			);
+			console.log("Looks like we need to process proposal");
 			return;
 		}
 
@@ -384,12 +401,18 @@ export class Consensus implements Contracts.Consensus.Service {
 			return;
 		}
 
-		await this.startRound(roundState.round);
+		await this.commitLock.runExclusive(async () => {
+			await this.startRound(roundState.round);
+		});
 	}
 
 	public async onTimeoutPropose(height: number, round: number): Promise<void> {
 		await this.#handlerLock.runExclusive(async () => {
 			if (this.#step !== Contracts.Consensus.Step.Propose || this.#height !== height || this.#round !== round) {
+				return;
+			}
+
+			if (this.roundStateRepository.getRoundState(this.#height, this.#round).hasProposal()) {
 				return;
 			}
 
@@ -424,7 +447,9 @@ export class Consensus implements Contracts.Consensus.Service {
 			this.roundStateRepository.getRoundState(this.#height, this.#round).logPrevotes();
 			this.roundStateRepository.getRoundState(this.#height, this.#round).logPrecommits();
 
-			await this.startRound(this.#round + 1);
+			await this.commitLock.runExclusive(async () => {
+				await this.startRound(this.#round + 1);
+			});
 		});
 	}
 
@@ -488,10 +513,12 @@ export class Consensus implements Contracts.Consensus.Service {
 			);
 		}
 
+		const t1 = performance.now();
+
 		const block = await registeredProposer.prepareBlock(roundState.proposer.getWalletPublicKey(), this.#round);
 		this.logger.info(`Proposing new block ${this.#height}/${this.#round} with blockId: ${block.data.id}`);
 
-		const t1 = performance.now();
+		const t2 = performance.now();
 
 		const proposal = await registeredProposer.propose(
 			this.validatorSet.getValidatorIndexByWalletPublicKey(roundState.proposer.getWalletPublicKey()),
@@ -500,7 +527,9 @@ export class Consensus implements Contracts.Consensus.Service {
 			block,
 		);
 
-		this.logger.info(`!!!Created proposal in ${performance.now() - t1}ms`);
+		this.logger.info(
+			`!!!Created block in ${t2 - t1}ms, proposal ${performance.now() - t2}ms, with ${block.transactions.length} txs`,
+		);
 
 		return proposal;
 	}

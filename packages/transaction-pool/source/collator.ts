@@ -1,20 +1,32 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+import { TransferBuilder } from "@mainsail/crypto-transaction-transfer";
 import { performance } from "perf_hooks";
 
 @injectable()
 export class Collator implements Contracts.TransactionPool.Collator {
+	@inject(Identifiers.Application.Instance)
+	private readonly app!: Contracts.Kernel.Application;
+
+	@inject(Identifiers.Cryptography.Identity.Address.Factory)
+	private readonly addressFactory!: Contracts.Crypto.AddressFactory;
+
 	@inject(Identifiers.TransactionPool.TransactionValidator.Factory)
 	private readonly createTransactionValidator!: Contracts.State.TransactionValidatorFactory;
 
 	@inject(Identifiers.TransactionPool.Service)
+	// @ts-ignore
 	private readonly pool!: Contracts.TransactionPool.Service;
 
 	@inject(Identifiers.TransactionPool.ExpirationService)
 	private readonly expirationService!: Contracts.TransactionPool.ExpirationService;
 
 	@inject(Identifiers.TransactionPool.Query)
+	// @ts-ignore
 	private readonly poolQuery!: Contracts.TransactionPool.Query;
+
+	@inject(Identifiers.State.Service)
+	protected readonly stateService!: Contracts.State.Service;
 
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
@@ -35,14 +47,42 @@ export class Collator implements Contracts.TransactionPool.Collator {
 		const failedTransactions: Contracts.Crypto.Transaction[] = [];
 		const startTime = performance.now();
 
-		for (const transaction of await this.poolQuery.getFromHighestPriority().all()) {
+		const store = this.stateService.getStore();
+
+		const secrets = this.app.config("validators.secrets");
+		const secret = secrets[0];
+
+		const address = await this.addressFactory.fromMnemonic(secret);
+
+		let walletNonce = store.walletRepository.findByAddress(address).getNonce();
+
+		while (true) {
 			// if (candidateTransactions.length === milestone.block.maxTransactions) {
 			// 	break;
 			// }
 
+			// if (candidateTransactions.length === 5000) {
+			// 	break;
+			// }
+
+			if (store.getLastHeight() < 3) {
+				break;
+			}
+
 			if (performance.now() - startTime > 3000) {
 				break;
 			}
+
+			walletNonce = walletNonce.plus(1);
+
+			const builder = await this.app
+				.resolve(TransferBuilder)
+				.nonce(walletNonce.toString())
+				.recipientId(address)
+				.amount("100")
+				.sign(secret);
+
+			const transaction = await builder.build();
 
 			if (failedTransactions.some((t) => t.data.senderPublicKey === transaction.data.senderPublicKey)) {
 				continue;

@@ -95,28 +95,28 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 	}
 
 	public async getMessages(peer: Contracts.P2P.Peer): Promise<Contracts.P2P.GetMessagesResponse> {
-		return this.emit(peer, Routes.GetMessages, {}, { timeout: 5000 });
+		return this.emit(peer, Routes.GetMessages, {}, { timeout: 15_000 });
 	}
 
 	public async getProposal(peer: Contracts.P2P.Peer): Promise<Contracts.P2P.GetProposalResponse> {
-		return this.emit(peer, Routes.GetProposal, {}, { timeout: 5000 });
+		return this.emit(peer, Routes.GetProposal, {}, { timeout: 15_000 });
 	}
 
 	public async getPeers(peer: Contracts.P2P.Peer): Promise<Contracts.P2P.GetPeersResponse> {
 		this.logger.debug(`Fetching a fresh peer list from ${peer.url}`);
-		return this.emit(peer, Routes.GetPeers, {}, { timeout: 5000 });
+		return this.emit(peer, Routes.GetPeers, {}, { timeout: 15_000 });
 	}
 
 	public async getApiNodes(peer: Contracts.P2P.Peer): Promise<Contracts.P2P.GetApiNodesResponse> {
 		this.logger.debug(`Fetching API nodes from ${peer.url}`);
-		return this.emit(peer, Routes.GetApiNodes, {}, { timeout: 5000 });
+		return this.emit(peer, Routes.GetApiNodes, {}, { timeout: 15_000 });
 	}
 
 	public async getStatus(
 		peer: Contracts.P2P.Peer,
 		options: Partial<Contracts.P2P.EmitOptions> = {},
 	): Promise<Contracts.P2P.GetStatusResponse> {
-		return this.emit<Contracts.P2P.GetStatusResponse>(peer, Routes.GetStatus, {}, { timeout: 5000, ...options });
+		return this.emit<Contracts.P2P.GetStatusResponse>(peer, Routes.GetStatus, {}, { timeout: 15_000, ...options });
 	}
 
 	public async getBlocks(
