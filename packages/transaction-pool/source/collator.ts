@@ -93,7 +93,7 @@ export class Collator implements Contracts.TransactionPool.Collator {
 		const count = 0;
 
 		while (this.continue) {
-			if (count % 300 === 0) {
+			if (count % 30 === 0) {
 				await new Promise((resolve) => setTimeout(resolve, 0));
 			}
 
