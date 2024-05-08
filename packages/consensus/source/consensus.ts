@@ -153,6 +153,8 @@ export class Consensus implements Contracts.Consensus.Service {
 				try {
 					const t1 = performance.now();
 
+					this.logger.info(`PROCESSING ${this.#height}/${this.#round}`);
+
 					await proposal.deserializeData();
 					roundState.setProcessorResult(await this.processor.process(roundState));
 

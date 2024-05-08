@@ -264,7 +264,7 @@ export class RoundState implements Contracts.Consensus.RoundState {
 				.filter((prevote) => prevote.blockId === key)
 				.map((prevote) => this.validatorSet.getValidator(prevote.validatorIndex).getWalletPublicKey());
 
-			this.logger.debug(`Block ${key ?? "null"} prevoted by: ${voters.join(", ")}`);
+			this.logger.info(`Block ${key ?? "null"} prevoted by: ${voters.length}`);
 		}
 	}
 
@@ -274,7 +274,7 @@ export class RoundState implements Contracts.Consensus.RoundState {
 				.filter((precommit) => precommit.blockId === key)
 				.map((precommit) => this.validatorSet.getValidator(precommit.validatorIndex).getWalletPublicKey());
 
-			this.logger.debug(`Block ${key ?? "null"} precommitted by: ${voters.join(", ")}`);
+			this.logger.info(`Block ${key ?? "null"} precommitted by: ${voters.length}`);
 		}
 	}
 

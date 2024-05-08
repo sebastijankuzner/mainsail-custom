@@ -14,7 +14,7 @@ const internals: any = {
 		headers: null,
 		heartbeat: {
 			interval: 15_000, // 15 seconds
-			timeout: 5000, // 5 seconds
+			timeout: 10000, // 5 seconds
 		},
 		maxConnections: false,
 		payload: {

@@ -41,7 +41,7 @@ export class Collator implements Contracts.TransactionPool.Collator {
 
 	private cache: Contracts.Crypto.Transaction[] = [];
 	private secretId = 0;
-	private continue = true;
+	// private continue = true;
 
 	public initialize(): void {
 		console.log("Collator initialized");
@@ -50,11 +50,9 @@ export class Collator implements Contracts.TransactionPool.Collator {
 	}
 
 	public async getBlockCandidateTransactions(): Promise<Contracts.Crypto.Transaction[]> {
-		await new Promise((resolve) => setTimeout(resolve, 2500));
-
-		this.continue = false;
-
-		await new Promise((resolve) => setTimeout(resolve, 200));
+		if (this.cache.length === 0) {
+			return [];
+		}
 
 		const result = this.cache;
 		this.cache = [];
@@ -65,11 +63,13 @@ export class Collator implements Contracts.TransactionPool.Collator {
 	}
 
 	async #build(): Promise<void> {
-		this.continue = true;
+		// this.continue = true;
 		this.cache = await this.#getBlockCandidateTransactions();
 	}
 
 	async #getBlockCandidateTransactions(): Promise<Contracts.Crypto.Transaction[]> {
+		await new Promise((resolve) => setTimeout(resolve, 2000));
+
 		const milestone = this.configuration.getMilestone();
 
 		let bytesLeft: number = milestone.block.maxPayload - this.blockSerializer.headerSize();
@@ -84,16 +84,40 @@ export class Collator implements Contracts.TransactionPool.Collator {
 		const store = this.stateService.getStore();
 
 		const secrets = this.app.config("validators.secrets");
+
+		if (secrets.length === 0) {
+			return [];
+		}
+
 		const secret = secrets[this.secretId++ % secrets.length];
 
 		const address = await this.addressFactory.fromMnemonic(secret);
 
 		let walletNonce = store.walletRepository.findByAddress(address).getNonce();
 
-		const count = 0;
+		let count = 0;
 
-		while (this.continue) {
-			if (count % 30 === 0) {
+		// const nonces: string[] = [];
+		// for (let i = 1; i <= 20_000; i++) {
+		// 	nonces.push(walletNonce.plus(i).toString());
+		// }
+
+		// const transactions = await Promise.all(
+		// 	nonces.map(async (nonce) => {
+		// 		const builder = await this.app
+		// 			.resolve(TransferBuilder)
+		// 			.nonce(nonce)
+		// 			.recipientId(address)
+		// 			.amount("100")
+		// 			.sign(secret);
+
+		// 		return await builder.build();
+		// 	}),
+		// );
+
+		// for (const transaction of transactions) {
+		while (true) {
+			if (count++ % 30 === 0) {
 				await new Promise((resolve) => setTimeout(resolve, 0));
 			}
 
@@ -101,7 +125,7 @@ export class Collator implements Contracts.TransactionPool.Collator {
 				break;
 			}
 
-			// if (candidateTransactions.length === 15_000) {
+			// if (candidateTransactions.length === 18_000) {
 			// 	break;
 			// }
 

@@ -55,7 +55,13 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		try {
 			await this.verifier.verify(unit);
 
+			let count = 0;
+
 			for (const transaction of unit.getBlock().transactions) {
+				if (count++ % 30 === 0) {
+					await new Promise((resolve) => setTimeout(resolve, 0));
+				}
+
 				await this.transactionProcessor.process(unit.store.walletRepository, transaction);
 			}
 

@@ -20,23 +20,24 @@ export class Selector implements Contracts.Proposer.Selector {
 
 	public getValidatorIndex(round: number): number {
 		const { activeValidators } = this.configuration.getMilestone();
-
 		const offset = (this.stateService.getStore().getTotalRound() + round) % activeValidators;
 		const result = JSON.parse(this.stateService.getStore().getAttribute("validatorMatrix"))[
 			offset % activeValidators
 		];
 		Utils.assert.defined<number>(result);
 		return result;
-
 		// switch ((this.stateService.getStore().getTotalRound() + round) % 3) {
 		// 	case 0:
 		// 		return 49 - 1;
 		// 	case 1:
 		// 		return 53 - 1;
-		// 	default:
+		// 	case 2:
 		// 		return 31 - 1;
+		// 	case 3:
+		// 		return 10 - 1;
+		// 	default:
+		// 		return 4 - 1;
 		// }
-
 		// return 48;
 	}
 

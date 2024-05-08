@@ -116,6 +116,10 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 		const transactions: Contracts.Crypto.Transaction[] = [];
 
 		for (let index = 0; index < block.transactions.length; index++) {
+			if (index % 30 === 0) {
+				await new Promise((resolve) => setTimeout(resolve, 0));
+			}
+
 			const transaction = await this.transactionFactory.fromBytes(block.transactions[index] as any);
 
 			transactions.push(transaction);
