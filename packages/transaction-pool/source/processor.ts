@@ -32,6 +32,10 @@ export class Processor implements Contracts.TransactionPool.Processor {
 		try {
 			for (const [index, transactionData] of data.entries()) {
 				try {
+					if (index % 5 === 0) {
+						await new Promise((resolve) => setTimeout(resolve, 0));
+					}
+
 					const transaction = await this.#getTransactionFromBuffer(transactionData);
 
 					await this.pool.addTransaction(transaction);
