@@ -57,7 +57,9 @@ export class Collator implements Contracts.TransactionPool.Collator {
 		const result = this.cache;
 		this.cache = [];
 
-		void this.#build();
+		if (result.length > 0) {
+			void this.#build();
+		}
 
 		return result;
 	}
