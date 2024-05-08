@@ -68,7 +68,7 @@ export class Collator implements Contracts.TransactionPool.Collator {
 	}
 
 	async #getBlockCandidateTransactions(): Promise<Contracts.Crypto.Transaction[]> {
-		await new Promise((resolve) => setTimeout(resolve, 2000));
+		await new Promise((resolve) => setTimeout(resolve, 8000));
 
 		const milestone = this.configuration.getMilestone();
 
