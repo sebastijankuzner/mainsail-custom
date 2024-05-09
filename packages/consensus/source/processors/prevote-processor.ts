@@ -22,7 +22,7 @@ export class PrevoteProcessor extends AbstractProcessor implements Contracts.Con
 	private readonly workerPool!: IpcWorker.WorkerPool;
 
 	async process(prevote: Contracts.Crypto.Prevote, broadcast = true): Promise<Contracts.Consensus.ProcessorResult> {
-		return this.commitLock.runNonExclusive(async () => {
+		const handle = async () => {
 			if (!this.hasValidHeightOrRound(prevote)) {
 				return Contracts.Consensus.ProcessorResult.Skipped;
 			}
@@ -49,6 +49,16 @@ export class PrevoteProcessor extends AbstractProcessor implements Contracts.Con
 			void this.getConsensus().handle(roundState);
 
 			return Contracts.Consensus.ProcessorResult.Accepted;
+		};
+
+		this.txPoolLock.lock();
+
+		return this.commitLock.runNonExclusive(async () => {
+			const result = await handle();
+
+			this.txPoolLock.unlock();
+
+			return result;
 		});
 	}
 

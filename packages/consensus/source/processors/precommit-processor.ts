@@ -25,7 +25,7 @@ export class PrecommitProcessor extends AbstractProcessor implements Contracts.C
 		precommit: Contracts.Crypto.Precommit,
 		broadcast = true,
 	): Promise<Contracts.Consensus.ProcessorResult> {
-		return this.commitLock.runNonExclusive(async () => {
+		const handle = async () => {
 			if (!this.hasValidHeightOrRound(precommit)) {
 				return Contracts.Consensus.ProcessorResult.Skipped;
 			}
@@ -52,6 +52,15 @@ export class PrecommitProcessor extends AbstractProcessor implements Contracts.C
 			void this.getConsensus().handle(roundState);
 
 			return Contracts.Consensus.ProcessorResult.Accepted;
+		};
+
+		this.txPoolLock.lock();
+		return this.commitLock.runNonExclusive(async () => {
+			const result = await handle();
+
+			this.txPoolLock.unlock();
+
+			return result;
 		});
 	}
 

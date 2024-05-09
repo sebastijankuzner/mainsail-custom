@@ -11,6 +11,9 @@ export class AbstractProcessor {
 	@inject(Identifiers.Consensus.CommitLock)
 	protected readonly commitLock!: Contracts.Kernel.Lock;
 
+	@inject(Identifiers.TransactionPool.Lock)
+	protected readonly txPoolLock!: Contracts.TransactionPool.Lock;
+
 	@inject(Identifiers.State.Service)
 	private readonly stateService!: Contracts.State.Service;
 

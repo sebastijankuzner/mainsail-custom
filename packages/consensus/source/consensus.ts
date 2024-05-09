@@ -49,6 +49,9 @@ export class Consensus implements Contracts.Consensus.Service {
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
 
+	@inject(Identifiers.TransactionPool.Lock)
+	protected readonly txPoolLock!: Contracts.TransactionPool.Lock;
+
 	#height = 1;
 	#round = 0;
 	#step: Contracts.Consensus.Step = Contracts.Consensus.Step.Propose;
@@ -135,6 +138,8 @@ export class Consensus implements Contracts.Consensus.Service {
 		}
 		this.#pendingJobs.add(key);
 
+		this.txPoolLock.lock();
+
 		await this.#handlerLock.runExclusive(async () => {
 			this.#pendingJobs.delete(key);
 
@@ -192,6 +197,8 @@ export class Consensus implements Contracts.Consensus.Service {
 			if (roundState.hasMinorityPrevotesOrPrecommits()) {
 				await this.onMinorityWithHigherRound(roundState);
 			}
+
+			this.txPoolLock.unlock();
 		});
 	}
 

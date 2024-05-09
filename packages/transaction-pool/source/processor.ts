@@ -20,6 +20,9 @@ export class Processor implements Contracts.TransactionPool.Processor {
 	@inject(Identifiers.Cryptography.Transaction.Factory)
 	private readonly transactionFactory!: Contracts.Crypto.TransactionFactory;
 
+	@inject(Identifiers.TransactionPool.Lock)
+	protected readonly txPoolLock!: Contracts.TransactionPool.Lock;
+
 	public async process(data: Buffer[]): Promise<Contracts.TransactionPool.ProcessorResult> {
 		const accept: number[] = [];
 		const broadcast: number[] = [];
@@ -29,50 +32,54 @@ export class Processor implements Contracts.TransactionPool.Processor {
 
 		const broadcastTransactions: Contracts.Crypto.Transaction[] = [];
 
-		try {
-			for (const [index, transactionData] of data.entries()) {
-				try {
-					if (index % 5 === 0) {
-						await new Promise((resolve) => setTimeout(resolve, 0));
-					}
-
-					const transaction = await this.#getTransactionFromBuffer(transactionData);
-
-					await this.pool.addTransaction(transaction);
-					accept.push(index);
-
+		const handle = async () => {
+			try {
+				for (const [index, transactionData] of data.entries()) {
 					try {
-						await Promise.all(this.extensions.map((e) => e.throwIfCannotBroadcast(transaction)));
-						broadcastTransactions.push(transaction);
-						broadcast.push(index);
-					} catch {}
-				} catch (error) {
-					invalid.push(index);
-
-					if (error instanceof Exceptions.PoolError) {
-						if (error.type === "ERR_EXCEEDS_MAX_COUNT") {
-							excess.push(index);
+						if (index % 5 === 0) {
+							await new Promise((resolve) => setTimeout(resolve, 0));
 						}
 
-						if (!errors) {
-							errors = {};
+						const transaction = await this.#getTransactionFromBuffer(transactionData);
+
+						await this.pool.addTransaction(transaction);
+						accept.push(index);
+
+						try {
+							await Promise.all(this.extensions.map((e) => e.throwIfCannotBroadcast(transaction)));
+							broadcastTransactions.push(transaction);
+							broadcast.push(index);
+						} catch {}
+					} catch (error) {
+						invalid.push(index);
+
+						if (error instanceof Exceptions.PoolError) {
+							if (error.type === "ERR_EXCEEDS_MAX_COUNT") {
+								excess.push(index);
+							}
+
+							if (!errors) {
+								errors = {};
+							}
+							errors[index] = {
+								message: error.message,
+								type: error.type,
+							};
+						} else {
+							throw error;
 						}
-						errors[index] = {
-							message: error.message,
-							type: error.type,
-						};
-					} else {
-						throw error;
 					}
 				}
+			} finally {
+				if (this.broadcaster && broadcastTransactions.length > 0) {
+					this.broadcaster
+						.broadcastTransactions(broadcastTransactions)
+						.catch((error) => this.logger.error(error.stack));
+				}
 			}
-		} finally {
-			if (this.broadcaster && broadcastTransactions.length > 0) {
-				this.broadcaster
-					.broadcastTransactions(broadcastTransactions)
-					.catch((error) => this.logger.error(error.stack));
-			}
-		}
+		};
+
+		await this.txPoolLock.run(handle);
 
 		return {
 			accept,

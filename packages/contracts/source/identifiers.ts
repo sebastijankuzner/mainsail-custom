@@ -263,6 +263,7 @@ export const Identifiers = {
 	TransactionPool: {
 		Collator: Symbol("TransactionPool<Collator>"),
 		ExpirationService: Symbol("TransactionPool<ExpirationService>"),
+		Lock: Symbol("TransactionPool<Lock>"),
 		Mempool: Symbol("TransactionPool<Mempool>"),
 		Processor: Symbol("TransactionPool<Processor>"),
 		ProcessorExtension: Symbol("TransactionPool<ProcessorExtension>"),

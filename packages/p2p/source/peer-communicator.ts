@@ -47,7 +47,7 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 		void queue.resume();
 		void queue.push({
 			handle: async () => {
-				await this.emit(peer, Routes.PostTransactions, { transactions }, { timeout: 10_000 });
+				await this.emit(peer, Routes.PostTransactions, { transactions }, { timeout: 100_000 });
 				await delay(Math.ceil(1000 / postTransactionsRateLimit));
 				// to space up between consecutive calls to postTransactions according to rate limit
 				// optimized here because default throttling would not be effective for postTransactions

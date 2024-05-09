@@ -5,6 +5,7 @@ import Joi from "joi";
 import { ApplyTransactionAction, ThrowIfCannotEnterPoolAction, VerifyTransactionAction } from "./actions/index.js";
 import { Collator } from "./collator.js";
 import { ExpirationService } from "./expiration-service.js";
+import { Lock } from "./lock.js";
 import { Mempool } from "./mempool.js";
 import { Processor } from "./processor.js";
 import { Query } from "./query.js";
@@ -48,6 +49,8 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	}
 
 	#registerServices(): void {
+		this.app.bind(Identifiers.TransactionPool.Lock).toConstantValue(new Lock());
+
 		this.app.bind(Identifiers.TransactionPool.TransactionValidator.Instance).to(TransactionValidator);
 		this.app
 			.bind(Identifiers.TransactionPool.TransactionValidator.Factory)

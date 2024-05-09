@@ -34,7 +34,7 @@ export class ProposalProcessor extends AbstractProcessor implements Contracts.Co
 	private readonly logger!: Contracts.Kernel.Logger;
 
 	async process(proposal: Contracts.Crypto.Proposal, broadcast = true): Promise<Contracts.Consensus.ProcessorResult> {
-		return this.commitLock.runNonExclusive(async () => {
+		const handle = async () => {
 			if (!this.hasValidHeightOrRound(proposal)) {
 				return Contracts.Consensus.ProcessorResult.Skipped;
 			}
@@ -71,7 +71,15 @@ export class ProposalProcessor extends AbstractProcessor implements Contracts.Co
 			void this.getConsensus().handle(roundState);
 
 			return Contracts.Consensus.ProcessorResult.Accepted;
-			4;
+		};
+
+		this.txPoolLock.lock();
+		return this.commitLock.runNonExclusive(async () => {
+			const result = await handle();
+
+			this.txPoolLock.unlock();
+
+			return result;
 		});
 	}
 
