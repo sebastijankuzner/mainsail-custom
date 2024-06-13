@@ -44,7 +44,7 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 
 			this.#verifyVersion(status.config);
 
-			await this.#verifyHighestCommonBlock(peer, status.state);
+			// await this.#verifyHighestCommonBlock(peer, status.state);
 
 			peer.lastPinged = dayjs();
 			peer.plugins = status.config.plugins;
@@ -73,6 +73,7 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 		}
 	}
 
+	// @ts-ignore
 	async #verifyHighestCommonBlock(peer: Contracts.P2P.Peer, state: Contracts.P2P.PeerState): Promise<void> {
 		const block = this.stateService.getStore().getLastBlock();
 
