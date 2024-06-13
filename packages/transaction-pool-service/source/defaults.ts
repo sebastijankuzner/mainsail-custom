@@ -23,7 +23,10 @@ export const defaults = {
 		Constants.EnvironmentVariables.CORE_TRANSACTION_POOL_MAX_PER_REQUEST,
 		40,
 	),
-	maxTransactionsPerSender: Environment.get(Constants.EnvironmentVariables.CORE_TRANSACTION_POOL_MAX_PER_SENDER, 150),
+	maxTransactionsPerSender: Environment.get(
+		Constants.EnvironmentVariables.CORE_TRANSACTION_POOL_MAX_PER_SENDER,
+		1500,
+	),
 
 	storage: `${Environment.get(Constants.EnvironmentVariables.CORE_PATH_DATA)}/transaction-pool.sqlite`,
 };
