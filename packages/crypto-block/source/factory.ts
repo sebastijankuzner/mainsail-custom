@@ -30,9 +30,11 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 
 		block.id = await this.idFactory.make(data);
 
-		console.log(`[Validator]: Block id - ${performance.now() - t1}ms`);
+		const t2 = performance.now();
 
 		const serialized: Buffer = await this.serializer.serializeWithTransactions(data);
+
+		console.log(`[Validator]: Block id - ${t2 - t1}ms, serialized - ${performance.now() - t2} ms`);
 
 		return sealBlock({
 			data: block,
