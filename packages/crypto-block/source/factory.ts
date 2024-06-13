@@ -4,6 +4,7 @@ import { BigNumber } from "@mainsail/utils";
 
 import { sealBlock } from "./block.js";
 import { IDFactory } from "./id.factory.js";
+import { performance } from "perf_hooks";
 
 @injectable()
 export class BlockFactory implements Contracts.Crypto.BlockFactory {
@@ -21,7 +22,12 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 
 	public async make(data: Utils.Mutable<Contracts.Crypto.BlockDataSerializable>): Promise<Contracts.Crypto.Block> {
 		const block = data as Utils.Mutable<Contracts.Crypto.BlockData>;
+
+		const t1 = performance.now();
+
 		block.id = await this.idFactory.make(data);
+
+		console.log(`[Validator]: Block id - ${performance.now() - t1}ms`);
 
 		return this.fromData(block);
 	}
@@ -53,12 +59,25 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 	}
 
 	public async fromData(data: Contracts.Crypto.BlockData): Promise<Contracts.Crypto.Block> {
+		const t1 = performance.now();
+
 		await this.#applySchema(data);
+
+		console.log(`[Validator]: Apply schema - ${performance.now() - t1}ms`);
+		const t2 = performance.now();
 
 		const serialized: Buffer = await this.serializer.serializeWithTransactions(data);
 
+		const t3 = performance.now();
+
+		const deserialized = await this.deserializer.deserializeWithTransactions(serialized);
+
+		console.log(
+			`[Validator]: ApplySchema - ${t2 - t1}ms,  Serialize - ${t3 - t2}ms, Deserialize - ${performance.now() - t3}ms`,
+		);
+
 		return sealBlock({
-			...(await this.deserializer.deserializeWithTransactions(serialized)),
+			...deserialized,
 			serialized: serialized.toString("hex"),
 		});
 	}
