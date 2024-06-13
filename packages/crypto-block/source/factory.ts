@@ -1,10 +1,10 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers, Utils } from "@mainsail/contracts";
 import { BigNumber } from "@mainsail/utils";
+import { performance } from "perf_hooks";
 
 import { sealBlock } from "./block.js";
 import { IDFactory } from "./id.factory.js";
-import { performance } from "perf_hooks";
 
 @injectable()
 export class BlockFactory implements Contracts.Crypto.BlockFactory {
@@ -20,7 +20,10 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 	@inject(Identifiers.Cryptography.Validator)
 	private readonly validator!: Contracts.Crypto.Validator;
 
-	public async make(data: Utils.Mutable<Contracts.Crypto.BlockDataSerializable>): Promise<Contracts.Crypto.Block> {
+	public async make(
+		data: Utils.Mutable<Contracts.Crypto.BlockDataSerializable>,
+		transactions: Contracts.Crypto.Transaction[],
+	): Promise<Contracts.Crypto.Block> {
 		const block = data as Utils.Mutable<Contracts.Crypto.BlockData>;
 
 		const t1 = performance.now();
@@ -29,7 +32,15 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 
 		console.log(`[Validator]: Block id - ${performance.now() - t1}ms`);
 
-		return this.fromData(block);
+		const serialized: Buffer = await this.serializer.serializeWithTransactions(data);
+
+		return sealBlock({
+			data: block,
+			serialized: serialized.toString("hex"),
+			transactions,
+		});
+
+		// return this.fromData(block);
 	}
 
 	public async fromHex(hex: string): Promise<Contracts.Crypto.Block> {
@@ -63,7 +74,6 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 
 		await this.#applySchema(data);
 
-		console.log(`[Validator]: Apply schema - ${performance.now() - t1}ms`);
 		const t2 = performance.now();
 
 		const serialized: Buffer = await this.serializer.serializeWithTransactions(data);
