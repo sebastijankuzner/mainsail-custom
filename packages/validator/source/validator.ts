@@ -130,7 +130,8 @@ export class Validator implements Contracts.Validator.Validator {
 		const candidateTransactions: Contracts.Crypto.Transaction[] = [];
 		const failedTransactions: Contracts.Crypto.Transaction[] = [];
 
-		const timeLimit = performance.now() + this.cryptoConfiguration.getMilestone().timeouts.blockPrepareTime * 0.75;
+		// @ts-ignore
+		const timeLimit = performance.now() + this.cryptoConfiguration.getMilestone().timeouts.blockCollateTime;
 
 		for (const bytes of transactionBytes) {
 			if (performance.now() > timeLimit) {
