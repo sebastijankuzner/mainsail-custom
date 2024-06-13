@@ -2,6 +2,7 @@ import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Enums, Utils } from "@mainsail/kernel";
 import dayjs from "dayjs";
+import { performance } from "perf_hooks";
 
 @injectable()
 export class Consensus implements Contracts.Consensus.Service {
@@ -571,12 +572,21 @@ export class Consensus implements Contracts.Consensus.Service {
 		const proposal = roundState.getProposal();
 		if (!roundState.hasProcessorResult() && proposal) {
 			try {
+				const t1 = performance.now();
+				this.logger.info(`!!!Processing proposal ${this.#height}/${this.#round}`);
+
 				await proposal.deserializeData();
+
+				const t2 = performance.now();
 
 				if (!(await this.proposalProcessor.hasValidLockProof(proposal))) {
 					roundState.setProcessorResult(false);
 					return;
 				}
+
+				this.logger.info(
+					`Processing proposal ${this.#height}/${this.#round} took ${performance.now() - t1}ms. Deserialize: ${t2 - t1}ms, process: ${performance.now() - t2}ms`,
+				);
 
 				roundState.setProcessorResult(await this.processor.process(roundState));
 			} catch {

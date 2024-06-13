@@ -22,6 +22,8 @@ export class PostProposalController implements Contracts.P2P.Controller {
 		request: Contracts.P2P.PostProposalRequest,
 		h: Hapi.ResponseToolkit,
 	): Promise<Contracts.P2P.PostProposalResponse> {
+		console.log("Received proposal from", getPeerIp(request));
+
 		try {
 			const proposal = await this.factory.makeProposalFromBytes(request.payload.proposal);
 			const result = await this.proposalProcessor.process(proposal);

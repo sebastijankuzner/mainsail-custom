@@ -2,6 +2,7 @@ import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Utils } from "@mainsail/kernel";
 import { BigNumber } from "@mainsail/utils";
+import { performance } from "perf_hooks";
 
 @injectable()
 export class Validator implements Contracts.Validator.Validator {
@@ -53,7 +54,14 @@ export class Validator implements Contracts.Validator.Validator {
 		timestamp: number,
 	): Promise<Contracts.Crypto.Block> {
 		const transactions = await this.#getTransactionsForForging();
-		return this.#makeBlock(round, generatorPublicKey, transactions, timestamp);
+
+		const t1 = performance.now();
+
+		const block = await this.#makeBlock(round, generatorPublicKey, transactions, timestamp);
+
+		console.log(`[Validator] prepareBlock took ${performance.now() - t1}ms`);
+
+		return block;
 	}
 
 	public async propose(
@@ -112,7 +120,11 @@ export class Validator implements Contracts.Validator.Validator {
 	}
 
 	async #getTransactionsForForging(): Promise<Contracts.Crypto.Transaction[]> {
+		const t1 = performance.now();
+
 		const transactionBytes = await this.txPoolWorker.getTransactionBytes();
+
+		const t2 = performance.now();
 
 		const validator = this.createTransactionValidator();
 		const candidateTransactions: Contracts.Crypto.Transaction[] = [];
@@ -135,6 +147,10 @@ export class Validator implements Contracts.Validator.Validator {
 		}
 
 		this.txPoolWorker.setFailedTransactions(failedTransactions);
+
+		console.log(
+			`[Validator] getTransactionsForForging took ${performance.now() - t1}ms, get: [${t2 - t1}ms, process: ${performance.now() - t2}ms`,
+		);
 
 		return candidateTransactions;
 	}
