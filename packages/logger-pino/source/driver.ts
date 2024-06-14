@@ -25,7 +25,7 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 		emergency: chalk.bgRed,
 		error: chalk.red,
 		info: chalk.blue,
-		notice: chalk.green,
+		notice: chalk.magenta,
 		warning: chalk.yellow,
 	};
 
