@@ -55,6 +55,7 @@ export class PeerProcessor implements Contracts.P2P.PeerProcessor {
 
 		this.transactionPoolWorker.registerEventHandler("peer.removed", (ip: string) => {
 			this.peerDisposer.disposePeer(ip);
+			this.logger.notice(`Removed peer ${ip} by the transaction pool.`);
 		});
 	}
 
