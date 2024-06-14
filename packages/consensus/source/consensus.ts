@@ -217,6 +217,8 @@ export class Consensus implements Contracts.Consensus.Service {
 	public async onTimeoutStartRound(): Promise<void> {
 		this.scheduler.scheduleTimeoutPropose(this.#height, this.#round);
 
+		console.log("Beginning of round");
+
 		if (this.#proposalPromise) {
 			const proposal = await this.#proposalPromise;
 			this.#proposalPromise = undefined;

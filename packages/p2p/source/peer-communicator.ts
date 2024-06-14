@@ -42,7 +42,9 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 	public async postProposal(peer: Contracts.P2P.Peer, proposal: Buffer): Promise<void> {
 		try {
 			await this.emit(peer, Routes.PostProposal, { proposal }, { timeout: 2000 });
+			console.log("Proposal send to", peer.ip);
 		} catch (error) {
+			console.log("Error sending proposal to", peer.ip, error.message);
 			this.handleSocketError(peer, error);
 		}
 	}

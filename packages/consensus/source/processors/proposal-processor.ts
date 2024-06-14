@@ -36,18 +36,22 @@ export class ProposalProcessor extends AbstractProcessor implements Contracts.Co
 	async process(proposal: Contracts.Crypto.Proposal, broadcast = true): Promise<Contracts.Consensus.ProcessorResult> {
 		return this.commitLock.runNonExclusive(async () => {
 			if (!this.hasValidHeightOrRound(proposal)) {
+				console.log("Invalid height or round");
 				return Contracts.Consensus.ProcessorResult.Skipped;
 			}
 
 			if (!this.isRoundInBounds(proposal)) {
+				console.log("Round out of bounds");
 				return Contracts.Consensus.ProcessorResult.Invalid;
 			}
 
 			if (!this.#hasValidProposer(proposal)) {
+				console.log("Invalid proposer");
 				return Contracts.Consensus.ProcessorResult.Invalid;
 			}
 
 			if (!(await this.#hasValidSignature(proposal))) {
+				console.log("Invalid signature");
 				return Contracts.Consensus.ProcessorResult.Invalid;
 			}
 
@@ -57,6 +61,7 @@ export class ProposalProcessor extends AbstractProcessor implements Contracts.Co
 			}
 
 			roundState.addProposal(proposal);
+			console.log("Proposal accepted");
 
 			if (broadcast) {
 				void this.broadcaster.broadcastProposal(proposal);
