@@ -109,7 +109,9 @@ export class Client {
 
 		this.onError = (err) => console.error(err); // General error handler (only when an error cannot be associated with a request)
 		this.onConnect = ignore; // Called whenever a connection is established
-		this.onDisconnect = ignore; // Called whenever a connection is lost: function(willReconnect)
+		this.onDisconnect = (a, b) => {
+			console.error("Disconnected", a, b);
+		}; // Called whenever a connection is lost: function(willReconnect)
 		this.onHeartbeatTimeout = ignore; // Called when a heartbeat timeout will cause a disconnection
 
 		// Public properties
