@@ -334,7 +334,7 @@ export class Client {
 
 		// Flush pending requests
 
-		const error = NesError("Request failed - server disconnected", errorTypes.DISCONNECT);
+		const error = NesError("Request failed - server disconnected (CAUSE 2)", errorTypes.DISCONNECT);
 
 		const requests = this._requests;
 		this._requests = {};
@@ -382,7 +382,9 @@ export class Client {
 
 	private _send(request, track) {
 		if (!this._isReady()) {
-			return Promise.reject(NesError("Failed to send message - server disconnected", errorTypes.DISCONNECT));
+			return Promise.reject(
+				NesError("Failed to send message - server disconnected (CAUSE 1)", errorTypes.DISCONNECT),
+			);
 		}
 
 		request.id = ++this._ids;
