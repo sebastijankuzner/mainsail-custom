@@ -61,6 +61,7 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 
 	#verifyConfig(config: Contracts.P2P.PeerConfig): void {
 		if (config.network.nethash !== this.cryptoConfiguration.get("network.nethash")) {
+			console.log("Invalid nethash");
 			throw new Error("Invalid nethash");
 		}
 
