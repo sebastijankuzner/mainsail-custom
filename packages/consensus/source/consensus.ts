@@ -584,11 +584,11 @@ export class Consensus implements Contracts.Consensus.Service {
 					return;
 				}
 
+				roundState.setProcessorResult(await this.processor.process(roundState));
+
 				this.logger.info(
 					`Processing proposal ${this.#height}/${this.#round} took ${performance.now() - t1}ms. Deserialize: ${t2 - t1}ms, process: ${performance.now() - t2}ms`,
 				);
-
-				roundState.setProcessorResult(await this.processor.process(roundState));
 			} catch {
 				roundState.setProcessorResult(false);
 			}
