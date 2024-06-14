@@ -59,7 +59,7 @@ export class Validator implements Contracts.Validator.Validator {
 
 		const block = await this.#makeBlock(round, generatorPublicKey, transactions, timestamp);
 
-		console.log(`[Validator] prepareBlock took ${performance.now() - t1}ms`);
+		this.logger.notice(`[Validator] prepareBlock took ${performance.now() - t1}ms`);
 
 		return block;
 	}
@@ -133,8 +133,10 @@ export class Validator implements Contracts.Validator.Validator {
 		// @ts-ignore
 		const timeLimit = performance.now() + this.cryptoConfiguration.getMilestone().timeouts.blockCollateTime;
 
-		// @ts-ignore
-		console.log("Collate time ", this.cryptoConfiguration.getMilestone().timeouts.blockCollateTime, timeLimit);
+		this.logger.notice(
+			// @ts-ignore
+			`Collate time  ${this.cryptoConfiguration.getMilestone().timeouts.blockCollateTime}, ${timeLimit}`,
+		);
 
 		for (const bytes of transactionBytes) {
 			if (performance.now() > timeLimit) {
@@ -158,7 +160,7 @@ export class Validator implements Contracts.Validator.Validator {
 
 		this.txPoolWorker.setFailedTransactions(failedTransactions);
 
-		console.log(
+		this.logger.notice(
 			`[Validator] getTransactionsForForging took ${performance.now() - t1}ms, get: [${t2 - t1}ms, process: ${performance.now() - t2}ms`,
 		);
 

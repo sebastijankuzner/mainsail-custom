@@ -17,12 +17,15 @@ export class Broadcaster implements Contracts.P2P.Broadcaster {
 	@inject(Identifiers.P2P.State)
 	private readonly state!: Contracts.P2P.State;
 
+	@inject(Identifiers.Services.Log.Service)
+	private readonly logger!: Contracts.Kernel.Logger;
+
 	async broadcastProposal(proposal: Contracts.Crypto.Proposal): Promise<void> {
 		this.state.resetLastMessageTime();
 
 		const peers = this.#getPeersForBroadcast();
 
-		console.log("Broadcasting proposal to", peers.map((peer) => peer.ip).join(", "));
+		this.logger.notice(`Broadcasting proposal to ${peers.map((peer) => peer.ip).join(", ")}`);
 
 		const promises = peers.map((peer) => this.communicator.postProposal(peer, proposal.serialized));
 

@@ -20,6 +20,9 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 	@inject(Identifiers.Cryptography.Validator)
 	private readonly validator!: Contracts.Crypto.Validator;
 
+	@inject(Identifiers.Services.Log.Service)
+	private readonly logger!: Contracts.Kernel.Logger;
+
 	public async make(
 		data: Utils.Mutable<Contracts.Crypto.BlockDataSerializable>,
 		transactions: Contracts.Crypto.Transaction[],
@@ -34,7 +37,7 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 
 		const serialized: Buffer = await this.serializer.serializeWithTransactions(data);
 
-		console.log(`[Validator]: Block id - ${t2 - t1}ms, serialized - ${performance.now() - t2} ms`);
+		this.logger.notice(`[Validator]: Block id - ${t2 - t1}ms, serialized - ${performance.now() - t2} ms`);
 
 		return sealBlock({
 			data: block,
@@ -84,7 +87,7 @@ export class BlockFactory implements Contracts.Crypto.BlockFactory {
 
 		const deserialized = await this.deserializer.deserializeWithTransactions(serialized);
 
-		console.log(
+		this.logger.notice(
 			`[Validator]: ApplySchema - ${t2 - t1}ms,  Serialize - ${t3 - t2}ms, Deserialize - ${performance.now() - t3}ms`,
 		);
 
