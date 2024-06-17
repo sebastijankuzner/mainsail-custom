@@ -41,7 +41,7 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 
 	public async postProposal(peer: Contracts.P2P.Peer, proposal: Buffer): Promise<void> {
 		try {
-			await this.emit(peer, Routes.PostProposal, { proposal }, { timeout: 2000 });
+			await this.emit(peer, Routes.PostProposal, { proposal }, { timeout: 6000 });
 			this.logger.notice(`Proposal send to ${peer.ip}`);
 		} catch (error) {
 			this.logger.notice(`Error sending proposal to ${peer.ip}, ${error.message}`);
@@ -51,7 +51,7 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 
 	public async postPrevote(peer: Contracts.P2P.Peer, prevote: Buffer): Promise<void> {
 		try {
-			await this.emit(peer, Routes.PostPrevote, { prevote }, { timeout: 2000 });
+			await this.emit(peer, Routes.PostPrevote, { prevote }, { timeout: 6000 });
 		} catch (error) {
 			this.handleSocketError(peer, error);
 		}
@@ -59,7 +59,7 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 
 	public async postPrecommit(peer: Contracts.P2P.Peer, precommit: Buffer): Promise<void> {
 		try {
-			await this.emit(peer, Routes.PostPrecommit, { precommit }, { timeout: 2000 });
+			await this.emit(peer, Routes.PostPrecommit, { precommit }, { timeout: 6000 });
 		} catch (error) {
 			this.handleSocketError(peer, error);
 		}
