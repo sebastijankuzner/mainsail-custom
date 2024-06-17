@@ -571,10 +571,6 @@ export class Consensus implements Contracts.Consensus.Service {
 	}
 
 	async #processProposal(roundState: Contracts.Consensus.RoundState): Promise<void> {
-		if (this.#isInvalidRoundState(roundState) || this.#step !== Contracts.Consensus.Step.Propose) {
-			return;
-		}
-
 		const proposal = roundState.getProposal();
 		if (!roundState.hasProcessorResult() && proposal) {
 			try {
