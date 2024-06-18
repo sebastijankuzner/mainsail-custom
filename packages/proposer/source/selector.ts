@@ -18,14 +18,15 @@ export class Selector implements Contracts.Proposer.Selector {
 	}
 
 	public getValidatorIndex(round: number): number {
-		const { activeValidators } = this.configuration.getMilestone();
+		// const { activeValidators } = this.configuration.getMilestone();
+		// const offset = (this.stateService.getStore().getTotalRound() + round) % activeValidators;
+		// const result = JSON.parse(this.stateService.getStore().getAttribute("validatorMatrix"))[
+		// 	offset % activeValidators
+		// ];
+		// Utils.assert.defined<number>(result);
+		// return result;
 
-		const offset = (this.stateService.getStore().getTotalRound() + round) % activeValidators;
-		const result = JSON.parse(this.stateService.getStore().getAttribute("validatorMatrix"))[
-			offset % activeValidators
-		];
-		Utils.assert.defined<number>(result);
-		return result;
+		return round % 3;
 	}
 
 	#updateValidatorMatrix(unit: Contracts.Processor.ProcessableUnit): void {
