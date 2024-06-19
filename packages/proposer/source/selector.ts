@@ -26,7 +26,7 @@ export class Selector implements Contracts.Proposer.Selector {
 		// Utils.assert.defined<number>(result);
 		// return result;
 
-		return round % 3;
+		return (this.stateService.getStore().getTotalRound() + round) % 3;
 	}
 
 	#updateValidatorMatrix(unit: Contracts.Processor.ProcessableUnit): void {
