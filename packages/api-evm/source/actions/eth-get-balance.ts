@@ -4,9 +4,6 @@ import { Utils } from "@mainsail/kernel";
 
 @injectable()
 export class EthGetBalanceAction implements Contracts.Api.RPC.Action {
-	// @inject(Identifiers.State.Service)
-	// private readonly stateService!: Contracts.State.Service;
-
 	@inject(Identifiers.Evm.Instance)
 	@tagged("instance", "evm")
 	private readonly evm!: Contracts.Evm.Instance;
