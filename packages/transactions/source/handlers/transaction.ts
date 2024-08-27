@@ -56,16 +56,16 @@ export abstract class TransactionHandler implements Contracts.Transactions.Trans
 
 		// @TODO: enforce fees here to support dynamic cases
 
-		this.#verifyTransactionNonceApply(sender, transaction);
+		// this.#verifyTransactionNonceApply(sender, transaction);
 
-		this.verifyTransactionFee(context, transaction, sender);
+		// this.verifyTransactionFee(context, transaction, sender);
 
-		if (
-			sender.getBalance().minus(transaction.data.amount).minus(transaction.data.fee).isNegative() &&
-			this.configuration.getHeight() > 0
-		) {
-			throw new Exceptions.InsufficientBalanceError();
-		}
+		// if (
+		// 	sender.getBalance().minus(transaction.data.amount).minus(transaction.data.fee).isNegative() &&
+		// 	this.configuration.getHeight() > 0
+		// ) {
+		// 	throw new Exceptions.InsufficientBalanceError();
+		// }
 
 		if (transaction.data.senderPublicKey !== sender.getPublicKey()) {
 			throw new Exceptions.SenderWalletMismatchError();
