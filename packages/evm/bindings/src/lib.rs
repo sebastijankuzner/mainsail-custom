@@ -172,6 +172,7 @@ impl EvmInner {
                     recipient: Some(genesis_info.validator_contract),
                     data: revm::primitives::Bytes::from(calldata.0),
                     value: U256::ZERO,
+                    nonce: None,
                     gas_limit: Some(u64::MAX),
                     spec_id: ctx.spec_id,
                     tx_hash: None,
@@ -408,6 +409,7 @@ impl EvmInner {
                 tx_env.gas_limit = ctx.gas_limit.unwrap_or_else(|| 15_000_000);
                 tx_env.caller = ctx.caller;
                 tx_env.value = ctx.value;
+                tx_env.nonce = ctx.nonce;
                 tx_env.transact_to = match ctx.recipient {
                     Some(recipient) => revm::primitives::TransactTo::Call(recipient),
                     None => revm::primitives::TransactTo::Create,
