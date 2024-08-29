@@ -1,18 +1,66 @@
 export const abi = {
+	_format: "hh-sol-artifact-1",
+	contractName: "Consensus",
+	sourceName: "contracts/Consensus.sol",
 	abi: [
-		{ inputs: [], stateMutability: "nonpayable", type: "constructor" },
 		{
-			inputs: [{ internalType: "uint8", name: "n", type: "uint8" }],
+			inputs: [],
+			stateMutability: "nonpayable",
+			type: "constructor",
+		},
+		{
+			anonymous: false,
+			inputs: [
+				{
+					indexed: false,
+					internalType: "address",
+					name: "voter",
+					type: "address",
+				},
+				{
+					indexed: false,
+					internalType: "address",
+					name: "validator",
+					type: "address",
+				},
+			],
+			name: "Voted",
+			type: "event",
+		},
+		{
+			inputs: [
+				{
+					internalType: "uint8",
+					name: "n",
+					type: "uint8",
+				},
+			],
 			name: "calculateTopValidators",
 			outputs: [
 				{
 					components: [
-						{ internalType: "address", name: "addr", type: "address" },
+						{
+							internalType: "address",
+							name: "addr",
+							type: "address",
+						},
 						{
 							components: [
-								{ internalType: "uint256", name: "voteBalance", type: "uint256" },
-								{ internalType: "bool", name: "isResigning", type: "bool" },
-								{ internalType: "bytes", name: "bls12_381_public_key", type: "bytes" },
+								{
+									internalType: "uint256",
+									name: "voteBalance",
+									type: "uint256",
+								},
+								{
+									internalType: "bool",
+									name: "isResigning",
+									type: "bool",
+								},
+								{
+									internalType: "bytes",
+									name: "bls12_381_public_key",
+									type: "bytes",
+								},
 							],
 							internalType: "struct ValidatorData",
 							name: "data",
@@ -27,19 +75,47 @@ export const abi = {
 			stateMutability: "nonpayable",
 			type: "function",
 		},
-		{ inputs: [], name: "deregisterValidator", outputs: [], stateMutability: "nonpayable", type: "function" },
 		{
-			inputs: [{ internalType: "uint8", name: "n", type: "uint8" }],
+			inputs: [],
+			name: "deregisterValidator",
+			outputs: [],
+			stateMutability: "nonpayable",
+			type: "function",
+		},
+		{
+			inputs: [
+				{
+					internalType: "uint8",
+					name: "n",
+					type: "uint8",
+				},
+			],
 			name: "getActiveValidators",
 			outputs: [
 				{
 					components: [
-						{ internalType: "address", name: "addr", type: "address" },
+						{
+							internalType: "address",
+							name: "addr",
+							type: "address",
+						},
 						{
 							components: [
-								{ internalType: "uint256", name: "voteBalance", type: "uint256" },
-								{ internalType: "bool", name: "isResigning", type: "bool" },
-								{ internalType: "bytes", name: "bls12_381_public_key", type: "bytes" },
+								{
+									internalType: "uint256",
+									name: "voteBalance",
+									type: "uint256",
+								},
+								{
+									internalType: "bool",
+									name: "isResigning",
+									type: "bool",
+								},
+								{
+									internalType: "bytes",
+									name: "bls12_381_public_key",
+									type: "bytes",
+								},
 							],
 							internalType: "struct ValidatorData",
 							name: "data",
@@ -55,17 +131,39 @@ export const abi = {
 			type: "function",
 		},
 		{
-			inputs: [{ internalType: "address", name: "_addr", type: "address" }],
+			inputs: [
+				{
+					internalType: "address",
+					name: "_addr",
+					type: "address",
+				},
+			],
 			name: "getValidator",
 			outputs: [
 				{
 					components: [
-						{ internalType: "address", name: "addr", type: "address" },
+						{
+							internalType: "address",
+							name: "addr",
+							type: "address",
+						},
 						{
 							components: [
-								{ internalType: "uint256", name: "voteBalance", type: "uint256" },
-								{ internalType: "bool", name: "isResigning", type: "bool" },
-								{ internalType: "bytes", name: "bls12_381_public_key", type: "bytes" },
+								{
+									internalType: "uint256",
+									name: "voteBalance",
+									type: "uint256",
+								},
+								{
+									internalType: "bool",
+									name: "isResigning",
+									type: "bool",
+								},
+								{
+									internalType: "bytes",
+									name: "bls12_381_public_key",
+									type: "bytes",
+								},
 							],
 							internalType: "struct ValidatorData",
 							name: "data",
@@ -81,9 +179,21 @@ export const abi = {
 			type: "function",
 		},
 		{
-			inputs: [{ internalType: "address", name: "addr", type: "address" }],
+			inputs: [
+				{
+					internalType: "address",
+					name: "addr",
+					type: "address",
+				},
+			],
 			name: "isValidatorRegistered",
-			outputs: [{ internalType: "bool", name: "", type: "bool" }],
+			outputs: [
+				{
+					internalType: "bool",
+					name: "",
+					type: "bool",
+				},
+			],
 			stateMutability: "view",
 			type: "function",
 		},
@@ -95,7 +205,13 @@ export const abi = {
 			type: "function",
 		},
 		{
-			inputs: [{ internalType: "bytes", name: "bls12_381_public_key", type: "bytes" }],
+			inputs: [
+				{
+					internalType: "bytes",
+					name: "bls12_381_public_key",
+					type: "bytes",
+				},
+			],
 			name: "registerValidator",
 			outputs: [],
 			stateMutability: "nonpayable",
@@ -104,12 +220,30 @@ export const abi = {
 		{
 			inputs: [],
 			name: "registeredValidatorsCount",
-			outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+			outputs: [
+				{
+					internalType: "uint256",
+					name: "",
+					type: "uint256",
+				},
+			],
 			stateMutability: "view",
 			type: "function",
 		},
-		{ inputs: [], name: "shuffle", outputs: [], stateMutability: "nonpayable", type: "function" },
-		{ inputs: [], name: "updateActiveValidators", outputs: [], stateMutability: "nonpayable", type: "function" },
+		{
+			inputs: [],
+			name: "shuffle",
+			outputs: [],
+			stateMutability: "nonpayable",
+			type: "function",
+		},
+		{
+			inputs: [],
+			name: "updateActiveValidators",
+			outputs: [],
+			stateMutability: "nonpayable",
+			type: "function",
+		},
 		{
 			inputs: [],
 			name: "updateActiveValidatorsMerge",
@@ -121,12 +255,28 @@ export const abi = {
 			inputs: [
 				{
 					components: [
-						{ internalType: "address", name: "addr", type: "address" },
+						{
+							internalType: "address",
+							name: "addr",
+							type: "address",
+						},
 						{
 							components: [
-								{ internalType: "uint256", name: "voteBalance", type: "uint256" },
-								{ internalType: "bool", name: "isResigning", type: "bool" },
-								{ internalType: "bytes", name: "bls12_381_public_key", type: "bytes" },
+								{
+									internalType: "uint256",
+									name: "voteBalance",
+									type: "uint256",
+								},
+								{
+									internalType: "bool",
+									name: "isResigning",
+									type: "bool",
+								},
+								{
+									internalType: "bytes",
+									name: "bls12_381_public_key",
+									type: "bytes",
+								},
 							],
 							internalType: "struct ValidatorData",
 							name: "data",
@@ -144,14 +294,26 @@ export const abi = {
 			type: "function",
 		},
 		{
-			inputs: [{ internalType: "address[]", name: "voters", type: "address[]" }],
+			inputs: [
+				{
+					internalType: "address[]",
+					name: "voters",
+					type: "address[]",
+				},
+			],
 			name: "updateVoters",
 			outputs: [],
 			stateMutability: "nonpayable",
 			type: "function",
 		},
 		{
-			inputs: [{ internalType: "address", name: "addr", type: "address" }],
+			inputs: [
+				{
+					internalType: "address",
+					name: "addr",
+					type: "address",
+				},
+			],
 			name: "vote",
 			outputs: [],
 			stateMutability: "nonpayable",
