@@ -241,7 +241,8 @@ export class Consensus implements Contracts.Consensus.Service {
 		this.logger.info(`Received proposal ${this.#height}/${this.#round} blockId: ${block.data.id}`);
 		await this.eventDispatcher.dispatch(Events.ConsensusEvent.ProposalAccepted, this.getState());
 
-		await this.prevote(roundState.getProcessorResult() ? block.data.id : undefined);
+
+		await this.prevote(roundState.getProcessorResult() && this.#round !== 0 ? block.data.id : undefined);
 	}
 
 	protected async onProposalLocked(roundState: Contracts.Consensus.RoundState): Promise<void> {
