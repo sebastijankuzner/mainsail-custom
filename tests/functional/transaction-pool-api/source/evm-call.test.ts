@@ -44,7 +44,7 @@ describe<{
 
 		const erc20Address = ethers.getCreateAddress({
 			from: ethers.computeAddress(`0x${deployTx.data.senderPublicKey}`),
-			nonce: 3,
+			nonce: 2,
 		});
 
 		// Successfully transfer tokens on new contract
@@ -62,7 +62,7 @@ describe<{
 		assert.equal(accept, [0]);
 
 		await waitBlock(context);
-		await isTransactionCommitted(context, transferTx);
+		assert.true(await isTransactionCommitted(context, transferTx));
 
 		// Check final balance
 		const balanceAfter = await EvmCalls.getErc20BalanceOf(context, erc20Address, randomWallet.address);

@@ -1,14 +1,14 @@
 {
-    "address": "0xb5DfF3FF44f16874360eD13160c03B1373F4F154",
+    "address": "0x07bdd76B4f67c65c8a70854d2e3814417b6C30D3",
     "consensusKeys": {
         "compressed": true,
-        "privateKey": "4131e47611ae9456e2b7e9c7bf1e91da32d6d9adf3e262e5a974c33ddb7f8217",
-        "publicKey": "b58307aa9fa1a8a9f6c81c1dfe99439cb0ec31de7cfcb2cd9f8c21102109bf48a3275a3495de77a3d1f305a17ca937ba"
+        "privateKey": "208c352fe153ade4beccba87f8aef468a5d303235bea1299fdeeaa4fd3208690",
+        "publicKey": "935a72f21d0bd3f3dbff9d7bd1d2c2c0c6464949f22f1ecbcc71095c13e9cd85bc2bfae1ac19abc4e00f7c120ff903c6"
     },
     "keys": {
         "compressed": true,
-        "privateKey": "5fe19495942fd36acd2371af3b49983a46250450e912d06cbc850ed7355bde15",
-        "publicKey": "032325b399c9a49fbc32624fb6e80e5599c5469eb5ab25430549d1d009cc297634"
+        "privateKey": "589ca2e48d6f76aa0f6ce59801b09a35a5c2ca0fd588422800d28f38bbee5282",
+        "publicKey": "03b10a6b81f3789137230b167d9ae75a5f2c7986372d14a0ab521f822685d491ac"
     },
-    "passphrase": "nephew news thing day index pond cover proud quick exchange toast ozone peasant tragic this acid message space mountain city never where cliff settle"
+    "passphrase": "friend bomb north symptom episode way chapter chief zone report combine fault dentist flight midnight window train oyster arctic exit antenna skirt aisle main"
 }

@@ -13,7 +13,7 @@ importers:
         version: 20.11.16
       '@typescript-eslint/eslint-plugin':
         specifier: ^7.2.0
-        version: 7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.0)(typescript@5.4.2)
+        version: 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)(typescript@5.4.2)
       '@typescript-eslint/parser':
         specifier: ^7.2.0
         version: 7.18.0(eslint@8.57.0)(typescript@5.4.2)
@@ -37,13 +37,13 @@ importers:
         version: 9.1.0(eslint@8.57.0)
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.29.1(@typescript-eslint/parser@7.18.0)(eslint@8.57.0)
+        version: 2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)
       eslint-plugin-jsx-a11y:
         specifier: ^6.8.0
         version: 6.9.0(eslint@8.57.0)
       eslint-plugin-prettier:
         specifier: ^5.1.3
-        version: 5.2.1(eslint-config-prettier@9.1.0)(eslint@8.57.0)(prettier@3.3.3)
+        version: 5.2.1(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.3)
       eslint-plugin-promise:
         specifier: ^6.1.1
         version: 6.6.0(eslint@8.57.0)
@@ -67,13 +67,13 @@ importers:
         version: 51.0.1(eslint@8.57.0)
       eslint-plugin-unused-imports:
         specifier: ^3.0.0
-        version: 3.2.0(@typescript-eslint/eslint-plugin@7.18.0)(eslint@8.57.0)
+        version: 3.2.0(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)
       husky:
         specifier: ^9.0.10
         version: 9.1.5
       lerna:
         specifier: ^6.6.2
-        version: 6.6.2
+        version: 6.6.2(encoding@0.1.13)
       lint-staged:
         specifier: ^15.2.2
         version: 15.2.9
@@ -255,7 +255,7 @@ importers:
         version: 8.11.3
       typeorm:
         specifier: 0.3.20
-        version: 0.3.20(pg@8.11.3)
+        version: 0.3.20(pg@8.11.3)(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))
     devDependencies:
       '@types/pg':
         specifier: 8.11.2
@@ -1548,10 +1548,10 @@ importers:
     dependencies:
       '@chainsafe/bls':
         specifier: ^7.1.3
-        version: 7.1.3(@chainsafe/blst@0.2.11)
+        version: 7.1.3(@chainsafe/blst@0.2.11(encoding@0.1.13))
       '@chainsafe/blst':
         specifier: ^0.2.10
-        version: 0.2.11
+        version: 0.2.11(encoding@0.1.13)
       '@mainsail/container':
         specifier: workspace:*
         version: link:../container
@@ -2466,25 +2466,25 @@ importers:
     devDependencies:
       '@nomicfoundation/hardhat-chai-matchers':
         specifier: ^2.0.0
-        version: 2.0.7(@nomicfoundation/hardhat-ethers@3.0.7)(chai@4.5.0)(ethers@6.13.2)(hardhat@2.22.9)
+        version: 2.0.7(@nomicfoundation/hardhat-ethers@3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)))(chai@4.5.0)(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       '@nomicfoundation/hardhat-ethers':
         specifier: ^3.0.0
-        version: 3.0.7(ethers@6.13.2)(hardhat@2.22.9)
+        version: 3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       '@nomicfoundation/hardhat-network-helpers':
         specifier: ^1.0.0
-        version: 1.0.11(hardhat@2.22.9)
+        version: 1.0.11(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       '@nomicfoundation/hardhat-toolbox':
         specifier: ^4.0.0
-        version: 4.0.0(@nomicfoundation/hardhat-chai-matchers@2.0.7)(@nomicfoundation/hardhat-ethers@3.0.7)(@nomicfoundation/hardhat-network-helpers@1.0.11)(@nomicfoundation/hardhat-verify@2.0.9)(@typechain/ethers-v6@0.5.1)(@typechain/hardhat@9.1.0)(@types/chai@4.3.18)(@types/mocha@10.0.7)(@types/node@20.11.16)(chai@4.5.0)(ethers@6.13.2)(hardhat-gas-reporter@2.2.1)(hardhat@2.22.9)(solidity-coverage@0.8.12)(ts-node@10.9.2)(typechain@8.3.2)(typescript@5.4.2)
+        version: 4.0.0(4ieg7xse355waurp4z2xeimdbe)
       '@nomicfoundation/hardhat-verify':
         specifier: ^2.0.0
-        version: 2.0.9(hardhat@2.22.9)
+        version: 2.0.9(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       '@typechain/ethers-v6':
         specifier: ^0.5.0
-        version: 0.5.1(ethers@6.13.2)(typechain@8.3.2)(typescript@5.4.2)
+        version: 0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2)
       '@typechain/hardhat':
         specifier: ^9.0.0
-        version: 9.1.0(@typechain/ethers-v6@0.5.1)(ethers@6.13.2)(hardhat@2.22.9)(typechain@8.3.2)
+        version: 9.1.0(@typechain/ethers-v6@0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2))(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))(typechain@8.3.2(typescript@5.4.2))
       '@types/chai':
         specifier: ^4.2.0
         version: 4.3.18
@@ -2502,13 +2502,13 @@ importers:
         version: 6.13.2
       hardhat:
         specifier: ^2.22.5
-        version: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+        version: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       hardhat-gas-reporter:
         specifier: ^2.2.0
-        version: 2.2.1(hardhat@2.22.9)(typescript@5.4.2)
+        version: 2.2.1(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))(typescript@5.4.2)(zod@3.22.5)
       solidity-coverage:
         specifier: ^0.8.0
-        version: 0.8.12(hardhat@2.22.9)
+        version: 0.8.12(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       ts-node:
         specifier: '>=8.0.0'
         version: 10.9.2(@types/node@20.11.16)(typescript@5.4.2)
@@ -4043,6 +4043,9 @@ importers:
       '@mainsail/evm-api-worker':
         specifier: workspace:*
         version: link:../../../packages/evm-api-worker
+      '@mainsail/evm-consensus':
+        specifier: workspace:*
+        version: link:../../../packages/evm-consensus
       '@mainsail/evm-development':
         specifier: workspace:*
         version: link:../../../packages/evm-development
@@ -4067,9 +4070,6 @@ importers:
       '@mainsail/processor':
         specifier: workspace:*
         version: link:../../../packages/processor
-      '@mainsail/proposer':
-        specifier: workspace:*
-        version: link:../../../packages/proposer
       '@mainsail/serializer':
         specifier: workspace:*
         version: link:../../../packages/serializer
@@ -4100,9 +4100,6 @@ importers:
       '@mainsail/validator':
         specifier: workspace:*
         version: link:../../../packages/validator
-      '@mainsail/validator-set-static':
-        specifier: workspace:*
-        version: link:../../../packages/validator-set-static
       '@types/tmp':
         specifier: 0.2.6
         version: 0.2.6
@@ -12159,16 +12156,17 @@ snapshots:
       ethereum-cryptography: 2.2.1
       uuid: 9.0.1
 
-  '@chainsafe/bls@7.1.3(@chainsafe/blst@0.2.11)':
+  '@chainsafe/bls@7.1.3(@chainsafe/blst@0.2.11(encoding@0.1.13))':
     dependencies:
       '@chainsafe/bls-keygen': 0.4.0
-      '@chainsafe/blst': 0.2.11
       bls-eth-wasm: 0.4.8
+    optionalDependencies:
+      '@chainsafe/blst': 0.2.11(encoding@0.1.13)
 
-  '@chainsafe/blst@0.2.11':
+  '@chainsafe/blst@0.2.11(encoding@0.1.13)':
     dependencies:
       '@types/tar': 6.1.11
-      node-fetch: 2.7.0
+      node-fetch: 2.7.0(encoding@0.1.13)
       node-gyp: 8.4.1
     transitivePeerDependencies:
       - bluebird
@@ -12700,12 +12698,12 @@ snapshots:
       - bluebird
       - supports-color
 
-  '@lerna/legacy-package-management@6.6.2(nx@15.9.7)':
+  '@lerna/legacy-package-management@6.6.2(encoding@0.1.13)(nx@15.9.7)':
     dependencies:
       '@npmcli/arborist': 6.2.3
       '@npmcli/run-script': 4.1.7
       '@nrwl/devkit': 15.9.7(nx@15.9.7)
-      '@octokit/rest': 19.0.3
+      '@octokit/rest': 19.0.3(encoding@0.1.13)
       byte-size: 7.0.0
       chalk: 4.1.0
       clone-deep: 4.0.1
@@ -12736,7 +12734,7 @@ snapshots:
       make-dir: 3.1.0
       minimatch: 3.0.5
       multimatch: 5.0.0
-      node-fetch: 2.6.7
+      node-fetch: 2.6.7(encoding@0.1.13)
       npm-package-arg: 8.1.1
       npm-packlist: 5.1.1
       npm-registry-fetch: 14.0.3
@@ -12896,59 +12894,59 @@ snapshots:
       '@nomicfoundation/ethereumjs-rlp': 5.0.4
       ethereum-cryptography: 0.1.3
 
-  '@nomicfoundation/hardhat-chai-matchers@2.0.7(@nomicfoundation/hardhat-ethers@3.0.7)(chai@4.5.0)(ethers@6.13.2)(hardhat@2.22.9)':
+  '@nomicfoundation/hardhat-chai-matchers@2.0.7(@nomicfoundation/hardhat-ethers@3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)))(chai@4.5.0)(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))':
     dependencies:
-      '@nomicfoundation/hardhat-ethers': 3.0.7(ethers@6.13.2)(hardhat@2.22.9)
+      '@nomicfoundation/hardhat-ethers': 3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       '@types/chai-as-promised': 7.1.8
       chai: 4.5.0
       chai-as-promised: 7.1.2(chai@4.5.0)
       deep-eql: 4.1.4
       ethers: 6.13.2
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       ordinal: 1.0.3
 
-  '@nomicfoundation/hardhat-ethers@3.0.7(ethers@6.13.2)(hardhat@2.22.9)':
+  '@nomicfoundation/hardhat-ethers@3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))':
     dependencies:
       debug: 4.3.6(supports-color@8.1.1)
       ethers: 6.13.2
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       lodash.isequal: 4.5.0
     transitivePeerDependencies:
       - supports-color
 
-  '@nomicfoundation/hardhat-network-helpers@1.0.11(hardhat@2.22.9)':
+  '@nomicfoundation/hardhat-network-helpers@1.0.11(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))':
     dependencies:
       ethereumjs-util: 7.1.5
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
 
-  '@nomicfoundation/hardhat-toolbox@4.0.0(@nomicfoundation/hardhat-chai-matchers@2.0.7)(@nomicfoundation/hardhat-ethers@3.0.7)(@nomicfoundation/hardhat-network-helpers@1.0.11)(@nomicfoundation/hardhat-verify@2.0.9)(@typechain/ethers-v6@0.5.1)(@typechain/hardhat@9.1.0)(@types/chai@4.3.18)(@types/mocha@10.0.7)(@types/node@20.11.16)(chai@4.5.0)(ethers@6.13.2)(hardhat-gas-reporter@2.2.1)(hardhat@2.22.9)(solidity-coverage@0.8.12)(ts-node@10.9.2)(typechain@8.3.2)(typescript@5.4.2)':
+  '@nomicfoundation/hardhat-toolbox@4.0.0(4ieg7xse355waurp4z2xeimdbe)':
     dependencies:
-      '@nomicfoundation/hardhat-chai-matchers': 2.0.7(@nomicfoundation/hardhat-ethers@3.0.7)(chai@4.5.0)(ethers@6.13.2)(hardhat@2.22.9)
-      '@nomicfoundation/hardhat-ethers': 3.0.7(ethers@6.13.2)(hardhat@2.22.9)
-      '@nomicfoundation/hardhat-network-helpers': 1.0.11(hardhat@2.22.9)
-      '@nomicfoundation/hardhat-verify': 2.0.9(hardhat@2.22.9)
-      '@typechain/ethers-v6': 0.5.1(ethers@6.13.2)(typechain@8.3.2)(typescript@5.4.2)
-      '@typechain/hardhat': 9.1.0(@typechain/ethers-v6@0.5.1)(ethers@6.13.2)(hardhat@2.22.9)(typechain@8.3.2)
+      '@nomicfoundation/hardhat-chai-matchers': 2.0.7(@nomicfoundation/hardhat-ethers@3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)))(chai@4.5.0)(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
+      '@nomicfoundation/hardhat-ethers': 3.0.7(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
+      '@nomicfoundation/hardhat-network-helpers': 1.0.11(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
+      '@nomicfoundation/hardhat-verify': 2.0.9(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
+      '@typechain/ethers-v6': 0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2)
+      '@typechain/hardhat': 9.1.0(@typechain/ethers-v6@0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2))(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))(typechain@8.3.2(typescript@5.4.2))
       '@types/chai': 4.3.18
       '@types/mocha': 10.0.7
       '@types/node': 20.11.16
       chai: 4.5.0
       ethers: 6.13.2
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
-      hardhat-gas-reporter: 2.2.1(hardhat@2.22.9)(typescript@5.4.2)
-      solidity-coverage: 0.8.12(hardhat@2.22.9)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
+      hardhat-gas-reporter: 2.2.1(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))(typescript@5.4.2)(zod@3.22.5)
+      solidity-coverage: 0.8.12(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))
       ts-node: 10.9.2(@types/node@20.11.16)(typescript@5.4.2)
       typechain: 8.3.2(typescript@5.4.2)
       typescript: 5.4.2
 
-  '@nomicfoundation/hardhat-verify@2.0.9(hardhat@2.22.9)':
+  '@nomicfoundation/hardhat-verify@2.0.9(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/address': 5.7.0
       cbor: 8.1.0
       chalk: 2.4.2
       debug: 4.3.6(supports-color@8.1.1)
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       lodash.clonedeep: 4.5.0
       semver: 6.3.1
       table: 6.8.2
@@ -13202,11 +13200,11 @@ snapshots:
 
   '@octokit/auth-token@3.0.4': {}
 
-  '@octokit/core@4.2.4':
+  '@octokit/core@4.2.4(encoding@0.1.13)':
     dependencies:
       '@octokit/auth-token': 3.0.4
-      '@octokit/graphql': 5.0.6
-      '@octokit/request': 6.2.8
+      '@octokit/graphql': 5.0.6(encoding@0.1.13)
+      '@octokit/request': 6.2.8(encoding@0.1.13)
       '@octokit/request-error': 3.0.3
       '@octokit/types': 9.3.2
       before-after-hook: 2.2.3
@@ -13220,9 +13218,9 @@ snapshots:
       is-plain-object: 5.0.0
       universal-user-agent: 6.0.1
 
-  '@octokit/graphql@5.0.6':
+  '@octokit/graphql@5.0.6(encoding@0.1.13)':
     dependencies:
-      '@octokit/request': 6.2.8
+      '@octokit/request': 6.2.8(encoding@0.1.13)
       '@octokit/types': 9.3.2
       universal-user-agent: 6.0.1
     transitivePeerDependencies:
@@ -13236,18 +13234,18 @@ snapshots:
 
   '@octokit/plugin-enterprise-rest@6.0.1': {}
 
-  '@octokit/plugin-paginate-rest@3.1.0(@octokit/core@4.2.4)':
+  '@octokit/plugin-paginate-rest@3.1.0(@octokit/core@4.2.4(encoding@0.1.13))':
     dependencies:
-      '@octokit/core': 4.2.4
+      '@octokit/core': 4.2.4(encoding@0.1.13)
       '@octokit/types': 6.41.0
 
-  '@octokit/plugin-request-log@1.0.4(@octokit/core@4.2.4)':
+  '@octokit/plugin-request-log@1.0.4(@octokit/core@4.2.4(encoding@0.1.13))':
     dependencies:
-      '@octokit/core': 4.2.4
+      '@octokit/core': 4.2.4(encoding@0.1.13)
 
-  '@octokit/plugin-rest-endpoint-methods@6.8.1(@octokit/core@4.2.4)':
+  '@octokit/plugin-rest-endpoint-methods@6.8.1(@octokit/core@4.2.4(encoding@0.1.13))':
     dependencies:
-      '@octokit/core': 4.2.4
+      '@octokit/core': 4.2.4(encoding@0.1.13)
       '@octokit/types': 8.2.1
       deprecation: 2.3.1
 
@@ -13257,23 +13255,23 @@ snapshots:
       deprecation: 2.3.1
       once: 1.4.0
 
-  '@octokit/request@6.2.8':
+  '@octokit/request@6.2.8(encoding@0.1.13)':
     dependencies:
       '@octokit/endpoint': 7.0.6
       '@octokit/request-error': 3.0.3
       '@octokit/types': 9.3.2
       is-plain-object: 5.0.0
-      node-fetch: 2.6.7
+      node-fetch: 2.6.7(encoding@0.1.13)
       universal-user-agent: 6.0.1
     transitivePeerDependencies:
       - encoding
 
-  '@octokit/rest@19.0.3':
+  '@octokit/rest@19.0.3(encoding@0.1.13)':
     dependencies:
-      '@octokit/core': 4.2.4
-      '@octokit/plugin-paginate-rest': 3.1.0(@octokit/core@4.2.4)
-      '@octokit/plugin-request-log': 1.0.4(@octokit/core@4.2.4)
-      '@octokit/plugin-rest-endpoint-methods': 6.8.1(@octokit/core@4.2.4)
+      '@octokit/core': 4.2.4(encoding@0.1.13)
+      '@octokit/plugin-paginate-rest': 3.1.0(@octokit/core@4.2.4(encoding@0.1.13))
+      '@octokit/plugin-request-log': 1.0.4(@octokit/core@4.2.4(encoding@0.1.13))
+      '@octokit/plugin-rest-endpoint-methods': 6.8.1(@octokit/core@4.2.4(encoding@0.1.13))
     transitivePeerDependencies:
       - encoding
 
@@ -13376,10 +13374,10 @@ snapshots:
       '@noble/hashes': 1.4.0
       '@polkadot/networks': 12.6.2
       '@polkadot/util': 12.6.2
-      '@polkadot/wasm-crypto': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)
+      '@polkadot/wasm-crypto': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))
       '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
       '@polkadot/x-bigint': 12.6.2
-      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2)
+      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2))
       '@scure/base': 1.1.7
       tslib: 2.7.0
 
@@ -13393,11 +13391,11 @@ snapshots:
       bn.js: 5.2.1
       tslib: 2.7.0
 
-  '@polkadot/wasm-bridge@7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)':
+  '@polkadot/wasm-bridge@7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))':
     dependencies:
       '@polkadot/util': 12.6.2
       '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
-      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2)
+      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2))
       tslib: 2.7.0
 
   '@polkadot/wasm-crypto-asmjs@7.3.2(@polkadot/util@12.6.2)':
@@ -13405,14 +13403,14 @@ snapshots:
       '@polkadot/util': 12.6.2
       tslib: 2.7.0
 
-  '@polkadot/wasm-crypto-init@7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)':
+  '@polkadot/wasm-crypto-init@7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))':
     dependencies:
       '@polkadot/util': 12.6.2
-      '@polkadot/wasm-bridge': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)
+      '@polkadot/wasm-bridge': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))
       '@polkadot/wasm-crypto-asmjs': 7.3.2(@polkadot/util@12.6.2)
       '@polkadot/wasm-crypto-wasm': 7.3.2(@polkadot/util@12.6.2)
       '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
-      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2)
+      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2))
       tslib: 2.7.0
 
   '@polkadot/wasm-crypto-wasm@7.3.2(@polkadot/util@12.6.2)':
@@ -13421,15 +13419,15 @@ snapshots:
       '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
       tslib: 2.7.0
 
-  '@polkadot/wasm-crypto@7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)':
+  '@polkadot/wasm-crypto@7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))':
     dependencies:
       '@polkadot/util': 12.6.2
-      '@polkadot/wasm-bridge': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)
+      '@polkadot/wasm-bridge': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))
       '@polkadot/wasm-crypto-asmjs': 7.3.2(@polkadot/util@12.6.2)
-      '@polkadot/wasm-crypto-init': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2)
+      '@polkadot/wasm-crypto-init': 7.3.2(@polkadot/util@12.6.2)(@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)))
       '@polkadot/wasm-crypto-wasm': 7.3.2(@polkadot/util@12.6.2)
       '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
-      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2)
+      '@polkadot/x-randomvalues': 12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2))
       tslib: 2.7.0
 
   '@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2)':
@@ -13446,7 +13444,7 @@ snapshots:
     dependencies:
       tslib: 2.7.0
 
-  '@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2)':
+  '@polkadot/x-randomvalues@12.6.2(@polkadot/util@12.6.2)(@polkadot/wasm-util@7.3.2(@polkadot/util@12.6.2))':
     dependencies:
       '@polkadot/util': 12.6.2
       '@polkadot/wasm-util': 7.3.2(@polkadot/util@12.6.2)
@@ -13489,6 +13487,7 @@ snapshots:
   '@samverschueren/stream-to-observable@0.3.1(rxjs@6.6.7)':
     dependencies:
       any-observable: 0.3.0(rxjs@6.6.7)
+    optionalDependencies:
       rxjs: 6.6.7
     transitivePeerDependencies:
       - zenObservable
@@ -13663,7 +13662,7 @@ snapshots:
       '@tufjs/canonical-json': 1.0.0
       minimatch: 9.0.5
 
-  '@typechain/ethers-v6@0.5.1(ethers@6.13.2)(typechain@8.3.2)(typescript@5.4.2)':
+  '@typechain/ethers-v6@0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2)':
     dependencies:
       ethers: 6.13.2
       lodash: 4.17.21
@@ -13671,12 +13670,12 @@ snapshots:
       typechain: 8.3.2(typescript@5.4.2)
       typescript: 5.4.2
 
-  '@typechain/hardhat@9.1.0(@typechain/ethers-v6@0.5.1)(ethers@6.13.2)(hardhat@2.22.9)(typechain@8.3.2)':
+  '@typechain/hardhat@9.1.0(@typechain/ethers-v6@0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2))(ethers@6.13.2)(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))(typechain@8.3.2(typescript@5.4.2))':
     dependencies:
-      '@typechain/ethers-v6': 0.5.1(ethers@6.13.2)(typechain@8.3.2)(typescript@5.4.2)
+      '@typechain/ethers-v6': 0.5.1(ethers@6.13.2)(typechain@8.3.2(typescript@5.4.2))(typescript@5.4.2)
       ethers: 6.13.2
       fs-extra: 9.1.0
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       typechain: 8.3.2(typescript@5.4.2)
 
   '@types/better-sqlite3@7.6.11':
@@ -13911,7 +13910,7 @@ snapshots:
 
   '@types/yargs-parser@21.0.3': {}
 
-  '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.0)(typescript@5.4.2)':
+  '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)(typescript@5.4.2)':
     dependencies:
       '@eslint-community/regexpp': 4.11.0
       '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.4.2)
@@ -13924,6 +13923,7 @@ snapshots:
       ignore: 5.3.2
       natural-compare: 1.4.0
       ts-api-utils: 1.3.0(typescript@5.4.2)
+    optionalDependencies:
       typescript: 5.4.2
     transitivePeerDependencies:
       - supports-color
@@ -13936,6 +13936,7 @@ snapshots:
       '@typescript-eslint/visitor-keys': 7.18.0
       debug: 4.3.6(supports-color@8.1.1)
       eslint: 8.57.0
+    optionalDependencies:
       typescript: 5.4.2
     transitivePeerDependencies:
       - supports-color
@@ -13957,6 +13958,7 @@ snapshots:
       debug: 4.3.6(supports-color@8.1.1)
       eslint: 8.57.0
       ts-api-utils: 1.3.0(typescript@5.4.2)
+    optionalDependencies:
       typescript: 5.4.2
     transitivePeerDependencies:
       - supports-color
@@ -13976,6 +13978,7 @@ snapshots:
       is-glob: 4.0.3
       semver: 7.6.0
       tsutils: 3.21.0(typescript@3.9.10)
+    optionalDependencies:
       typescript: 3.9.10
     transitivePeerDependencies:
       - supports-color
@@ -13989,6 +13992,7 @@ snapshots:
       is-glob: 4.0.3
       semver: 7.6.0
       tsutils: 3.21.0(typescript@4.9.5)
+    optionalDependencies:
       typescript: 4.9.5
     transitivePeerDependencies:
       - supports-color
@@ -14002,6 +14006,7 @@ snapshots:
       is-glob: 4.0.3
       semver: 7.6.0
       tsutils: 3.21.0(typescript@5.4.2)
+    optionalDependencies:
       typescript: 5.4.2
     transitivePeerDependencies:
       - supports-color
@@ -14016,6 +14021,7 @@ snapshots:
       minimatch: 9.0.5
       semver: 7.6.0
       ts-api-utils: 1.3.0(typescript@5.4.2)
+    optionalDependencies:
       typescript: 5.4.2
     transitivePeerDependencies:
       - supports-color
@@ -14117,9 +14123,10 @@ snapshots:
 
   abbrev@2.0.0: {}
 
-  abitype@1.0.0(typescript@5.4.2):
-    dependencies:
+  abitype@1.0.0(typescript@5.4.2)(zod@3.22.5):
+    optionalDependencies:
       typescript: 5.4.2
+      zod: 3.22.5
 
   abort-controller@3.0.0:
     dependencies:
@@ -14174,7 +14181,7 @@ snapshots:
       indent-string: 5.0.0
 
   ajv-formats@2.1.1(ajv@8.12.0):
-    dependencies:
+    optionalDependencies:
       ajv: 8.12.0
 
   ajv-keywords@5.1.0(ajv@8.12.0):
@@ -14246,7 +14253,7 @@ snapshots:
   ansi-styles@6.2.1: {}
 
   any-observable@0.3.0(rxjs@6.6.7):
-    dependencies:
+    optionalDependencies:
       rxjs: 6.6.7
 
   any-promise@1.3.0: {}
@@ -15190,6 +15197,7 @@ snapshots:
       import-fresh: 3.3.0
       js-yaml: 4.1.0
       parse-json: 5.2.0
+    optionalDependencies:
       typescript: 5.4.2
 
   create-hash@1.2.0:
@@ -15300,6 +15308,7 @@ snapshots:
   debug@4.3.6(supports-color@8.1.1):
     dependencies:
       ms: 2.1.2
+    optionalDependencies:
       supports-color: 8.1.1
 
   decamelize-keys@1.1.1:
@@ -15907,18 +15916,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.8.2(@typescript-eslint/parser@7.18.0)(eslint-import-resolver-node@0.3.9)(eslint@8.57.0):
+  eslint-module-utils@2.8.2(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint@8.57.0):
     dependencies:
-      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.4.2)
       debug: 3.2.7
+    optionalDependencies:
+      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.4.2)
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.18.0)(eslint@8.57.0):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0):
     dependencies:
-      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.4.2)
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
       array.prototype.flat: 1.3.2
@@ -15927,7 +15936,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.0
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.2(@typescript-eslint/parser@7.18.0)(eslint-import-resolver-node@0.3.9)(eslint@8.57.0)
+      eslint-module-utils: 2.8.2(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint-import-resolver-node@0.3.9)(eslint@8.57.0)
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -15937,6 +15946,8 @@ snapshots:
       object.values: 1.2.0
       semver: 6.3.1
       tsconfig-paths: 3.15.0
+    optionalDependencies:
+      '@typescript-eslint/parser': 7.18.0(eslint@8.57.0)(typescript@5.4.2)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -15962,13 +15973,14 @@ snapshots:
       safe-regex-test: 1.0.3
       string.prototype.includes: 2.0.0
 
-  eslint-plugin-prettier@5.2.1(eslint-config-prettier@9.1.0)(eslint@8.57.0)(prettier@3.3.3):
+  eslint-plugin-prettier@5.2.1(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.3.3):
     dependencies:
       eslint: 8.57.0
-      eslint-config-prettier: 9.1.0(eslint@8.57.0)
       prettier: 3.3.3
       prettier-linter-helpers: 1.0.0
       synckit: 0.9.1
+    optionalDependencies:
+      eslint-config-prettier: 9.1.0(eslint@8.57.0)
 
   eslint-plugin-promise@6.6.0(eslint@8.57.0):
     dependencies:
@@ -16021,11 +16033,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-unused-imports@3.2.0(@typescript-eslint/eslint-plugin@7.18.0)(eslint@8.57.0):
+  eslint-plugin-unused-imports@3.2.0(@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0)(eslint@8.57.0)(typescript@5.4.2)
       eslint: 8.57.0
       eslint-rule-composer: 0.3.0
+    optionalDependencies:
+      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0(eslint@8.57.0)(typescript@5.4.2))(eslint@8.57.0)(typescript@5.4.2)
 
   eslint-rule-composer@0.3.0: {}
 
@@ -16444,7 +16457,7 @@ snapshots:
   fn.name@1.1.0: {}
 
   follow-redirects@1.15.6(debug@4.3.6):
-    dependencies:
+    optionalDependencies:
       debug: 4.3.6(supports-color@8.1.1)
 
   for-each@0.3.3:
@@ -16626,7 +16639,7 @@ snapshots:
   git-hooks-list@3.1.0: {}
 
   git-node-fs@1.0.0(js-git@0.7.8):
-    dependencies:
+    optionalDependencies:
       js-git: 0.7.8
 
   git-raw-commits@2.0.11:
@@ -16868,7 +16881,7 @@ snapshots:
 
   hard-rejection@2.1.0: {}
 
-  hardhat-gas-reporter@2.2.1(hardhat@2.22.9)(typescript@5.4.2):
+  hardhat-gas-reporter@2.2.1(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2))(typescript@5.4.2)(zod@3.22.5):
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bytes': 5.7.0
@@ -16880,12 +16893,12 @@ snapshots:
       cli-table3: 0.6.3
       ethereum-cryptography: 2.2.1
       glob: 10.3.10
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       jsonschema: 1.4.1
       lodash: 4.17.21
       markdown-table: 2.0.0
       sha1: 1.1.1
-      viem: 2.7.14(typescript@5.4.2)
+      viem: 2.7.14(typescript@5.4.2)(zod@3.22.5)
     transitivePeerDependencies:
       - bufferutil
       - debug
@@ -16893,7 +16906,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  hardhat@2.22.9(ts-node@10.9.2)(typescript@5.4.2):
+  hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2):
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@metamask/eth-sig-util': 4.0.1
@@ -16934,12 +16947,13 @@ snapshots:
       solc: 0.8.26(debug@4.3.6)
       source-map-support: 0.5.21
       stacktrace-parser: 0.1.10
-      ts-node: 10.9.2(@types/node@20.11.16)(typescript@5.4.2)
       tsort: 0.0.1
-      typescript: 5.4.2
       undici: 5.28.4
       uuid: 8.3.2
       ws: 7.5.10
+    optionalDependencies:
+      ts-node: 10.9.2(@types/node@20.11.16)(typescript@5.4.2)
+      typescript: 5.4.2
     transitivePeerDependencies:
       - bufferutil
       - c-kzg
@@ -17730,16 +17744,16 @@ snapshots:
 
   lazy@1.0.11: {}
 
-  lerna@6.6.2:
+  lerna@6.6.2(encoding@0.1.13):
     dependencies:
       '@lerna/child-process': 6.6.2
       '@lerna/create': 6.6.2
-      '@lerna/legacy-package-management': 6.6.2(nx@15.9.7)
+      '@lerna/legacy-package-management': 6.6.2(encoding@0.1.13)(nx@15.9.7)
       '@npmcli/arborist': 6.2.3
       '@npmcli/run-script': 4.1.7
       '@nrwl/devkit': 15.9.7(nx@15.9.7)
       '@octokit/plugin-enterprise-rest': 6.0.1
-      '@octokit/rest': 19.0.3
+      '@octokit/rest': 19.0.3(encoding@0.1.13)
       byte-size: 7.0.0
       chalk: 4.1.0
       clone-deep: 4.0.1
@@ -17774,7 +17788,7 @@ snapshots:
       make-dir: 3.1.0
       minimatch: 3.0.5
       multimatch: 5.0.0
-      node-fetch: 2.6.7
+      node-fetch: 2.6.7(encoding@0.1.13)
       npm-package-arg: 8.1.1
       npm-packlist: 5.1.1
       npm-registry-fetch: 14.0.5
@@ -18088,8 +18102,9 @@ snapshots:
       rc: 1.2.8
       stream-to-array: 2.3.0
       ts-graphviz: 1.8.2
-      typescript: 5.4.2
       walkdir: 0.4.1
+    optionalDependencies:
+      typescript: 5.4.2
     transitivePeerDependencies:
       - supports-color
 
@@ -18611,13 +18626,17 @@ snapshots:
     dependencies:
       lodash: 4.17.21
 
-  node-fetch@2.6.7:
+  node-fetch@2.6.7(encoding@0.1.13):
     dependencies:
       whatwg-url: 5.0.0
+    optionalDependencies:
+      encoding: 0.1.13
 
-  node-fetch@2.7.0:
+  node-fetch@2.7.0(encoding@0.1.13):
     dependencies:
       whatwg-url: 5.0.0
+    optionalDependencies:
+      encoding: 0.1.13
 
   node-gyp-build-optional-packages@5.1.1:
     dependencies:
@@ -20406,7 +20425,7 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  solidity-coverage@0.8.12(hardhat@2.22.9):
+  solidity-coverage@0.8.12(hardhat@2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)):
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@solidity-parser/parser': 0.18.0
@@ -20417,7 +20436,7 @@ snapshots:
       ghost-testrpc: 0.0.2
       global-modules: 2.0.0
       globby: 10.0.2
-      hardhat: 2.22.9(ts-node@10.9.2)(typescript@5.4.2)
+      hardhat: 2.22.9(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2))(typescript@5.4.2)
       jsonschema: 1.4.1
       lodash: 4.17.21
       mocha: 10.7.3
@@ -21051,7 +21070,7 @@ snapshots:
       shiki: 0.14.7
       typescript: 5.4.2
 
-  typeorm@0.3.20(pg@8.11.3):
+  typeorm@0.3.20(pg@8.11.3)(ts-node@10.9.2(@types/node@20.11.16)(typescript@5.4.2)):
     dependencies:
       '@sqltools/formatter': 1.2.5
       app-root-path: 3.1.0
@@ -21063,12 +21082,14 @@ snapshots:
       dotenv: 16.4.5
       glob: 10.3.10
       mkdirp: 2.1.6
-      pg: 8.11.3
       reflect-metadata: 0.2.1
       sha.js: 2.4.11
       tslib: 2.7.0
       uuid: 9.0.1
       yargs: 17.7.2
+    optionalDependencies:
+      pg: 8.11.3
+      ts-node: 10.9.2(@types/node@20.11.16)(typescript@5.4.2)
     transitivePeerDependencies:
       - supports-color
 
@@ -21246,17 +21267,18 @@ snapshots:
 
   validate-npm-package-name@5.0.1: {}
 
-  viem@2.7.14(typescript@5.4.2):
+  viem@2.7.14(typescript@5.4.2)(zod@3.22.5):
     dependencies:
       '@adraffy/ens-normalize': 1.10.0
       '@noble/curves': 1.2.0
       '@noble/hashes': 1.3.2
       '@scure/bip32': 1.3.2
       '@scure/bip39': 1.2.1
-      abitype: 1.0.0(typescript@5.4.2)
+      abitype: 1.0.0(typescript@5.4.2)(zod@3.22.5)
       isows: 1.0.3(ws@8.13.0)
-      typescript: 5.4.2
       ws: 8.13.0
+    optionalDependencies:
+      typescript: 5.4.2
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
