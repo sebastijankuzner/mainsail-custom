@@ -219,6 +219,7 @@ export class Snapshot {
 
 						// add transferred value to recipient (if any)
 						if (transaction.data.recipientId && transaction.data.amount.isGreaterThan(0)) {
+							await negativeBalanceChange(receipt.sender, transaction.data.amount);
 							await positiveBalanceChange(transaction.data.recipientId, transaction.data.amount);
 						}
 					}
