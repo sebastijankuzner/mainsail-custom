@@ -13,6 +13,7 @@ pub struct JsTransactionContext {
     /// Omit recipient when deploying a contract
     pub recipient: Option<JsString>,
     pub gas_limit: JsBigInt,
+    pub gas_price: Option<JsBigInt>,
     pub value: JsBigInt,
     pub data: JsBuffer,
     pub tx_hash: JsString,
@@ -84,6 +85,7 @@ pub struct TxContext {
     /// Omit recipient when deploying a contract
     pub recipient: Option<Address>,
     pub gas_limit: u64,
+    pub gas_price: Option<U256>,
     pub value: U256,
     pub data: Bytes,
     pub tx_hash: B256,
@@ -120,7 +122,7 @@ pub struct CalculateTopValidatorsContext {
     pub commit_key: CommitKey,
     pub timestamp: U256,
     pub active_validators: u8,
-	pub validator_address: Address,
+    pub validator_address: Address,
     pub spec_id: SpecId,
 }
 
@@ -138,6 +140,7 @@ pub struct ExecutionContext {
     pub caller: Address,
     pub recipient: Option<Address>,
     pub gas_limit: Option<u64>,
+    pub gas_price: Option<U256>,
     pub value: U256,
     pub data: Bytes,
     pub tx_hash: Option<B256>,
@@ -151,6 +154,7 @@ impl From<TxViewContext> for ExecutionContext {
             caller: value.caller,
             recipient: Some(value.recipient),
             gas_limit: None,
+            gas_price: None,
             value: U256::ZERO,
             data: value.data,
             tx_hash: None,
@@ -166,6 +170,7 @@ impl From<TxContext> for ExecutionContext {
             caller: value.caller,
             recipient: value.recipient,
             gas_limit: Some(value.gas_limit),
+            gas_price: value.gas_price,
             value: value.value,
             data: value.data,
             tx_hash: Some(value.tx_hash),
@@ -221,9 +226,16 @@ impl TryFrom<JsTransactionContext> for TxContext {
             None
         };
 
+        let gas_price = if let Some(gas_price) = value.gas_price {
+            Some(utils::convert_bigint_to_u256(gas_price)?)
+        } else {
+            None
+        };
+
         let tx_ctx = TxContext {
             recipient,
             gas_limit: value.gas_limit.try_into()?,
+            gas_price,
             caller: utils::create_address_from_js_string(value.caller)?,
             value: utils::convert_bigint_to_u256(value.value)?,
             data: Bytes::from(buf.as_ref().to_owned()),
@@ -271,15 +283,15 @@ impl TryFrom<JsGenesisContext> for GenesisContext {
 impl TryFrom<JsCalculateTopValidatorsContext> for CalculateTopValidatorsContext {
     type Error = anyhow::Error;
 
-    fn try_from(mut value: JsCalculateTopValidatorsContext) -> Result<Self, Self::Error> {
+    fn try_from(value: JsCalculateTopValidatorsContext) -> Result<Self, Self::Error> {
         Ok(CalculateTopValidatorsContext {
             commit_key: value.commit_key.try_into()?,
             timestamp: U256::from(value.timestamp.get_u64()?.0),
             validator_address: utils::create_address_from_js_string(value.validator_address)?,
             active_validators: u8::try_from(match value.active_validators.get_u64() {
-				Ok(active_validators) => active_validators.0,
-				Err(_) => 0 as u64,
-			})?,
+                Ok(active_validators) => active_validators.0,
+                Err(_) => 0 as u64,
+            })?,
             spec_id: parse_spec_id(value.spec_id)?,
         })
     }

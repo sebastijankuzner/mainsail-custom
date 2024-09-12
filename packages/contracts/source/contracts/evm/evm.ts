@@ -59,6 +59,7 @@ export interface TransactionContext {
 	/** Omit recipient when deploying a contract */
 	readonly recipient?: string;
 	readonly gasLimit: bigint;
+	readonly gasPrice?: bigint;
 	readonly value: bigint;
 	readonly data: Buffer;
 	readonly blockContext: BlockContext;
