@@ -24,6 +24,7 @@ interface WalletState {
 export class Snapshot {
 	private states: Record<string, WalletState> = {};
 	private receipts: Record<string, { sender: string; receipt: Contracts.Evm.TransactionReceipt }[]> = {};
+	private manualDeltas: Record<string, WalletState> = {};
 
 	public constructor(public sandbox: Sandbox) {
 		this.listenForEvmEvents();
@@ -61,12 +62,28 @@ export class Snapshot {
 		this.states[wallet.getAddress()] = { balance: wallet.getBalance(), nonce: wallet.getNonce() };
 	}
 
+	public async addManualDelta(addressOrPublicKey: string, delta: Partial<WalletState>): Promise<void> {
+		const wallet = await getWalletByAddressOrPublicKey({ sandbox: this.sandbox }, addressOrPublicKey);
+
+		if (!this.manualDeltas[wallet.getAddress()]) {
+			this.manualDeltas[wallet.getAddress()] = { balance: BigNumber.ZERO, nonce: BigNumber.ZERO };
+		}
+
+		const manualDelta = this.manualDeltas[wallet.getAddress()];
+		if (delta.balance) {
+			manualDelta.balance = manualDelta.balance.plus(delta.balance);
+		}
+		if (delta.nonce) {
+			manualDelta.nonce = manualDelta.nonce.plus(delta.nonce);
+		}
+	}
+
 	public async validate(): Promise<void> {
 		const { walletRepository } = this.sandbox.app
 			.get<Contracts.State.Service>(Identifiers.State.Service)
 			.getStore();
 
-		// All walelt changes from block 1 onwards
+		// All wallet changes from block 1 onwards
 		const walletDeltas = await this.collectWalletDeltas();
 
 		// Verify final balance of all wallets matches with delta and snapshot taken at block 0
@@ -234,6 +251,21 @@ export class Snapshot {
 				block.header.generatorPublicKey,
 				block.header.reward.plus(totalValidatorFeeReward),
 			);
+		}
+
+		for (const [address, delta] of Object.entries(this.manualDeltas)) {
+			const wallet = await getWalletByAddressOrPublicKey({ sandbox: this.sandbox }, address);
+
+			if (!stateDeltas[wallet.getAddress()]) {
+				stateDeltas[wallet.getAddress()] = {
+					balance: BigNumber.ZERO,
+					nonce: BigNumber.ZERO,
+				};
+			}
+
+			const stateDelta = stateDeltas[wallet.getAddress()];
+			stateDelta.balance = stateDelta.balance.plus(delta.balance);
+			stateDelta.nonce = stateDelta.nonce.plus(delta.nonce);
 		}
 
 		return stateDeltas;

@@ -60,7 +60,7 @@ export class Deployer {
 			blockContext,
 			caller: this.#deployerAddress,
 			value: 0n,
-			data: Buffer.from(ethers.getBytes(DirectTransfer.abi.bytecode)),
+			data: Buffer.from(ethers.getBytes(DirectTransfer.abi.bytecode.object)),
 			gasLimit: BigInt(2_000_000),
 			specId: milestone.evmSpec,
 			txHash: this.#generateTxHash(),
@@ -87,7 +87,8 @@ export class Deployer {
 		await this.evm.onCommit({
 			...commitKey,
 			getBlock: () => ({ data: { round: BigInt(0) } }),
-		} as any);	}
+		} as any);
+	}
 
 	private async ensureFunds(
 		erc20ContractAddress: string,
