@@ -127,9 +127,5 @@ tags
 # Unit test artifacts
 :memory:
 
-# Rust
-target
-
-# Functional
 tests/functional/**/paths/data/**
 !tests/functional/**/paths/data/.gitkeep
