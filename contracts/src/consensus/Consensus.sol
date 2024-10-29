@@ -15,6 +15,13 @@ struct Validator {
 struct Vote {
     address validator;
     uint256 balance;
+    address prev;
+    address next;
+}
+
+struct VoteResult {
+    address voter;
+    address validator;
 }
 
 event ValidatorRegistered(address addr, bytes bls12_381_public_key);
@@ -55,9 +62,12 @@ contract Consensus {
     mapping(bytes32 => bool) private _registeredPublicKeys;
     address[] private _registeredValidators;
 
-    mapping(address => Vote) private _votes;
+    mapping(address => Vote) private _voters;
+    uint256 private _votersCount = 0;
+    address private _votersHead = address(0);
+    address private _votersTail = address(0);
 
-    address private _head;
+    address private _topValidatorsHead;
     mapping(address => address) private _topValidators;
     uint256 private _topValidatorsCount = 0;
     address[] private _calculatedTopValidators;
@@ -90,7 +100,7 @@ contract Consensus {
     }
 
     function deleteTopValidators() internal {
-        address next = _head;
+        address next = _topValidatorsHead;
 
         while (next != address(0)) {
             address current = next;
@@ -104,7 +114,7 @@ contract Consensus {
         shuffle();
         deleteTopValidators();
 
-        _head = address(0);
+        _topValidatorsHead = address(0);
 
         uint8 top = uint8(_clamp(n, 0, _registeredValidatorsCount - _resignedValidatorsCount)); // TODO: Use new method that returns registered validators
         if (top == 0) {
@@ -119,8 +129,8 @@ contract Consensus {
                 continue;
             }
 
-            if (_head == address(0)) {
-                _head = addr;
+            if (_topValidatorsHead == address(0)) {
+                _topValidatorsHead = addr;
                 _topValidatorsCount = 1;
                 continue;
             }
@@ -130,14 +140,15 @@ contract Consensus {
                 continue;
             }
 
-            ValidatorData storage headData = _registeredValidatorData[_head];
+            ValidatorData storage headData = _registeredValidatorData[_topValidatorsHead];
 
-            if (_isGreater(Validator({addr: addr, data: data}), Validator({addr: _head, data: headData}))) {
+            if (_isGreater(Validator({addr: addr, data: data}), Validator({addr: _topValidatorsHead, data: headData})))
+            {
                 insertTopValidator(addr, top);
             }
         }
 
-        address next = _head;
+        address next = _topValidatorsHead;
         delete _calculatedTopValidators;
         _calculatedTopValidators = new address[](top);
         for (uint256 i = 0; i < top; i++) {
@@ -151,13 +162,14 @@ contract Consensus {
 
         if (
             _isGreater(
-                Validator({addr: _head, data: _registeredValidatorData[_head]}), Validator({addr: addr, data: data})
+                Validator({addr: _topValidatorsHead, data: _registeredValidatorData[_topValidatorsHead]}),
+                Validator({addr: addr, data: data})
             )
         ) {
             insertHead(addr);
         } else {
-            address current = _topValidators[_head];
-            address previous = _head;
+            address current = _topValidators[_topValidatorsHead];
+            address previous = _topValidatorsHead;
 
             while (true) {
                 if (current == address(0)) {
@@ -181,16 +193,16 @@ contract Consensus {
         }
 
         if (_topValidatorsCount > top) {
-            address next = _topValidators[_head];
-            delete _topValidators[_head];
-            _head = next;
+            address next = _topValidators[_topValidatorsHead];
+            delete _topValidators[_topValidatorsHead];
+            _topValidatorsHead = next;
             _topValidatorsCount--;
         }
     }
 
     function insertHead(address addr) internal {
-        _topValidators[addr] = _head;
-        _head = addr;
+        _topValidators[addr] = _topValidatorsHead;
+        _topValidatorsHead = addr;
         _topValidatorsCount++;
     }
 
@@ -211,6 +223,8 @@ contract Consensus {
         return result;
     }
 
+    // TODO: allow passing limit to cap maximum number of returned items in case validator count is very high.
+    // the caller can paginate to retrieve all items.
     function getAllValidators() public view returns (Validator[] memory) {
         Validator[] memory result = new Validator[](_registeredValidators.length);
         for (uint256 i = 0; i < _registeredValidators.length; i++) {
@@ -289,14 +303,57 @@ contract Consensus {
         _registeredValidatorData[_validator.addr] = _validator.data;
     }
 
+    function getVotesCount() public view returns (uint256) {
+        return _votersCount;
+    }
+
+    function getVotes(address addr, uint256 count) public view onlyOwner returns (VoteResult[] memory) {
+        VoteResult[] memory voters = new VoteResult[](_clamp(count, 0, _votersCount));
+
+        address next = _votersHead;
+
+        if (addr != address(0)) {
+            next = _voters[addr].next;
+        }
+
+        uint256 i = 0;
+        while (next != address(0) && i < count) {
+            Vote storage voter = _voters[next];
+            voters[i++] = VoteResult({voter: next, validator: voter.validator});
+            next = voter.next;
+        }
+
+        if (voters.length == i) {
+            return voters;
+        }
+
+        // Slice array to remove empty elements
+        VoteResult[] memory slice = new VoteResult[](i);
+        for (uint256 j = 0; j < i; j++) {
+            slice[j] = voters[j];
+        }
+
+        return slice;
+    }
+
     function vote(address addr) external preventOwner {
         require(isValidatorRegistered(addr), "Must vote for validator");
-        require(_votes[msg.sender].validator == address(0), "Already voted");
+        require(_voters[msg.sender].validator == address(0), "Already voted");
 
         ValidatorData storage validatorData = _registeredValidatorData[addr];
         require(!validatorData.isResigned, "Must vote for unresigned validator");
 
-        _votes[msg.sender] = Vote({validator: addr, balance: msg.sender.balance});
+        _voters[msg.sender] = Vote({validator: addr, balance: msg.sender.balance, prev: address(0), next: address(0)});
+
+        if (_votersHead == address(0)) {
+            _votersHead = msg.sender;
+            _votersTail = msg.sender;
+        } else {
+            _voters[_votersTail].next = msg.sender;
+            _voters[msg.sender].prev = _votersTail;
+            _votersTail = msg.sender;
+        }
+        _votersCount++;
 
         // TODO: safe math
         validatorData.voteBalance += msg.sender.balance;
@@ -306,14 +363,33 @@ contract Consensus {
     }
 
     function unvote() external {
-        Vote storage voter = _votes[msg.sender];
+        Vote storage voter = _voters[msg.sender];
         require(voter.validator != address(0), "TODO: not voted");
+
+        if (_votersHead == _votersTail) {
+            _votersHead = address(0);
+            _votersTail = address(0);
+        } else if (_votersTail == msg.sender) {
+            _voters[voter.prev].next = address(0);
+            _votersTail = voter.prev;
+        } else if (_votersHead == msg.sender) {
+            _voters[_votersTail].prev = address(0);
+            _votersHead = _voters[_votersHead].next;
+        } else {
+            _voters[voter.prev].next = voter.next;
+            _voters[voter.next].prev = voter.prev;
+        }
 
         emit Unvoted(msg.sender, voter.validator);
 
-        _registeredValidatorData[voter.validator].voteBalance -= voter.balance;
-        _registeredValidatorData[voter.validator].votersCount -= 1;
-        delete _votes[msg.sender];
+        ValidatorData storage validatorData = _registeredValidatorData[voter.validator];
+
+        validatorData.voteBalance -= voter.balance;
+        validatorData.votersCount -= 1;
+
+        delete _voters[msg.sender];
+
+        _votersCount--;
     }
 
     function updateVoters(address[] calldata voters) external onlyOwner {
@@ -324,7 +400,7 @@ contract Consensus {
     }
 
     function _updateVoter(address addr) private {
-        Vote storage voter = _votes[addr];
+        Vote storage voter = _voters[addr];
         if (voter.validator == address(0)) {
             return;
         }
