@@ -10,6 +10,7 @@ import { chunk, sleep, validatorSetPack } from "@mainsail/utils";
 import { performance } from "perf_hooks";
 
 import { Listeners } from "./contracts.js";
+import { Restore } from "./restore.js";
 
 interface DeferredSync {
 	block: Models.Block;
@@ -36,6 +37,9 @@ export class Sync implements Contracts.ApiSync.Service {
 	@inject(ApiDatabaseIdentifiers.DataSource)
 	private readonly dataSource!: ApiDatabaseContracts.RepositoryDataSource;
 
+	@inject(Identifiers.Database.Service)
+	private readonly databaseService!: Contracts.Database.DatabaseService;
+
 	@inject(ApiDatabaseIdentifiers.Migrations)
 	private readonly migrations!: ApiDatabaseContracts.Migrations;
 
@@ -54,17 +58,11 @@ export class Sync implements Contracts.ApiSync.Service {
 	@inject(ApiDatabaseIdentifiers.TransactionRepositoryFactory)
 	private readonly transactionRepositoryFactory!: ApiDatabaseContracts.TransactionRepositoryFactory;
 
-	@inject(ApiDatabaseIdentifiers.TransactionTypeRepositoryFactory)
-	private readonly transactionTypeRepositoryFactory!: ApiDatabaseContracts.TransactionTypeRepositoryFactory;
-
 	@inject(ApiDatabaseIdentifiers.ValidatorRoundRepositoryFactory)
 	private readonly validatorRoundRepositoryFactory!: ApiDatabaseContracts.ValidatorRoundRepositoryFactory;
 
 	@inject(ApiDatabaseIdentifiers.WalletRepositoryFactory)
 	private readonly walletRepositoryFactory!: ApiDatabaseContracts.WalletRepositoryFactory;
-
-	@inject(Identifiers.State.Store)
-	private readonly stateStore!: Contracts.State.Store;
 
 	@inject(Identifiers.State.State)
 	private readonly state!: Contracts.State.State;
@@ -74,9 +72,6 @@ export class Sync implements Contracts.ApiSync.Service {
 
 	@inject(Identifiers.Proposer.Selector)
 	private readonly proposerSelector!: Contracts.Proposer.Selector;
-
-	@inject(Identifiers.Transaction.Handler.Registry)
-	private readonly transactionHandlerRegistry!: Contracts.Transactions.TransactionHandlerRegistry;
 
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
@@ -95,16 +90,18 @@ export class Sync implements Contracts.ApiSync.Service {
 	public async prepareBootstrap(): Promise<void> {
 		await this.migrations.run();
 		await this.#resetDatabaseIfNecessary();
+		this.#queue = await this.createQueue();
 	}
 
 	public async bootstrap(): Promise<void> {
-		await this.#bootstrapConfiguration();
-		await this.#bootstrapState();
-		await this.#bootstrapTransactionTypes();
+		// if our database is empty, we sync all blocks from scratch
+		const [blocks] = await this.dataSource.query("select count(1) from blocks");
+		if (blocks.count === "0") {
+			await this.#bootstrapRestore();
+		}
 
 		await this.listeners.bootstrap();
 
-		this.#queue = await this.createQueue();
 		await this.#queue.start();
 	}
 
@@ -317,52 +314,8 @@ export class Sync implements Contracts.ApiSync.Service {
 		return (await this.blockRepositoryFactory().getLatestHeight()) ?? 0;
 	}
 
-	async #bootstrapConfiguration(): Promise<void> {
-		await this.configurationRepositoryFactory()
-			.createQueryBuilder()
-			.insert()
-			.values({
-				activeMilestones: this.configuration.getMilestone(0) as Record<string, any>,
-				cryptoConfiguration: (this.configuration.all() ?? {}) as Record<string, any>,
-				id: 1,
-				version: this.app.version(),
-			})
-			.orUpdate(["crypto_configuration", "version"], ["id"])
-			.execute();
-	}
-
-	async #bootstrapState(): Promise<void> {
-		const genesisCommit = this.stateStore.getGenesisCommit();
-		await this.stateRepositoryFactory()
-			.createQueryBuilder()
-			.insert()
-			.orIgnore()
-			.values({
-				height: "0",
-				id: 1,
-				supply: genesisCommit.block.data.totalAmount.toFixed(),
-			})
-			.execute();
-	}
-
-	async #bootstrapTransactionTypes(): Promise<void> {
-		const transactionHandlers = await this.transactionHandlerRegistry.getActivatedHandlers();
-
-		const types: Models.TransactionType[] = [];
-
-		for (const handler of transactionHandlers) {
-			const constructor = handler.getConstructor();
-
-			const key: string | undefined = constructor.key;
-
-			Utils.assert.defined<string>(key);
-
-			types.push({ key, schema: constructor.getSchema().properties });
-		}
-
-		types.sort((a, b) => a.key.localeCompare(b.key, undefined, { sensitivity: "base" }));
-
-		await this.transactionTypeRepositoryFactory().upsert(types, ["key"]);
+	async #bootstrapRestore(): Promise<void> {
+		await this.app.resolve(Restore).restore();
 	}
 
 	async #queueDeferredSync(deferredSync: DeferredSync): Promise<void> {
@@ -508,12 +461,25 @@ export class Sync implements Contracts.ApiSync.Service {
 	}
 
 	async #resetDatabaseIfNecessary(): Promise<void> {
+		const lastHeight = this.databaseService.isEmpty()
+			? 0
+			: (await this.databaseService.getLastCommit()).block.header.height;
+
+		const [blocks] = await this.dataSource.query(
+			"select coalesce(max(height), 0)::bigint as max_height, count(1) as count from blocks",
+		);
+		const blocksOk = blocks.count !== "0" && blocks.max_height === lastHeight.toFixed();
+
 		const forcedTruncateDatabase = this.pluginConfiguration.getOptional<boolean>("truncateDatabase", false);
-		if (!forcedTruncateDatabase) {
+		this.logger.info(
+			`checking for database reset (forced=${forcedTruncateDatabase}, db.blocks=${blocks.count}, db.height=${blocks.max_height}, storage.height=${lastHeight})`,
+		);
+
+		if (blocksOk && !forcedTruncateDatabase) {
 			return;
 		}
 
-		this.logger.warning(`resetting API database and state to genesis block for full resync`);
+		this.logger.warning(`resetting API database and state to genesis block for full restore`);
 
 		await this.dataSource.transaction("REPEATABLE READ", async (entityManager) => {
 			const blockRepository = this.blockRepositoryFactory(entityManager);
