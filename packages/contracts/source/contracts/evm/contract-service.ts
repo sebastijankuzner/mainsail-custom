@@ -1,3 +1,5 @@
+import { BigNumber } from "@mainsail/utils";
+
 import { ValidatorWallet } from "../state/wallets.js";
 
 export interface Vote {
@@ -6,7 +8,7 @@ export interface Vote {
 }
 
 export interface ValidatorRoundValidator {
-	readonly voteBalance: bigint;
+	readonly voteBalance: BigNumber;
 	readonly address: string;
 }
 
@@ -21,5 +23,5 @@ export interface ConsensusContractService {
 	getAllValidators(): Promise<ValidatorWallet[]>;
 	getVotesCount(): Promise<number>;
 	getVotes(): AsyncIterable<Vote>;
-	getValidatorRounds(): Promise<ValidatorRound[]>;
+	getValidatorRounds(): AsyncIterable<ValidatorRound>;
 }

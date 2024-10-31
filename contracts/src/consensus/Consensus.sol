@@ -12,6 +12,16 @@ struct Validator {
     ValidatorData data;
 }
 
+struct RoundValidator {
+    address addr;
+    uint256 voteBalance;
+}
+
+struct Round {
+    uint256 round;
+    RoundValidator[] validators;
+}
+
 struct Vote {
     address validator;
     uint256 balance;
@@ -22,16 +32,6 @@ struct Vote {
 struct VoteResult {
     address voter;
     address validator;
-}
-
-struct ValidatorRoundValidator {
-    address validatorAddress;
-    uint256 voteBalance;
-}
-
-struct ValidatorRound {
-    uint256 round;
-    ValidatorRoundValidator[] validators;
 }
 
 event ValidatorRegistered(address addr, bytes bls12_381_public_key);
@@ -82,7 +82,7 @@ contract Consensus {
     uint256 private _topValidatorsCount = 0;
     address[] private _calculatedTopValidators;
 
-    ValidatorRound[] private _validatorRounds;
+    RoundValidator[][] private _rounds;
 
     constructor() {
         _owner = msg.sender;
@@ -160,13 +160,14 @@ contract Consensus {
             }
         }
 
-        // TODO: update _validatorRounds
+        RoundValidator[] storage round = _rounds.push();
 
         address next = _topValidatorsHead;
         delete _calculatedTopValidators;
         _calculatedTopValidators = new address[](top);
         for (uint256 i = 0; i < top; i++) {
             _calculatedTopValidators[i] = next;
+            round.push(RoundValidator({addr: next, voteBalance: _registeredValidatorData[next].voteBalance}));
             next = _topValidators[next];
         }
     }
@@ -413,13 +414,21 @@ contract Consensus {
         }
     }
 
-    // TODO: allow passing limit to cap maximum number of returned items in case validator count is very high.
-    // the caller can paginate to retrieve all items.
-    function getValidatorRounds() public view onlyOwner returns (ValidatorRound[] memory) {
-        ValidatorRound[] memory result = new ValidatorRound[](_validatorRounds.length);
-        for (uint256 i = 0; i < _validatorRounds.length; i++) {
-            ValidatorRound storage data = _validatorRounds[i];
-            result[i] = data;
+    function getRoundsCount() public view returns (uint256) {
+        return _rounds.length;
+    }
+
+    function getRounds(uint256 offset, uint256 count) public view onlyOwner returns (Round[] memory) {
+        uint256 total = count;
+        if (offset >= _rounds.length) {
+            total = 0;
+        } else if (offset + count > _rounds.length) {
+            total = _rounds.length - offset;
+        }
+
+        Round[] memory result = new Round[](total);
+        for (uint256 i = 0; i < total; i++) {
+            result[i] = Round({round: offset + i + 1, validators: _rounds[offset + i]});
         }
 
         return result;
