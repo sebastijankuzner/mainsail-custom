@@ -87,16 +87,14 @@ export class Sync implements Contracts.ApiSync.Service {
 	@inject(Identifiers.ApiSync.Listener)
 	private readonly listeners!: Listeners;
 
-	public async prepareBootstrap(): Promise<void> {
+	public async bootstrap(): Promise<void> {
 		await this.migrations.run();
 		await this.#resetDatabaseIfNecessary();
 		this.#queue = await this.createQueue();
-	}
 
-	public async bootstrap(): Promise<void> {
 		// if our database is empty, we sync all blocks from scratch
 		const [blocks] = await this.dataSource.query("select count(1) from blocks");
-		if (blocks.count === "0") {
+		if (blocks.count === "0" && !this.databaseService.isEmpty()) {
 			await this.#bootstrapRestore();
 		}
 
@@ -123,11 +121,7 @@ export class Sync implements Contracts.ApiSync.Service {
 		const publicKeyToAddress: Record<string, string> = {};
 		const transactionReceipts: Models.Receipt[] = [];
 
-		let receipts: Map<string, Contracts.Evm.TransactionReceipt> | undefined;
-
-		if (unit.hasProcessorResult()) {
-			receipts = unit.getProcessorResult().receipts;
-		}
+		const receipts = unit.getProcessorResult().receipts;
 
 		for (const transaction of transactions) {
 			const { senderPublicKey } = transaction.data;
@@ -479,7 +473,9 @@ export class Sync implements Contracts.ApiSync.Service {
 			return;
 		}
 
-		this.logger.warning(`resetting API database and state to genesis block for full restore`);
+		if (lastHeight !== 0 || blocks.count !== "0") {
+			this.logger.warning(`Clearing API database for full restore.`);
+		}
 
 		await this.dataSource.transaction("REPEATABLE READ", async (entityManager) => {
 			const blockRepository = this.blockRepositoryFactory(entityManager);

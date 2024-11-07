@@ -57,19 +57,14 @@ export class Bootstrapper {
 
 	public async bootstrap(): Promise<void> {
 		try {
-			if (this.apiSync) {
-				await this.apiSync.prepareBootstrap();
-			}
-
 			await this.#setGenesisCommit();
 			await this.#checkStoredGenesisCommit();
-
-			await this.#initState();
 
 			if (this.apiSync) {
 				await this.apiSync.bootstrap();
 			}
 
+			await this.#initState();
 			this.state.setBootstrap(false);
 
 			this.validatorRepository.printLoadedValidators();

@@ -74,9 +74,6 @@ export class Restore {
 	@inject(Identifiers.Database.Service)
 	private readonly databaseService!: Contracts.Database.DatabaseService;
 
-	@inject(Identifiers.ValidatorSet.Service)
-	private readonly validatorSet!: Contracts.ValidatorSet.Service;
-
 	@inject(ApiDatabaseIdentifiers.BlockRepositoryFactory)
 	private readonly blockRepositoryFactory!: ApiDatabaseContracts.BlockRepositoryFactory;
 
@@ -293,8 +290,7 @@ export class Restore {
 	async #ingestConsensusData(context: RestoreContext): Promise<void> {
 		const t0 = performance.now();
 
-		// Consensus.sol#getAllValidators
-		const validators = this.validatorSet.getAllValidators();
+		const validators = await this.consensusContractService.getAllValidators();
 
 		for (const validator of validators) {
 			context.validatorAttributes[validator.address] = {
@@ -404,12 +400,17 @@ export class Restore {
 				Utils.assert.defined(receipt.txHash);
 				Utils.assert.defined(receipt.blockHeight);
 
+				// Initial deployment receipts
+				if (receipt.blockHeight >= BigInt(2 ** 32)) {
+					continue;
+				}
+
 				receipts.push({
 					blockHeight: Utils.BigNumber.make(receipt.blockHeight).toFixed(),
 					deployedContractAddress: receipt.deployedContractAddress,
 					gasRefunded: Number(receipt.gasRefunded),
 					gasUsed: Number(receipt.gasUsed),
-					id: receipt.txHash,
+					id: receipt.txHash.slice(2),
 					logs: receipt.logs,
 					output: receipt.output,
 					success: receipt.success,
