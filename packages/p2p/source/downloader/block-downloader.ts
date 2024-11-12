@@ -61,7 +61,7 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 			(peers = peers.filter((peer) => peer.header.height > this.#getLastRequestedBlockHeight())) &&
 			peers.length > 0
 		) {
-			void this.download(getRandomPeer(peers));
+			this.download(getRandomPeer(peers));
 		}
 	}
 
@@ -231,8 +231,26 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 
 	#replyJob(job: DownloadJob) {
 		const index = this.#downloadJobs.indexOf(job);
+		if (index === -1) {
+			return; // Job was already removed
+		}
 
-		const peers = this.repository.getPeers().filter((peer) => peer.header.height >= job.heightTo);
+		const isFirstJob = index === 0;
+		const heightFrom = isFirstJob ? this.stateStore.getHeight() + 1 : job.heightFrom;
+
+		// Skip if next job is higher than current height
+		if (
+			isFirstJob &&
+			this.#downloadJobs.length > 1 &&
+			this.#downloadJobs[1].heightFrom > this.stateStore.getHeight()
+		) {
+			this.#downloadJobs.shift();
+			return;
+		}
+
+		const peers = this.repository
+			.getPeers()
+			.filter((peer) => peer.header.height > Math.max(heightFrom, job.heightTo));
 
 		if (peers.length === 0) {
 			// Remove higher jobs, because peer is no longer available
@@ -242,10 +260,18 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 
 		const peer = getRandomPeer(peers);
 
+		const heightTo = this.#downloadJobs.length === 1 ? this.#calculateHeightTo(peer) : job.heightTo;
+
+		// Skip if heightFrom is higher than heightTo
+		if (isFirstJob && heightFrom > heightTo) {
+			this.#downloadJobs.shift();
+			return;
+		}
+
 		const newJob: DownloadJob = {
 			blocks: [],
-			heightFrom: index === 0 ? this.stateStore.getHeight() + 1 : job.heightFrom,
-			heightTo: this.#downloadJobs.length === 1 ? this.#calculateHeightTo(peer) : job.heightTo,
+			heightFrom,
+			heightTo,
 			peer,
 			peerHeight: peer.header.height - 1,
 			status: JobStatus.Downloading,
