@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: GNU GENERAL PUBLIC LICENSE
 pragma solidity ^0.8.13;
 
-import {Consensus, ValidatorData, Validator, ValidatorResigned} from "@contracts/consensus/Consensus.sol";
+import {
+    ConsensusV1,
+    ValidatorData,
+    Validator,
+    ValidatorResigned,
+    ValidatorAlreadyResigned,
+    CallerIsNotValidator
+} from "@contracts/consensus/ConsensusV1.sol";
 import {Base} from "./Base.sol";
 
 contract ConsensusTest is Base {
-    Consensus public consensus;
+    ConsensusV1 public consensus;
 
     function setUp() public {
-        consensus = new Consensus();
+        consensus = new ConsensusV1();
     }
 
     function test_validator_resignation_pass() public {
@@ -24,7 +31,7 @@ contract ConsensusTest is Base {
         assertEq(consensus.registeredValidatorsCount(), 1);
         Validator memory validator = consensus.getValidator(addr);
         assertEq(validator.addr, addr);
-        assertEq(validator.data.bls12_381_public_key, prepareBLSKey(addr));
+        assertEq(validator.data.blsPublicKey, prepareBLSKey(addr));
         assertEq(validator.data.voteBalance, 0);
         assertEq(validator.data.votersCount, 0);
         assertEq(validator.data.isResigned, false);
@@ -39,14 +46,14 @@ contract ConsensusTest is Base {
         assertEq(consensus.registeredValidatorsCount(), 1);
         validator = consensus.getValidator(addr);
         assertEq(validator.addr, addr);
-        assertEq(validator.data.bls12_381_public_key, prepareBLSKey(addr));
+        assertEq(validator.data.blsPublicKey, prepareBLSKey(addr));
         assertEq(validator.data.voteBalance, 0);
         assertEq(validator.data.votersCount, 0);
         assertEq(validator.data.isResigned, true);
     }
 
     function test_validator_resignation_revert_if_caller_is_not_validator() public {
-        vm.expectRevert("Caller is not a validator");
+        vm.expectRevert(CallerIsNotValidator.selector);
         consensus.resignValidator();
     }
 
@@ -68,7 +75,7 @@ contract ConsensusTest is Base {
         emit ValidatorResigned(addr);
         consensus.resignValidator();
 
-        vm.expectRevert("Validator is already resigned");
+        vm.expectRevert(ValidatorAlreadyResigned.selector);
         consensus.resignValidator();
     }
 }

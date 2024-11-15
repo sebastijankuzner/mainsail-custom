@@ -2,20 +2,20 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "@forge-std/Test.sol";
-import {Consensus, Round} from "@contracts/consensus/Consensus.sol";
+import {ConsensusV1, Round, CallerIsNotOwner} from "@contracts/consensus/ConsensusV1.sol";
 import {Base} from "./Base.sol";
 
 contract ConsensusTest is Base {
-    Consensus public consensus;
+    ConsensusV1 public consensus;
 
     function setUp() public {
-        consensus = new Consensus();
+        consensus = new ConsensusV1();
     }
 
     function test_revert_if_caller_is_not_owner() public {
         vm.startPrank(address(1));
 
-        vm.expectRevert("Caller is not the contract owner");
+        vm.expectRevert(CallerIsNotOwner.selector);
         consensus.getRounds(0, 10);
     }
 
@@ -30,7 +30,7 @@ contract ConsensusTest is Base {
         consensus.registerValidator(prepareBLSKey(addr));
         vm.stopPrank();
 
-        consensus.calculateTopValidators(1);
+        consensus.calculateActiveValidators(1);
 
         assertEq(consensus.getRoundsCount(), 1);
         Round[] memory rounds = consensus.getRounds(0, 10);
@@ -47,7 +47,7 @@ contract ConsensusTest is Base {
         vm.stopPrank();
 
         // Round 1
-        consensus.calculateTopValidators(1);
+        consensus.calculateActiveValidators(1);
         assertEq(consensus.getRoundsCount(), 1);
         Round[] memory rounds = consensus.getRounds(0, 10);
         assertEq(rounds.length, 1);
@@ -64,7 +64,7 @@ contract ConsensusTest is Base {
         vm.stopPrank();
 
         // Round 2
-        consensus.calculateTopValidators(1);
+        consensus.calculateActiveValidators(1);
         assertEq(consensus.getRoundsCount(), 2);
         rounds = consensus.getRounds(0, 10);
         assertEq(rounds.length, 2);
@@ -85,7 +85,7 @@ contract ConsensusTest is Base {
         vm.stopPrank();
 
         // Round 3
-        consensus.calculateTopValidators(1);
+        consensus.calculateActiveValidators(1);
         assertEq(consensus.getRoundsCount(), 3);
         rounds = consensus.getRounds(0, 10);
         assertEq(rounds.length, 3);
@@ -110,9 +110,9 @@ contract ConsensusTest is Base {
         vm.stopPrank();
 
         // Create 3 rounds
-        consensus.calculateTopValidators(1);
-        consensus.calculateTopValidators(1);
-        consensus.calculateTopValidators(1);
+        consensus.calculateActiveValidators(1);
+        consensus.calculateActiveValidators(1);
+        consensus.calculateActiveValidators(1);
 
         // Assert rounds count
         assertEq(consensus.getRoundsCount(), 3);

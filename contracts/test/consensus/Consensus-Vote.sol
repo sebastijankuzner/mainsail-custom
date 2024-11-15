@@ -2,13 +2,26 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "@forge-std/Test.sol";
-import {Consensus, ValidatorData, Validator, Unvoted, Voted, VoteResult} from "@contracts/consensus/Consensus.sol";
+import {
+    ConsensusV1,
+    ValidatorData,
+    Validator,
+    Unvoted,
+    Voted,
+    VoteResult,
+    CallerIsNotOwner,
+    CallerIsOwner,
+    ValidatorNotRegistered,
+    VoteResignedValidator,
+    VoteSameValidator,
+    MissingVote
+} from "@contracts/consensus/ConsensusV1.sol";
 
 contract ConsensusTest is Test {
-    Consensus public consensus;
+    ConsensusV1 public consensus;
 
     function setUp() public {
-        consensus = new Consensus();
+        consensus = new ConsensusV1();
     }
 
     function registerValidator(address addr) internal {
@@ -93,19 +106,19 @@ contract ConsensusTest is Test {
     }
 
     function test_vote_revert_if_caller_is_owner() public {
-        vm.expectRevert("Caller is the contract owner");
+        vm.expectRevert(CallerIsOwner.selector);
         consensus.vote(address(1));
     }
 
     function test_unvote_revert_if_did_not_vote() public {
-        vm.expectRevert("Must vote for validator before unvote");
+        vm.expectRevert(MissingVote.selector);
         consensus.unvote();
     }
 
     function test_get_voters_revert_if_caller_is_not_owner() public {
         vm.startPrank(address(1));
 
-        vm.expectRevert("Caller is not the contract owner");
+        vm.expectRevert(CallerIsNotOwner.selector);
         consensus.getVotes(address(0), 10);
     }
 
@@ -180,7 +193,7 @@ contract ConsensusTest is Test {
         emit Voted(voterAddr, addr);
         consensus.vote(addr);
 
-        vm.expectRevert("Already voted for this validator");
+        vm.expectRevert(VoteSameValidator.selector);
         consensus.vote(addr);
     }
 
@@ -188,7 +201,7 @@ contract ConsensusTest is Test {
         address addr = address(1);
 
         vm.startPrank(addr);
-        vm.expectRevert("Must vote for validator");
+        vm.expectRevert(ValidatorNotRegistered.selector);
         consensus.vote(addr);
     }
 
@@ -201,7 +214,7 @@ contract ConsensusTest is Test {
         // Prepare voter
         address voterAddr = address(2);
         vm.startPrank(voterAddr);
-        vm.expectRevert("Must vote for unresigned validator");
+        vm.expectRevert(VoteResignedValidator.selector);
         consensus.vote(addr);
     }
 

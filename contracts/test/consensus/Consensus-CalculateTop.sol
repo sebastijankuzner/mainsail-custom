@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "@forge-std/Test.sol";
-import {Consensus, ValidatorData, Validator} from "@contracts/consensus/Consensus.sol";
+import {ConsensusV1, ValidatorData, Validator, CallerIsNotOwner} from "@contracts/consensus/ConsensusV1.sol";
 import {Base} from "./Base.sol";
 
 contract ConsensusTest is Base {
-    Consensus public consensus;
+    ConsensusV1 public consensus;
 
     function setUp() public {
-        consensus = new Consensus();
+        consensus = new ConsensusV1();
     }
 
     function test_should_work_with_one_validator() public {
@@ -18,8 +18,8 @@ contract ConsensusTest is Base {
         consensus.registerValidator(prepareBLSKey(addr));
         vm.stopPrank();
 
-        consensus.calculateTopValidators(1);
-        Validator[] memory validators = consensus.getTopValidators();
+        consensus.calculateActiveValidators(1);
+        Validator[] memory validators = consensus.getActiveValidators();
         assertEq(validators.length, 1);
         assertEq(validators[0].addr, addr);
     }
@@ -27,8 +27,8 @@ contract ConsensusTest is Base {
     function test_should_allow_only_caller() public {
         address addr = address(1);
         vm.startPrank(addr);
-        vm.expectRevert("Caller is not the contract owner");
-        consensus.calculateTopValidators(1);
+        vm.expectRevert(CallerIsNotOwner.selector);
+        consensus.calculateActiveValidators(1);
     }
 
     function test_should_ignore_resigned_validators() public {
@@ -39,8 +39,8 @@ contract ConsensusTest is Base {
         consensus.resignValidator();
         vm.stopPrank();
 
-        consensus.calculateTopValidators(1);
-        Validator[] memory validators = consensus.getTopValidators();
+        consensus.calculateActiveValidators(1);
+        Validator[] memory validators = consensus.getActiveValidators();
         assertEq(validators.length, 0);
     }
 
@@ -79,14 +79,19 @@ contract ConsensusTest is Base {
 
         uint160 activeValidators = 53;
 
-        consensus.calculateTopValidators(uint8(activeValidators));
-        Validator[] memory validators = consensus.getTopValidators();
+        consensus.calculateActiveValidators(uint8(activeValidators));
+        Validator[] memory validators = consensus.getActiveValidators();
         assertEq(validators.length, activeValidators);
+
+        assertEq(validators[activeValidators - 1].addr, address(0xAE)); // Shuffled address
+        validators = sortValidators(validators);
         assertEq(validators[activeValidators - 1].addr, highest);
 
-        consensus.calculateTopValidators(uint8(activeValidators));
+        consensus.calculateActiveValidators(uint8(activeValidators));
 
-        validators = consensus.getTopValidators();
+        validators = consensus.getActiveValidators();
+        assertEq(validators[activeValidators - 1].addr, address(0xAE)); // Shuffled address
+        validators = sortValidators(validators);
         assertEq(validators.length, activeValidators);
         assertEq(validators[activeValidators - 1].addr, highest);
     }
