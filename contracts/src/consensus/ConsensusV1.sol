@@ -1,5 +1,8 @@
 pragma solidity ^0.8.27;
 
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
 struct ValidatorData {
     uint256 votersCount;
     uint256 voteBalance;
@@ -74,8 +77,8 @@ error InvalidRange(uint256 min, uint256 max);
 // Block is processed: Original wallet balance: 100, new wallet balance: 88, difference 12
 // This process will only work fine if we pass the new wallet balance (88) and keep track of voteBalances in EVM contract.
 
-contract ConsensusV1 {
-    address private immutable _owner;
+contract ConsensusV1 is Initializable, UUPSUpgradeable {
+    address private _owner;
 
     mapping(address => ValidatorData) private _validatorsData;
     mapping(address => bool) private _hasValidator;
@@ -96,10 +99,6 @@ contract ConsensusV1 {
 
     RoundValidator[][] private _rounds;
 
-    constructor() {
-        _owner = msg.sender;
-    }
-
     // Modifiers
     modifier onlyOwner() {
         if (msg.sender != _owner) {
@@ -114,6 +113,14 @@ contract ConsensusV1 {
         }
         _;
     }
+
+    // Initializers
+    function initialize() public initializer {
+        _owner = msg.sender;
+    }
+
+    // Overrides
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     // External functions
     function registerValidator(bytes calldata blsPublicKey) external preventOwner {
@@ -265,6 +272,10 @@ contract ConsensusV1 {
     }
 
     // External functions that are view
+    function version() external pure returns (uint256) {
+        return 1;
+    }
+
     function registeredValidatorsCount() external view returns (uint256) {
         return _validatorsCount;
     }

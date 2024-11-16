@@ -1,7 +1,7 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { EvmCallBuilder } from "@mainsail/crypto-transaction-evm-call";
-import { ConsensusAbi } from "@mainsail/evm-contracts";
+import { ConsensusAbi, ERC1967ProxyAbi } from "@mainsail/evm-contracts";
 import { Utils } from "@mainsail/kernel";
 import { BigNumber } from "@mainsail/utils";
 import dayjs from "dayjs";
@@ -26,6 +26,7 @@ export class GenesisBlockGenerator extends Generator {
 	private readonly evm!: Contracts.Evm.Instance;
 
 	#deployerAddress = "0x0000000000000000000000000000000000000001";
+	#consensusProxyContractAddress = "0x535B3D7A252fa034Ed71F0C53ec0C6F784cB64E1";
 
 	async generate(
 		genesisMnemonic: string,
@@ -102,7 +103,7 @@ export class GenesisBlockGenerator extends Generator {
 			validatorAddress: this.#deployerAddress,
 		};
 
-		const result = await this.evm.process({
+		const consensusResult = await this.evm.process({
 			blockContext,
 			caller: this.#deployerAddress,
 			data: Buffer.concat([
@@ -116,8 +117,35 @@ export class GenesisBlockGenerator extends Generator {
 			value: 0n,
 		});
 
-		if (!result.receipt.success) {
+		if (!consensusResult.receipt.success) {
 			throw new Error("failed to deploy Consensus contract");
+		}
+
+		// Logic contract initializer function ABI
+		const logicInterface = new ethers.Interface(ConsensusAbi.abi);
+		// Encode the initializer call
+		const initializerCalldata = logicInterface.encodeFunctionData("initialize");
+		// Prepare the constructor arguments for the proxy contract
+		const proxyConstructorArguments = new ethers.AbiCoder()
+			.encode(["address", "bytes"], [consensusResult.receipt.deployedContractAddress, initializerCalldata])
+			.slice(2);
+
+		const proxyResult = await this.evm.process({
+			blockContext,
+			caller: this.#deployerAddress,
+			data: Buffer.concat([
+				Buffer.from(ethers.getBytes(ERC1967ProxyAbi.bytecode.object)),
+				Buffer.from(proxyConstructorArguments, "hex"),
+			]),
+			gasLimit: BigInt(10_000_000),
+			nonce: BigInt(1),
+			specId: Contracts.Evm.SpecId.SHANGHAI,
+			txHash: sha256(Buffer.from(`tx-${this.#deployerAddress}-${1}`, "utf8")).slice(2),
+			value: 0n,
+		});
+
+		if (!proxyResult.receipt.success) {
+			throw new Error("failed to deploy Consensus PROXY contract");
 		}
 
 		await this.evm.onCommit({
@@ -170,9 +198,6 @@ export class GenesisBlockGenerator extends Generator {
 
 		const iface = new ethers.Interface(ConsensusAbi.abi);
 
-		// TODO: move to constant (can be calculated based on deployer address + nonce)
-		const consensusContractAddress = "0x522B3294E6d06aA25Ad0f1B8891242E335D3B459";
-
 		for (const [index, sender] of senders.entries()) {
 			const data = iface
 				.encodeFunctionData("registerValidator", [Buffer.from(sender.consensusKeys.publicKey, "hex")])
@@ -182,7 +207,7 @@ export class GenesisBlockGenerator extends Generator {
 				await this.app
 					.resolve(EvmCallBuilder)
 					.network(pubKeyHash)
-					.recipientAddress(consensusContractAddress)
+					.recipientAddress(this.#consensusProxyContractAddress)
 					.nonce("0") // validator registration tx is always the first one from sender
 					.payload(data)
 					.gasPrice(0)
@@ -199,9 +224,6 @@ export class GenesisBlockGenerator extends Generator {
 
 		const iface = new ethers.Interface(ConsensusAbi.abi);
 
-		// TODO: move to constant (can be calculated based on deployer address + nonce)
-		const consensusContractAddress = "0x522B3294E6d06aA25Ad0f1B8891242E335D3B459";
-
 		for (const [index, sender] of senders.entries()) {
 			const data = iface.encodeFunctionData("vote", [sender.address]).slice(2);
 
@@ -209,7 +231,7 @@ export class GenesisBlockGenerator extends Generator {
 				await this.app
 					.resolve(EvmCallBuilder)
 					.network(pubKeyHash)
-					.recipientAddress(consensusContractAddress)
+					.recipientAddress(this.#consensusProxyContractAddress)
 					.nonce("1") // vote transaction is always the 3rd tx from sender (1st one is validator registration)
 					.payload(data)
 					.gasPrice(0)
