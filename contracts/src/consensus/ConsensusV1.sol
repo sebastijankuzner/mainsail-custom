@@ -54,6 +54,7 @@ error CallerIsNotValidator();
 error ValidatorNotRegistered();
 error ValidatorAlreadyRegistered();
 error ValidatorAlreadyResigned();
+error BellowMinValidators();
 
 error BlsKeyAlreadyRegistered();
 error BlsKeyIsInvalid();
@@ -63,6 +64,11 @@ error VoteSameValidator();
 error MissingVote();
 
 error InvalidRange(uint256 min, uint256 max);
+
+// Validators:
+// - Registered -> All validators that are registered including resigned validators
+// - Active -> Top N validators with the highest vote balance, that participate in the consensus
+// - Resigned -> Validators that resigned from the consensus
 
 // Voter calls vote funtion
 // Vote function includes valdiator address and balance, whole balance is added to the validator voteBalance
@@ -84,18 +90,19 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
     mapping(address => bool) private _hasValidator;
     mapping(bytes32 => bool) private _blsPublicKeys;
     address[] private _validators;
-    uint256 private _validatorsCount = 0;
-    uint256 private _resignedValidatorsCount = 0;
+    uint256 private _validatorsCount; // Default 0
+    uint256 private _resignedValidatorsCount; // Default 0
 
     mapping(address => Vote) private _voters;
-    address private _votersHead = address(0);
-    address private _votersTail = address(0);
-    uint256 private _votersCount = 0;
+    address private _votersHead; // Default address(0)
+    address private _votersTail; // Default address(0)
+    uint256 private _votersCount; // Default 0
 
     mapping(address => address) private _activeValidatorsMap;
     address[] private _activeValidators;
-    address private _activeValidatorsHead;
-    uint256 private _activeValidatorsCount = 0;
+    address private _activeValidatorsHead; // Default address(0)
+    uint256 private _activeValidatorsCount; // Default 0
+    uint256 private _minValidators; // Default 1
 
     RoundValidator[][] private _rounds;
 
@@ -117,6 +124,7 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
     // Initializers
     function initialize() public initializer {
         _owner = msg.sender;
+        _minValidators = 1;
     }
 
     // Overrides
@@ -161,6 +169,10 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
         ValidatorData storage validator = _validatorsData[msg.sender];
         if (validator.isResigned) {
             revert ValidatorAlreadyResigned();
+        }
+
+        if (_validatorsCount - _resignedValidatorsCount <= _minValidators) {
+            revert BellowMinValidators();
         }
 
         validator.isResigned = true;
@@ -217,6 +229,8 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
     }
 
     function calculateActiveValidators(uint8 n) external onlyOwner {
+        _minValidators = n;
+
         _shuffle(_validators);
         _deleteActiveValidators();
 
@@ -257,18 +271,26 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
             }
         }
 
-        RoundValidator[] storage round = _rounds.push();
-
+        // Prepare temp array. Used when top < _minValidators
         address next = _activeValidatorsHead;
-        delete _activeValidators;
-        _activeValidators = new address[](top);
+        address[] memory tmpValidators = new address[](top);
+
         for (uint256 i = 0; i < top; i++) {
-            _activeValidators[i] = next;
-            round.push(RoundValidator({addr: next, voteBalance: _validatorsData[next].voteBalance}));
+            tmpValidators[i] = next;
             next = _activeValidatorsMap[next];
         }
+        _shuffleMem(tmpValidators);
 
-        _shuffle(_activeValidators);
+        // Fill round & _activeValidators
+        RoundValidator[] storage round = _rounds.push();
+        delete _activeValidators;
+        _activeValidators = new address[](_minValidators);
+
+        for (uint256 i = 0; i < _minValidators; i++) {
+            address addr = tmpValidators[i % top];
+            _activeValidators[i] = addr;
+            round.push(RoundValidator({addr: addr, voteBalance: _validatorsData[addr].voteBalance}));
+        }
     }
 
     // External functions that are view
@@ -285,7 +307,7 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
     }
 
     function activeValidatorsCount() external view returns (uint256) {
-        return _activeValidators.length;
+        return _activeValidatorsCount;
     }
 
     function isValidatorRegistered(address addr) public view returns (bool) {
@@ -377,6 +399,19 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
 
     // Internal functions
     function _shuffle(address[] storage array) internal {
+        uint256 n = array.length;
+        for (uint256 i = n - 1; i > 0; i--) {
+            // Get a random index between 0 and i (inclusive)
+            uint256 j = uint256(keccak256(abi.encodePacked(block.timestamp, i))) % (i + 1);
+
+            // Swap elements at index i and j
+            address temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+        }
+    }
+
+    function _shuffleMem(address[] memory array) internal view {
         uint256 n = array.length;
         for (uint256 i = n - 1; i > 0; i--) {
             // Get a random index between 0 and i (inclusive)

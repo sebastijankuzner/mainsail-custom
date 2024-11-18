@@ -1,25 +1,14 @@
 // SPDX-License-Identifier: GNU GENERAL PUBLIC LICENSE
 pragma solidity ^0.8.13;
 
-import {Test, console} from "@forge-std/Test.sol";
 import {ConsensusV1, ValidatorData, Validator, CallerIsNotOwner} from "@contracts/consensus/ConsensusV1.sol";
 import {Base} from "./Base.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ConsensusTest is Base {
-    ConsensusV1 public consensus;
-
-    function setUp() public {
-        bytes memory data = abi.encode(ConsensusV1.initialize.selector);
-        address proxy = address(new ERC1967Proxy(address(new ConsensusV1()), data));
-        consensus = ConsensusV1(proxy);
-    }
-
     function test_should_work_with_one_validator() public {
         address addr = address(1);
-        vm.startPrank(addr);
-        consensus.registerValidator(prepareBLSKey(addr));
-        vm.stopPrank();
+        registerValidator(addr);
 
         consensus.calculateActiveValidators(1);
         Validator[] memory validators = consensus.getActiveValidators();
@@ -37,14 +26,15 @@ contract ConsensusTest is Base {
     function test_should_ignore_resigned_validators() public {
         address addr = address(1);
 
-        vm.startPrank(addr);
-        consensus.registerValidator(prepareBLSKey(addr));
-        consensus.resignValidator();
-        vm.stopPrank();
+        registerValidator(addr);
+        registerValidator(address(2));
+        resignValidator(addr);
 
-        consensus.calculateActiveValidators(1);
+        consensus.calculateActiveValidators(2);
         Validator[] memory validators = consensus.getActiveValidators();
-        assertEq(validators.length, 0);
+        assertEq(validators.length, 2);
+        assertEq(validators[0].addr, address(2));
+        assertEq(validators[1].addr, address(2)); // Second validator is duplicated
     }
 
     function test_consensus_200_topValidators() public {
@@ -90,6 +80,7 @@ contract ConsensusTest is Base {
         validators = sortValidators(validators);
         assertEq(validators[activeValidators - 1].addr, highest);
 
+        // Seccond attempt shoudl return the same result
         consensus.calculateActiveValidators(uint8(activeValidators));
 
         validators = consensus.getActiveValidators();
