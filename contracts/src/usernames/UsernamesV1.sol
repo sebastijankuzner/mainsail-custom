@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: GNU GENERAL PUBLIC LICENSE
 pragma solidity ^0.8.27;
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
-error CallerIsNotOwner();
-error CallerIsOwner();
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 error InvalidUsername();
 error TakenUsername();
@@ -20,30 +17,13 @@ struct User {
     string username;
 }
 
-contract UsernamesV1 is Initializable, UUPSUpgradeable {
-    address private _owner;
-
+contract UsernamesV1 is UUPSUpgradeable, OwnableUpgradeable {
     mapping(address => string) private _usernames;
     mapping(bytes32 => bool) private _usernameExists;
 
-    // Modifiers
-    modifier onlyOwner() {
-        if (msg.sender != _owner) {
-            revert CallerIsNotOwner();
-        }
-        _;
-    }
-
-    modifier preventOwner() {
-        if (msg.sender == _owner) {
-            revert CallerIsOwner();
-        }
-        _;
-    }
-
     // Initializers
     function initialize() public initializer {
-        _owner = msg.sender;
+        __Ownable_init(msg.sender);
     }
 
     // Overrides
@@ -60,7 +40,7 @@ contract UsernamesV1 is Initializable, UUPSUpgradeable {
         _registerUsername(user, username, b);
     }
 
-    function registerUsername(string memory username) external preventOwner {
+    function registerUsername(string memory username) external {
         // Register username
         bytes memory b = bytes(username);
         if (!_verifyUsername(b)) {

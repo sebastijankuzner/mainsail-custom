@@ -4,8 +4,6 @@ pragma solidity ^0.8.13;
 import {Test, console} from "@forge-std/Test.sol";
 import {
     UsernamesV1,
-    CallerIsOwner,
-    CallerIsNotOwner,
     InvalidUsername,
     TakenUsername,
     UsernameNotRegistered,
@@ -14,6 +12,7 @@ import {
     User
 } from "@contracts/usernames/UsernamesV1.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract UsernamesTest is Test {
     UsernamesV1 public usernames;
@@ -26,7 +25,7 @@ contract UsernamesTest is Test {
 
     function test_add_username_should_revert_if_not_owner() public {
         vm.startPrank(address(1));
-        vm.expectRevert(CallerIsNotOwner.selector);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, address(1)));
         usernames.addUsername(address(1), "test");
     }
 
@@ -208,11 +207,6 @@ contract UsernamesTest is Test {
 
         assertTrue(usernames.isUsernameRegistered("test"));
         assertTrue(usernames.isUsernameRegistered("test2"));
-    }
-
-    function test_register_username_revert_if_owner() public {
-        vm.expectRevert(CallerIsOwner.selector);
-        usernames.registerUsername("test");
     }
 
     function test_register_username_revert_if_empty() public {

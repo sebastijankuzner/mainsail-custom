@@ -6,8 +6,6 @@ import {
     ValidatorData,
     Validator,
     ValidatorRegistered,
-    CallerIsOwner,
-    CallerIsNotOwner,
     ValidatorAlreadyRegistered,
     BlsKeyAlreadyRegistered,
     ImportIsNotAllowed,
@@ -15,6 +13,7 @@ import {
 } from "@contracts/consensus/ConsensusV1.sol";
 import {Base} from "./Base.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract ConsensusTest is Base {
     function test_validator_add_pass() public {
@@ -85,7 +84,7 @@ contract ConsensusTest is Base {
     function test_validator_add_revert_if_caller_is_not_owner() public {
         address addr = address(1);
         vm.startPrank(addr);
-        vm.expectRevert(CallerIsNotOwner.selector);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, addr));
         consensus.addValidator(addr, prepareBLSKey(addr), false);
     }
 

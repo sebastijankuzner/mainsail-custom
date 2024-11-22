@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GNU GENERAL PUBLIC LICENSE
 pragma solidity ^0.8.27;
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 struct ValidatorData {
     uint256 votersCount;
@@ -48,9 +48,6 @@ event Voted(address voter, address validator);
 
 event Unvoted(address voter, address validator);
 
-error CallerIsNotOwner();
-error CallerIsOwner();
-
 error CallerIsNotValidator();
 error ValidatorNotRegistered();
 error ValidatorAlreadyRegistered();
@@ -89,9 +86,7 @@ error ImportIsNotAllowed();
 // Block is processed: Original wallet balance: 100, new wallet balance: 88, difference 12
 // This process will only work fine if we pass the new wallet balance (88) and keep track of voteBalances in EVM contract.
 
-contract ConsensusV1 is Initializable, UUPSUpgradeable {
-    address private _owner;
-
+contract ConsensusV1 is UUPSUpgradeable, OwnableUpgradeable {
     mapping(address => ValidatorData) private _validatorsData;
     mapping(address => bool) private _hasValidator;
     mapping(bytes32 => bool) private _blsPublicKeys;
@@ -112,24 +107,9 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
 
     RoundValidator[][] private _rounds;
 
-    // Modifiers
-    modifier onlyOwner() {
-        if (msg.sender != _owner) {
-            revert CallerIsNotOwner();
-        }
-        _;
-    }
-
-    modifier preventOwner() {
-        if (msg.sender == _owner) {
-            revert CallerIsOwner();
-        }
-        _;
-    }
-
     // Initializers
     function initialize() public initializer {
-        _owner = msg.sender;
+        __Ownable_init(msg.sender);
         _minValidators = 1;
     }
 
@@ -203,7 +183,7 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
         emit Voted(voter, validator);
     }
 
-    function registerValidator(bytes calldata blsPublicKey) external preventOwner {
+    function registerValidator(bytes calldata blsPublicKey) external {
         if (_hasValidator[msg.sender]) {
             revert ValidatorAlreadyRegistered();
         }
@@ -221,7 +201,7 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
         emit ValidatorRegistered(msg.sender, blsPublicKey);
     }
 
-    function updateValidator(bytes calldata blsPublicKey) external preventOwner {
+    function updateValidator(bytes calldata blsPublicKey) external {
         if (!isValidatorRegistered(msg.sender)) {
             revert ValidatorNotRegistered();
         }
@@ -253,7 +233,7 @@ contract ConsensusV1 is Initializable, UUPSUpgradeable {
         emit ValidatorResigned(msg.sender);
     }
 
-    function vote(address addr) external preventOwner {
+    function vote(address addr) external {
         if (!isValidatorRegistered(addr)) {
             revert ValidatorNotRegistered();
         }
