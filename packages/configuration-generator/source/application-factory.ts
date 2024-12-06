@@ -13,10 +13,12 @@ import { ServiceProvider as CoreCryptoTransaction } from "@mainsail/crypto-trans
 import { ServiceProvider as CoreCryptoTransactionEvmCall } from "@mainsail/crypto-transaction-evm-call";
 import { ServiceProvider as CoreCryptoValidation } from "@mainsail/crypto-validation";
 import { ServiceProvider as CoreCryptoWif } from "@mainsail/crypto-wif";
+import { ServiceProvider as CoreEvmConsensus } from "@mainsail/evm-consensus";
 import { ServiceProvider as CoreEvmGasFee } from "@mainsail/evm-gas-fee";
 import { ServiceProvider as EvmService } from "@mainsail/evm-service";
 import { Application } from "@mainsail/kernel";
 import { ServiceProvider as CoreSerializer } from "@mainsail/serializer";
+import { ServiceProvider as CoreSnapshotLegacyImporter } from "@mainsail/snapshot-legacy-importer";
 import { ServiceProvider as CoreValidation } from "@mainsail/validation";
 import { dirSync, setGracefulCleanup } from "tmp";
 
@@ -40,10 +42,16 @@ export const makeApplication = async (configurationPath: string, options: Record
 	const app = new Application(new Container());
 	app.bind(Identifiers.Application.Name).toConstantValue(options.name);
 	app.bind(Identifiers.Services.EventDispatcher.Service).toConstantValue({});
-	app.bind(Identifiers.Services.Log.Service).toConstantValue({});
+	app.bind(Identifiers.Services.Log.Service).toConstantValue({
+		debug: (message: string) => console.log(message),
+		info: (message: string) => console.log(message),
+		warning: (message: string) => console.log(message),
+	});
 	// Used for evm instance
+	const fsExtra = await import("fs-extra/esm");
 	app.bind(Identifiers.Services.Filesystem.Service).toConstantValue({
 		existsSync: () => true,
+		readJSONSync: (file: string, options?: Record<string, any>) => fsExtra.readJSONSync(file, options),
 	});
 	setGracefulCleanup();
 	app.rebind("path.data").toConstantValue(dirSync().name);
@@ -62,14 +70,17 @@ export const makeApplication = async (configurationPath: string, options: Record
 	await app.resolve(CoreCryptoWif).register();
 	await app.resolve(CoreCryptoBlock).register();
 	await app.resolve(CoreEvmGasFee).register();
+	await app.resolve(CoreEvmConsensus).register();
 	await app.resolve(CoreCryptoTransaction).register();
 	await app.resolve(CoreCryptoTransactionEvmCall).register();
+	await app.resolve(CoreSnapshotLegacyImporter).register();
 	await app.resolve(EvmService).register();
 
 	// @ts-ignore
 	app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration).setConfig({
 		milestones: [
 			{
+				evmSpec: Contracts.Evm.SpecId.SHANGHAI,
 				height: 0,
 				timeouts: {
 					blockPrepareTime: 4000,

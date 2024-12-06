@@ -14,7 +14,7 @@ use mainsail_evm_core::{
 };
 use napi::{bindgen_prelude::*, JsBigInt, JsObject, JsString};
 use napi_derive::napi;
-use result::{CommitResult, TxViewResult};
+use result::{CommitResult, JsAccountInfo, TxViewResult};
 use revm::{
     db::{State, WrapDatabaseRef},
     primitives::{
@@ -51,6 +51,11 @@ impl EvmInner {
 
     pub fn prepare_next_commit(&mut self, ctx: PrepareNextCommitContext) -> Result<()> {
         if let Some(pending) = self.pending_commit.as_ref() {
+            // do not replace any pending commit, while still in bootstrapping phase.
+            if pending.key == CommitKey(0, 0) && ctx.commit_key == pending.key {
+                return Ok(());
+            }
+
             println!(
                 "discarding existing pending commit {:?} for {:?}",
                 pending.key, ctx.commit_key
@@ -281,7 +286,9 @@ impl EvmInner {
                     Ok(receipt) => {
                         println!(
                             "vote_update {:?} {:?} {:?}",
-                            ctx.commit_key, receipt, voters
+                            ctx.commit_key,
+                            receipt,
+                            voters.len()
                         );
                         assert!(receipt.is_success(), "vote_update unsuccessful");
                         Ok(())
@@ -307,6 +314,20 @@ impl EvmInner {
                 format!("account lookup failed: {}", err).into(),
             )),
         }
+    }
+
+    pub fn seed_account_info(
+        &mut self,
+        address: Address,
+        info: AccountInfo,
+    ) -> std::result::Result<(), EVMError<String>> {
+        let pending = self.pending_commit.as_mut().unwrap();
+        assert_eq!(pending.key, CommitKey(0, 0));
+        assert!(!pending.cache.accounts.contains_key(&address));
+
+        pending.cache.insert_account(address, info);
+
+        Ok(())
     }
 
     pub fn get_accounts(
@@ -713,6 +734,22 @@ impl JsEvmWrapper {
         )
     }
 
+    #[napi(ts_return_type = "Promise<void>")]
+    pub fn seed_account_info(
+        &mut self,
+        node_env: Env,
+        address: JsString,
+        info: JsAccountInfo,
+    ) -> Result<JsObject> {
+        let address = utils::create_address_from_js_string(address)?;
+        let info: AccountInfo = info.try_into()?;
+
+        node_env.execute_tokio_future(
+            Self::seed_account_info_async(self.evm.clone(), address, info),
+            |_, _| Ok(()),
+        )
+    }
+
     #[napi(ts_return_type = "Promise<JsGetAccounts>")]
     pub fn get_accounts(
         &mut self,
@@ -823,6 +860,20 @@ impl JsEvmWrapper {
 
         match result {
             Ok(account) => Result::Ok(account),
+            Err(err) => Result::Err(serde::de::Error::custom(err)),
+        }
+    }
+
+    async fn seed_account_info_async(
+        evm: Arc<tokio::sync::Mutex<EvmInner>>,
+        address: Address,
+        info: AccountInfo,
+    ) -> Result<()> {
+        let mut lock = evm.lock().await;
+        let result = lock.seed_account_info(address, info);
+
+        match result {
+            Ok(_) => Result::Ok(()),
             Err(err) => Result::Err(serde::de::Error::custom(err)),
         }
     }

@@ -12,6 +12,7 @@ export * as Processor from "./processor.js";
 export * as Proposer from "./proposer.js";
 export * as Serializer from "./serializer.js";
 export * as Shared from "./shared/index.js";
+export * as Snapshot from "./snapshot.js";
 export * as State from "./state/index.js";
 export * as TransactionPool from "./transaction-pool/index.js";
 export * as Transactions from "./transactions.js";

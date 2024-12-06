@@ -63,7 +63,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 
 			await this.verifier.verify(unit);
 
-			for (const [index, transaction] of unit.getBlock().transactions.entries()) {
+			for (const [index, transaction] of block.transactions.entries()) {
 				if (index % 20 === 0) {
 					await Utils.sleep(0);
 				}

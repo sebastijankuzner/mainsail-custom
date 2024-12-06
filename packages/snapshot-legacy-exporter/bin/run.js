@@ -3,24 +3,20 @@ import path from "path";
 import { makeApplication } from "../distribution/application-factory.js";
 import { Identifiers } from "../distribution/identifiers.js";
 
+process.env.CORE_DB_HOST = "localhost";
+process.env.CORE_DB_PORT = "5432";
+process.env.CORE_DB_DATABASE = "test_db";
+process.env.CORE_DB_USERNAME = "test_db";
+process.env.CORE_DB_PASSWORD = "password";
+
 async function run() {
 	const paths = envPaths("mainsail", { suffix: "" });
 	const configCore = path.join(paths.config, "core");
-	console.log(paths, configCore);
 
 	const app = await makeApplication(configCore, {});
-	const generator = app.get(Identifiers.ConfigurationGenerator);
+	const generator = app.get(Identifiers.Snapshot.Generator);
 
-	await generator.generate({
-		network: "testnet",
-		symbol: "TѦ",
-		token: "ARK",
-		distribute: true,
-		premine: "0",
-		snapshot: {
-			path: "../../snapshot-19a87c96dbe8ad1be06d33e97cd17f5662eb952c29efd3d8bb00c9c75e7582bc.json",
-		},
-	});
+	await generator.generate({});
 }
 
 run();

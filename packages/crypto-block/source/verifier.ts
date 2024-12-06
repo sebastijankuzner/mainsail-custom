@@ -1,5 +1,6 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers, Utils } from "@mainsail/contracts";
+import { Utils as AppUtils } from "@mainsail/kernel";
 import { BigNumber } from "@mainsail/utils";
 
 @injectable()
@@ -24,11 +25,19 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 		try {
 			const constants = this.configuration.getMilestone(blockData.height);
 
-			if (
-				blockData.height === 0 &&
-				blockData.previousBlock !== "0000000000000000000000000000000000000000000000000000000000000000"
-			) {
-				result.errors.push("Genesis block has invalid previous block");
+			if (blockData.height === 0) {
+				let validPreviousBlock = false;
+				if (constants.snapshot) {
+					AppUtils.assert.defined(constants.snapshot.hash);
+					validPreviousBlock = blockData.previousBlock === constants.snapshot.hash;
+				} else {
+					validPreviousBlock =
+						blockData.previousBlock === "0000000000000000000000000000000000000000000000000000000000000000";
+				}
+
+				if (!validPreviousBlock) {
+					result.errors.push("Genesis block has invalid previous block");
+				}
 			}
 
 			if (blockData.height !== 0 && !blockData.previousBlock) {
@@ -108,7 +117,10 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 				payloadBuffers.push(bytes);
 			}
 
-			if (!totalAmount.isEqualTo(blockData.totalAmount)) {
+			if (
+				!totalAmount.isEqualTo(blockData.totalAmount) && // Only the genesis block can have a 'totalAmount' while having no transactions.
+				(block.header.height > 0 || block.header.transactions.length > 0)
+			) {
 				result.errors.push("Invalid total amount");
 			}
 
