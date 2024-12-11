@@ -42,6 +42,7 @@ export interface TransactionData {
 	timestamp: number;
 
 	signature?: string;
+	legacySecondSignature?: string;
 
 	sequence?: number;
 	gasUsed?: number;
@@ -102,6 +103,8 @@ export interface TransactionVerifier {
 	verifyHash(data: TransactionData): Promise<boolean>;
 
 	verifySchema(data: Omit<TransactionData, "id">, strict?: boolean): Promise<SchemaValidationResult>;
+
+	verifyLegacySecondSignature(data: TransactionData, legacySecondPublicKey: string): Promise<boolean>;
 }
 
 export interface TransactionSigner {
