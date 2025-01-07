@@ -1,14 +1,14 @@
 {
-	"address": "0xe1B864823024e74C2ecB190E8721101b8F012e2E",
+	"address": "0x9c83DE8A104da85A13A2D96D772dC7FB9a3147d1",
 	"consensusKeys": {
 		"compressed": true,
-		"privateKey": "2106a07f2593cf113f09ca388333acdeb0ac869c25ac49f5f2e1152ec9a8c866",
-		"publicKey": "aa33e334c07b27be65172b6da7d0e529e240b3ea3475b52d9fc411feb2001e1bff2cefe1f4db133394396c5a80b01a7d"
+		"privateKey": "225de37b8e2a639823db786bbc41b1971f17702defa41465ab096b7f99b41236",
+		"publicKey": "88ead8d480aae6ec4643c1341b79675d74902183ebd35bdf05234da536cf1cc14569ca6239c90301387638268402f779"
 	},
 	"keys": {
 		"compressed": true,
-		"privateKey": "119c633ac90752df5cca7e8d4c2f34fff83ecd24be90322be29c5007059ab458",
-		"publicKey": "022ccab791bb3c7923a25e8df3f84f3ef246b3b84d881527525379c79e3bce1443"
+		"privateKey": "aeeb33f7135a9251e5de837a437ebb2597e6faed4445f55526d37e4611da1efa",
+		"publicKey": "0253a5dea79ada0176abd694d7102b23a848228f8a0063a677f33b825cc7acbe55"
 	},
-	"passphrase": "fury emerge table silent bid brass help chaos wear wagon film together birth truth congress sock patch immense butter pig pigeon arrange edit frozen"
+	"passphrase": "fit kiwi anger speak traffic possible draft logic clock vessel guide flee essence body correct hand tattoo calm ethics antique ladder main jewel visit"
 }
