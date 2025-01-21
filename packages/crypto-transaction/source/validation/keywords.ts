@@ -33,6 +33,66 @@ export const makeKeywords = (configuration: Contracts.Crypto.Configuration) => {
 		},
 	};
 
+	const transactionGasPrice: FuncKeywordDefinition = {
+		// @ts-ignore
+		compile(schema) {
+			// Used as lazy cache
+			const genesisTransactionsLookup: Set<string> = new Set();
+
+			return (data, parentSchema: AnySchemaObject) => {
+				const {
+					gas: { minimumGasPrice, maximumGasPrice },
+				} = configuration.getMilestone();
+
+				try {
+					const bignum = BigNumber.make(data);
+					if (bignum.isLessThan(minimumGasPrice)) {
+						// Accept 0 gasFee when processing genesis block only
+						if (!bignum.isZero()) {
+							return false;
+						}
+
+						// The height check is needed for when e.g. the genesis block itself is being built.
+						const height = configuration.getHeight();
+						let valid = height === 0;
+
+						// Otherwise lookup by transaction id
+						if (!valid && parentSchema && parentSchema.parentData && parentSchema.parentData.id) {
+							if (genesisTransactionsLookup.size === 0) {
+								const genesisBlock = configuration.get<Contracts.Crypto.BlockData | undefined>(
+									"genesisBlock.block",
+								);
+								for (const transaction of genesisBlock?.transactions || []) {
+									genesisTransactionsLookup.add(transaction.id);
+								}
+							}
+
+							valid = genesisTransactionsLookup.has(parentSchema.parentData.id);
+						}
+
+						return valid;
+					}
+
+					// The upper limit technically isn't needed and solely acts as a safeguard
+					// as there's no legit reason to go beyond it.
+					if (bignum.isGreaterThan(maximumGasPrice)) {
+						return false;
+					}
+				} catch {
+					return false;
+				}
+
+				return true;
+			};
+		},
+		errors: false,
+		keyword: "transactionGasPrice",
+		metaSchema: {
+			properties: {},
+			type: "object",
+		},
+	};
+
 	const transactionGasLimit: FuncKeywordDefinition = {
 		// @ts-ignore
 		compile(schema) {
@@ -108,6 +168,7 @@ export const makeKeywords = (configuration: Contracts.Crypto.Configuration) => {
 		bytecode,
 		network,
 		transactionGasLimit,
+		transactionGasPrice,
 		transactionType,
 	};
 };
