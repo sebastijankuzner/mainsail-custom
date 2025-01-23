@@ -3,9 +3,10 @@ import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
 import { ethers } from "ethers";
 
 type TxData = {
-	from: string;
+	from?: string;
 	to: string;
 	data: string;
+	gas?: string;
 };
 
 @injectable()
@@ -28,9 +29,12 @@ export class CallAction implements Contracts.Api.RPC.Action {
 				properties: {
 					data: { $ref: "prefixedHex" },
 					from: { $ref: "address" },
+					gas: { $ref: "prefixedHex" },
+					gasPrice: { $ref: "prefixedHex" },
 					to: { $ref: "address" },
+					value: { $ref: "prefixedHex" },
 				},
-				required: ["from", "to", "data"],
+				required: ["to", "data"],
 				type: "object",
 			},
 			{ $ref: "blockTag" },
@@ -43,8 +47,9 @@ export class CallAction implements Contracts.Api.RPC.Action {
 		const [data] = parameters;
 
 		const { success, output } = await this.evm.view({
-			caller: data.from,
+			caller: data.from ?? "0x" + "0".repeat(40), // default to zero address
 			data: Buffer.from(ethers.getBytes(data.data)),
+			gasLimit: data.gas ? BigInt(data.gas) : undefined,
 			recipient: data.to,
 			specId: Contracts.Evm.SpecId.LATEST,
 		});
