@@ -17,6 +17,7 @@ export class Sandbox {
 
 	#configurationOptions: Contracts.NetworkGenerator.Options = {
 		blockTime: 8000,
+		chainId: 99_999,
 		configPath: resolve(`${this.#path}/unitnet`),
 		distribute: true,
 		explorer: "http://uexplorer.ark.io",
