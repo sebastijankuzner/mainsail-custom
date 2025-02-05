@@ -628,6 +628,9 @@ importers:
       '@mainsail/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -861,6 +864,9 @@ importers:
       '@mainsail/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -1135,6 +1141,9 @@ importers:
         specifier: 8.12.0
         version: 8.12.0
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -1199,6 +1208,9 @@ importers:
         specifier: workspace:*
         version: link:../utils
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -1516,6 +1528,9 @@ importers:
         specifier: 8.12.0
         version: 8.12.0
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -1646,6 +1661,9 @@ importers:
         specifier: 6.11.0
         version: 6.11.0
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -1686,6 +1704,9 @@ importers:
         specifier: workspace:*
         version: link:../utils
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -1909,6 +1930,9 @@ importers:
         specifier: workspace:*
         version: link:../kernel
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -2485,6 +2509,9 @@ importers:
       '@mainsail/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -2879,6 +2906,9 @@ importers:
         specifier: 17.12.2
         version: 17.12.2
     devDependencies:
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../crypto-address-keccak256
@@ -3114,6 +3144,9 @@ importers:
       '@mainsail/contracts':
         specifier: workspace:*
         version: link:../../../packages/contracts
+      '@mainsail/crypto-address-base58':
+        specifier: workspace:*
+        version: link:../../../packages/crypto-address-base58
       '@mainsail/crypto-address-keccak256':
         specifier: workspace:*
         version: link:../../../packages/crypto-address-keccak256

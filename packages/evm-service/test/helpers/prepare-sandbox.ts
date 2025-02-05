@@ -2,6 +2,7 @@ import { Contracts, Identifiers } from "@mainsail/contracts";
 
 import crypto from "../../../core/bin/config/testnet/core/crypto.json";
 import { ServiceProvider as CoreCryptoAddressKeccak256 } from "@mainsail/crypto-address-keccak256";
+import { ServiceProvider as CoreCryptoAddressBase58 } from "@mainsail/crypto-address-base58";
 import { ServiceProvider as CoreCryptoBlock } from "@mainsail/crypto-block";
 import { ServiceProvider as CoreCryptoConfig } from "@mainsail/crypto-config";
 import { ServiceProvider as CoreCryptoHashBcrypto } from "@mainsail/crypto-hash-bcrypto";
@@ -34,10 +35,14 @@ export const prepareSandbox = async (context: { sandbox?: Sandbox }) => {
 	await context.sandbox.app.resolve(CoreCryptoKeyPairEcdsa).register();
 
 	await context.sandbox.app.resolve(CoreCryptoAddressKeccak256).register();
+	await context.sandbox.app.resolve(CoreCryptoAddressBase58).register();
 	await context.sandbox.app.resolve(CoreCryptoValidation).register();
 	await context.sandbox.app.resolve(CoreCryptoWif).register();
 
-	context.sandbox.app.bind(Identifiers.Services.Log.Service).toConstantValue({});
+	context.sandbox.app.bind(Identifiers.Services.Log.Service).toConstantValue({
+		info: (msg) => console.log(msg),
+		debug: (msg) => console.log(msg),
+	});
 	context.sandbox.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration).setConfig(crypto);
 
 	context.sandbox.app.bind(Identifiers.Services.Filesystem.Service).toConstantValue({ existsSync: () => true });
