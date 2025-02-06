@@ -33,8 +33,23 @@ import {
 } from "./actions/index.js";
 import Handlers from "./handlers.js";
 import { Server } from "./server.js";
+import { makeKeywords, schemas } from "./validation/index.js";
 
 export class ServiceProvider extends AbstractServiceProvider<Server> {
+	public async register(): Promise<void> {
+		for (const keyword of Object.values(
+			makeKeywords(this.app.get<Contracts.State.Store>(Identifiers.State.Store)),
+		)) {
+			this.app.get<Contracts.Crypto.Validator>(Identifiers.Cryptography.Validator).addKeyword(keyword);
+		}
+
+		for (const schema of Object.values(schemas)) {
+			this.app.get<Contracts.Crypto.Validator>(Identifiers.Cryptography.Validator).addSchema(schema);
+		}
+
+		await super.register();
+	}
+
 	protected httpIdentifier(): symbol {
 		return Identifiers.Evm.API.HTTP;
 	}
