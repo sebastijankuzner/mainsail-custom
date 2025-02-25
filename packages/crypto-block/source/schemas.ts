@@ -1,6 +1,6 @@
 import { AnySchemaObject } from "ajv";
 
-export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHeader", AnySchemaObject> = {
+export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHeader" | "logsBloom", AnySchemaObject> = {
 	block: {
 		$id: "block",
 		$ref: "blockHeader",
@@ -20,6 +20,7 @@ export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHea
 			generatorAddress: { $ref: "address" },
 			height: { minimum: 0, type: "integer" },
 			id: { $ref: "blockId" },
+			logsBloom: { $ref: "logsBloom" },
 			numberOfTransactions: { minimum: 0, type: "integer" },
 			payloadHash: { $ref: "hex" },
 			payloadLength: { minimum: 0, type: "integer" },
@@ -38,6 +39,7 @@ export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHea
 			"previousBlock",
 			"height",
 			"stateHash",
+			"logsBloom",
 			"totalGasUsed",
 			"totalAmount",
 			"totalFee",
@@ -53,6 +55,17 @@ export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHea
 				$ref: "hex",
 				maxLength: 64,
 				minLength: 64,
+			},
+		],
+		type: "string",
+	},
+	logsBloom: {
+		$id: "logsBloom",
+		allOf: [
+			{
+				$ref: "hex",
+				maxLength: 512,
+				minLength: 512,
 			},
 		],
 		type: "string",
