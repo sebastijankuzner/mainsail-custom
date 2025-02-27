@@ -51,6 +51,10 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	@optional()
 	private readonly apiSync?: Contracts.ApiSync.Service;
 
+	@inject(Identifiers.Snapshot.Legacy.Importer)
+	@optional()
+	private readonly snapshotImporter?: Contracts.Snapshot.LegacyImporter;
+
 	public async process(unit: Contracts.Processor.ProcessableUnit): Promise<Contracts.Processor.BlockProcessorResult> {
 		const processResult = { gasUsed: 0, receipts: new Map(), success: false };
 
@@ -173,14 +177,24 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	}
 
 	async #verifyStateHash(block: Contracts.Crypto.Block): Promise<void> {
+		let previousStateHash;
 		if (block.header.height === 0) {
-			return;
+			// Assume snapshot is present if the previous block points to a non-zero hash
+			if (block.header.previousBlock !== "0000000000000000000000000000000000000000000000000000000000000000") {
+				Utils.assert.defined(this.snapshotImporter);
+				Utils.assert.defined(this.snapshotImporter.result);
+				previousStateHash = this.snapshotImporter.result.stateHash;
+			} else {
+				previousStateHash = "0000000000000000000000000000000000000000000000000000000000000000";
+			}
+		} else {
+			const previousBlock = this.stateStore.getLastBlock();
+			previousStateHash = previousBlock.header.stateHash;
 		}
 
-		const previousBlock = this.stateStore.getLastBlock();
 		const stateHash = await this.evm.stateHash(
 			{ height: BigInt(block.header.height), round: BigInt(block.header.round) },
-			previousBlock.header.stateHash,
+			previousStateHash,
 		);
 
 		if (block.header.stateHash !== stateHash) {
@@ -189,10 +203,6 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	}
 
 	async #verifyLogsBloom(block: Contracts.Crypto.Block): Promise<void> {
-		if (block.header.height === 0) {
-			return;
-		}
-
 		const logsBloom = await this.evm.logsBloom({
 			height: BigInt(block.header.height),
 			round: BigInt(block.header.round),

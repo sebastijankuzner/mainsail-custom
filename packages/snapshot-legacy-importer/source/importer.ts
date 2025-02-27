@@ -46,7 +46,9 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 		voters: Contracts.Snapshot.ImportedLegacyVoter[];
 		validators: Contracts.Snapshot.ImportedLegacyValidator[];
 		snapshotHash: string;
+		result: Contracts.Snapshot.LegacyImportResult | undefined;
 	} = {
+		result: undefined,
 		snapshotHash: "",
 		validators: [],
 		voters: [],
@@ -67,6 +69,10 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 	public get snapshotHash(): string {
 		return this.#data.snapshotHash;
+	}
+
+	public get result(): Contracts.Snapshot.LegacyImportResult | undefined {
+		return this.#data.result;
 	}
 
 	#nonce = 0n;
@@ -104,6 +110,8 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 		if (result.initialTotalSupply !== header.totalAmount.toBigInt()) {
 			throw new Error("genesis block snapshot supply mismatch ");
 		}
+
+		this.#data.result = result;
 
 		return result;
 	}
@@ -199,6 +207,7 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 		);
 
 		this.#data = {
+			result: undefined,
 			snapshotHash: calculatedHash,
 			validators,
 			voters,
