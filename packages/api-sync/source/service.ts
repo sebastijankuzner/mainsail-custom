@@ -35,6 +35,9 @@ export class Sync implements Contracts.ApiSync.Service {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
+
 	@inject(ApiDatabaseIdentifiers.DataSource)
 	private readonly dataSource!: ApiDatabaseContracts.RepositoryDataSource;
 
@@ -77,8 +80,8 @@ export class Sync implements Contracts.ApiSync.Service {
 	@inject(Identifiers.ValidatorSet.Service)
 	private readonly validatorSet!: Contracts.ValidatorSet.Service;
 
-	@inject(Identifiers.Proposer.Selector)
-	private readonly proposerSelector!: Contracts.Proposer.Selector;
+	@inject(Identifiers.BlockchainUtils.ProposerCalculator)
+	private readonly proposerCalculator!: Contracts.BlockchainUtils.ProposerCalculator;
 
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
@@ -267,7 +270,7 @@ export class Sync implements Contracts.ApiSync.Service {
 				totalAmount: header.totalAmount.toFixed(),
 				totalFee: header.totalFee.toFixed(),
 				totalGasUsed: header.totalGasUsed,
-				validatorRound: Utils.roundCalculator.calculateRound(header.height, this.configuration).round,
+				validatorRound: this.roundCalculator.calculateRound(header.height).round,
 				validatorSet: validatorSetPack(proof.validators).toString(),
 				version: header.version,
 			},
@@ -295,7 +298,7 @@ export class Sync implements Contracts.ApiSync.Service {
 			})),
 			wallets,
 
-			...(Utils.roundCalculator.isNewRound(header.height + 1, this.configuration)
+			...(this.roundCalculator.isNewRound(header.height + 1)
 				? {
 						validatorRound: this.#createValidatorRound(header.height + 1),
 					}
@@ -317,11 +320,11 @@ export class Sync implements Contracts.ApiSync.Service {
 		// Map the active validator set (static, vote-weighted, etc.) to actual proposal order
 		const validatorWallets = Array.from(
 			{ length: activeValidators.length },
-			(_, index) => activeValidators[this.proposerSelector.getValidatorIndex(index)],
+			(_, index) => activeValidators[this.proposerCalculator.getValidatorIndex(index)],
 		);
 
 		return {
-			...Utils.roundCalculator.calculateRound(height, this.configuration),
+			...this.roundCalculator.calculateRound(height),
 			validators: validatorWallets.map((v) => v.address),
 			votes: validatorWallets.map((v) => v.voteBalance.toFixed()),
 		};

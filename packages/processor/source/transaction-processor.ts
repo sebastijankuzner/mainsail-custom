@@ -1,15 +1,12 @@
+import { formatCurrency } from "@mainsail/blockchain-utils";
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
 
 @injectable()
 export class TransactionProcessor implements Contracts.Processor.TransactionProcessor {
 	@inject(Identifiers.Evm.Instance)
 	@tagged("instance", "evm")
 	private readonly evm!: Contracts.Evm.Instance;
-
-	@inject(Identifiers.Evm.Gas.FeeCalculator)
-	protected readonly gasFeeCalculator!: Contracts.Evm.GasFeeCalculator;
 
 	@inject(Identifiers.Services.Log.Service)
 	protected readonly logger!: Contracts.Kernel.Logger;
@@ -19,6 +16,9 @@ export class TransactionProcessor implements Contracts.Processor.TransactionProc
 
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
+
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	private readonly feeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
 
 	@inject(Identifiers.Transaction.Handler.Registry)
 	private readonly handlerRegistry!: Contracts.Transactions.TransactionHandlerRegistry;
@@ -53,9 +53,9 @@ export class TransactionProcessor implements Contracts.Processor.TransactionProc
 
 		const receipt = await transactionHandler.apply(transactionHandlerContext, transaction);
 
-		const feeConsumed = this.gasFeeCalculator.calculateConsumed(transaction.data.gasPrice, Number(receipt.gasUsed));
+		const feeConsumed = this.feeCalculator.calculateConsumed(transaction.data.gasPrice, Number(receipt.gasUsed));
 		this.logger.debug(
-			`executed EVM call (success=${receipt.success}, from=${transaction.data.senderAddress} to=${transaction.data.recipientAddress} gasUsed=${receipt.gasUsed} paidNativeFee=${Utils.formatCurrency(this.configuration, feeConsumed)} deployed=${receipt.deployedContractAddress})`,
+			`executed EVM call (success=${receipt.success}, from=${transaction.data.senderAddress} to=${transaction.data.recipientAddress} gasUsed=${receipt.gasUsed} paidNativeFee=${formatCurrency(this.configuration, feeConsumed)} deployed=${receipt.deployedContractAddress})`,
 		);
 
 		return receipt;

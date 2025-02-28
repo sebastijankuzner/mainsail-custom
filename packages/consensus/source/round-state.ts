@@ -1,3 +1,4 @@
+import { isMajority, isMinority } from "@mainsail/blockchain-utils";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Utils } from "@mainsail/kernel";
@@ -13,8 +14,8 @@ export class RoundState implements Contracts.Consensus.RoundState {
 	@inject(Identifiers.ValidatorSet.Service)
 	private readonly validatorSet!: Contracts.ValidatorSet.Service;
 
-	@inject(Identifiers.Proposer.Selector)
-	private readonly proposerSelector!: Contracts.Proposer.Selector;
+	@inject(Identifiers.BlockchainUtils.ProposerCalculator)
+	private readonly proposerCalculator!: Contracts.BlockchainUtils.ProposerCalculator;
 
 	@inject(Identifiers.Cryptography.Commit.Serializer)
 	private readonly commitSerializer!: Contracts.Crypto.CommitSerializer;
@@ -70,7 +71,7 @@ export class RoundState implements Contracts.Consensus.RoundState {
 			this.#validatorsSignedPrevote.push(false);
 		}
 
-		const validatorIndex = this.proposerSelector.getValidatorIndex(round);
+		const validatorIndex = this.proposerCalculator.getValidatorIndex(round);
 
 		this.#proposer = validators[validatorIndex];
 
@@ -284,12 +285,12 @@ export class RoundState implements Contracts.Consensus.RoundState {
 
 	#isMajority(size: number): boolean {
 		const { activeValidators } = this.configuration.getMilestone(this.#height);
-		return Utils.isMajority(size, activeValidators);
+		return isMajority(size, activeValidators);
 	}
 
 	#isMinority(size: number): boolean {
 		const { activeValidators } = this.configuration.getMilestone(this.#height);
-		return Utils.isMinority(size, activeValidators);
+		return isMinority(size, activeValidators);
 	}
 
 	#increasePrevoteCount(blockId?: string): void {

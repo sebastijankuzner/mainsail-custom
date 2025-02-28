@@ -7,9 +7,6 @@ export abstract class TransactionHandler implements Contracts.Transactions.Trans
 	@inject(Identifiers.Application.Instance)
 	protected readonly app!: Contracts.Kernel.Application;
 
-	@inject(Identifiers.Evm.Gas.FeeCalculator)
-	protected readonly gasFeeCalculator!: Contracts.Evm.GasFeeCalculator;
-
 	@inject(Identifiers.Services.Log.Service)
 	protected readonly logger!: Contracts.Kernel.Logger;
 
@@ -18,6 +15,9 @@ export abstract class TransactionHandler implements Contracts.Transactions.Trans
 
 	@inject(Identifiers.Cryptography.Transaction.Verifier)
 	protected readonly verifier!: Contracts.Crypto.TransactionVerifier;
+
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	protected readonly feeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
 
 	@inject(Identifiers.Services.EventDispatcher.Service)
 	protected readonly eventDispatcher!: Contracts.Kernel.EventDispatcher;
@@ -40,7 +40,7 @@ export abstract class TransactionHandler implements Contracts.Transactions.Trans
 			sender
 				.getBalance()
 				.minus(transaction.data.value)
-				.minus(this.gasFeeCalculator.calculate(transaction))
+				.minus(this.feeCalculator.calculate(transaction))
 				.isNegative() &&
 			this.configuration.getHeight() > 0
 		) {

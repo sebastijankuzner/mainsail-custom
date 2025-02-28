@@ -97,7 +97,7 @@ const setup = async () => {
 		"@mainsail/serializer",
 		"@mainsail/crypto-block",
 		"@mainsail/evm-service",
-		"@mainsail/evm-gas-fee",
+		"@mainsail/blockchain-utils",
 		"@mainsail/crypto-transaction",
 		"@mainsail/crypto-transaction-evm-call",
 		"@mainsail/state",

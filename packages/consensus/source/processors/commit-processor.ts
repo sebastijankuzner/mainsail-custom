@@ -1,6 +1,6 @@
+import { isMajority } from "@mainsail/blockchain-utils";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
 
 import { AbstractProcessor } from "./abstract-processor.js";
 
@@ -49,7 +49,7 @@ export class CommitProcessor extends AbstractProcessor implements Contracts.Cons
 		}
 
 		const { activeValidators } = this.configuration.getMilestone(block.header.height);
-		if (!Utils.isMajority(publicKeys.length, activeValidators)) {
+		if (!isMajority(publicKeys.length, activeValidators)) {
 			return false;
 		}
 

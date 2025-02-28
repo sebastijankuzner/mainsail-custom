@@ -1,4 +1,4 @@
-# Mainsail - EVM Gas Fee
+# Mainsail - Crypto wif
 
 ![banner](https://raw.githubusercontent.com/ArkEcosystem/mainsail/main/banner.jpeg)
 

@@ -1,6 +1,5 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
 
 import { constants } from "../constants.js";
 import { getRandomPeer } from "../utils/index.js";
@@ -36,6 +35,9 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
+
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
 
 	@inject(Identifiers.State.Store)
 	private readonly stateStore!: Contracts.State.Store;
@@ -132,7 +134,7 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 			const bytesForProcess = [...job.blocks];
 
 			while (bytesForProcess.length > 0) {
-				const roundInfo = Utils.roundCalculator.calculateRound(height, this.configuration);
+				const roundInfo = this.roundCalculator.calculateRound(height);
 
 				// TODO: Check if can use workers
 				// Slice to the end of the round, to ensure validator set is the same

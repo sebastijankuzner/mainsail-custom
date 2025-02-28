@@ -22,11 +22,11 @@ export class SenderState implements Contracts.TransactionPool.SenderState {
 	@inject(Identifiers.Transaction.Handler.Registry)
 	private readonly handlerRegistry!: Contracts.Transactions.TransactionHandlerRegistry;
 
-	@inject(Identifiers.Evm.Gas.FeeCalculator)
-	protected readonly gasFeeCalculator!: Contracts.Evm.GasFeeCalculator;
-
 	@inject(Identifiers.Services.Trigger.Service)
 	private readonly triggers!: Services.Triggers.Triggers;
+
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	private readonly feeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
 
 	#corrupt = false;
 	#wallet!: Contracts.State.Wallet;
@@ -78,7 +78,7 @@ export class SenderState implements Contracts.TransactionPool.SenderState {
 			}
 
 			this.#wallet.increaseNonce();
-			this.#wallet.decreaseBalance(transaction.data.value.plus(this.gasFeeCalculator.calculate(transaction)));
+			this.#wallet.decreaseBalance(transaction.data.value.plus(this.feeCalculator.calculate(transaction)));
 		} else {
 			throw new Exceptions.TransactionFailedToVerifyError(transaction);
 		}
@@ -86,6 +86,6 @@ export class SenderState implements Contracts.TransactionPool.SenderState {
 
 	public revert(transaction: Contracts.Crypto.Transaction): void {
 		this.#wallet.decreaseNonce();
-		this.#wallet.increaseBalance(transaction.data.value.plus(this.gasFeeCalculator.calculate(transaction)));
+		this.#wallet.increaseBalance(transaction.data.value.plus(this.feeCalculator.calculate(transaction)));
 	}
 }

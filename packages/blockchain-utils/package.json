@@ -1,7 +1,7 @@
 {
-	"name": "@mainsail/evm-gas-fee",
+	"name": "@mainsail/blockchain-utils",
 	"version": "0.0.1-evm.14",
-	"description": "EVM gas fees for Mainsail blockchain",
+	"description": "Common blockchain utils for the Mainsail blockchain.",
 	"license": "GPL-3.0-only",
 	"contributors": [],
 	"type": "module",
@@ -24,7 +24,8 @@
 	"dependencies": {
 		"@mainsail/container": "workspace:*",
 		"@mainsail/contracts": "workspace:*",
-		"@mainsail/kernel": "workspace:*"
+		"@mainsail/kernel": "workspace:*",
+		"@mainsail/utils": "workspace:*"
 	},
 	"devDependencies": {
 		"uvu": "^0.5.6"

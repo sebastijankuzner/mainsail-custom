@@ -14,6 +14,9 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
+
 	@inject(Identifiers.Database.Service)
 	private readonly databaseService!: Contracts.Database.DatabaseService;
 
@@ -26,9 +29,6 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 
 	@inject(Identifiers.Transaction.Handler.Registry)
 	private handlerRegistry!: Contracts.Transactions.TransactionHandlerRegistry;
-
-	@inject(Identifiers.Proposer.Selector)
-	private readonly proposerSelector!: Contracts.Proposer.Selector;
 
 	@inject(Identifiers.Services.EventDispatcher.Service)
 	private readonly events!: Contracts.Kernel.EventDispatcher;
@@ -56,8 +56,8 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	@optional()
 	private readonly snapshotImporter?: Contracts.Snapshot.LegacyImporter;
 
-	@inject(Identifiers.Evm.Gas.FeeCalculator)
-	protected readonly gasFeeCalculator!: Contracts.Evm.GasFeeCalculator;
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	protected readonly feeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
 
 	public async process(unit: Contracts.Processor.ProcessableUnit): Promise<Contracts.Processor.BlockProcessorResult> {
 		const processResult = { gasUsed: 0, receipts: new Map(), success: false };
@@ -117,7 +117,6 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		await this.stateStore.onCommit(unit);
 		await this.evm.onCommit(unit);
 		await this.validatorSet.onCommit(unit);
-		await this.proposerSelector.onCommit(unit);
 		await this.txPoolWorker.onCommit(unit);
 		await this.evmWorker.onCommit(unit);
 
@@ -146,8 +145,8 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 
 	#logNewRound(unit: Contracts.Processor.ProcessableUnit): void {
 		const height = unit.getBlock().data.height;
-		if (Utils.roundCalculator.isNewRound(height + 1, this.configuration)) {
-			const roundInfo = Utils.roundCalculator.calculateRound(height + 1, this.configuration);
+		if (this.roundCalculator.isNewRound(height + 1)) {
+			const roundInfo = this.roundCalculator.calculateRound(height + 1);
 
 			if (!this.state.isBootstrap()) {
 				this.logger.debug(
@@ -187,7 +186,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 			Utils.assert.defined(transaction.data.gasUsed);
 
 			totalGas = totalGas.plus(
-				this.gasFeeCalculator.calculateConsumed(transaction.data.gasUsed, transaction.data.gasPrice),
+				this.feeCalculator.calculateConsumed(transaction.data.gasUsed, transaction.data.gasPrice),
 			);
 		}
 
@@ -257,7 +256,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	}
 
 	async #calculateActiveValidators(unit: Contracts.Processor.ProcessableUnit) {
-		if (!Utils.roundCalculator.isNewRound(unit.height + 1, this.configuration)) {
+		if (!this.roundCalculator.isNewRound(unit.height + 1)) {
 			return;
 		}
 

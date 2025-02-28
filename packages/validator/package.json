@@ -31,6 +31,7 @@
 		"joi": "17.12.2"
 	},
 	"devDependencies": {
+		"@mainsail/blockchain-utils": "workspace:*",
 		"@mainsail/crypto-address-base58": "workspace:*",
 		"@mainsail/crypto-address-keccak256": "workspace:*",
 		"@mainsail/crypto-block": "workspace:*",
@@ -43,7 +44,6 @@
 		"@mainsail/crypto-transaction": "workspace:*",
 		"@mainsail/crypto-validation": "workspace:*",
 		"@mainsail/crypto-wif": "workspace:*",
-		"@mainsail/evm-gas-fee": "workspace:*",
 		"@mainsail/serializer": "workspace:*",
 		"@mainsail/transactions": "workspace:*",
 		"@mainsail/validation": "workspace:*",

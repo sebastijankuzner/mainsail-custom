@@ -10,6 +10,13 @@ export const Identifiers = {
 		Thread: Symbol("Application<Thread>"),
 		Version: Symbol("Application<Version>"),
 	},
+	BlockchainUtils: {
+		FeeCalculator: Symbol("BlockchainUtils<FeeCalculator>"),
+		ProposerCalculator: Symbol("BlockchainUtils<ProposerCalculator>"),
+		RoundCalculator: Symbol("BlockchainUtils<RoundCalculator>"),
+		SupplyCalculator: Symbol("BlockchainUtils<SupplyCalculator>"),
+		TimestampCalculator: Symbol("BlockchainUtils<TimestampCalculator>"),
+	},
 	Config: {
 		Flags: Symbol("Config<Flags>"),
 		Plugins: Symbol("Config<Plugins>"),
@@ -128,6 +135,7 @@ export const Identifiers = {
 			Utils: Symbol("Crypto<Transaction.Utils>"),
 			Verifier: Symbol("Crypto<Transaction.Verifier>"),
 		},
+
 		Validator: Symbol("Crypto<Validator>"),
 	},
 	Database: {
@@ -152,10 +160,6 @@ export const Identifiers = {
 		},
 		ContractService: {
 			Consensus: Symbol("Evm<ContractService.Consensus>"),
-		},
-		Gas: {
-			FeeCalculator: Symbol("Evm<Gas.FeeCalculator>"),
-			Limits: Symbol("Evm<Gas.Limits>"),
 		},
 		Instance: Symbol("Evm<Instance>"),
 		State: Symbol("Evm<State>"),
@@ -208,9 +212,6 @@ export const Identifiers = {
 		BlockProcessor: Symbol("Processor<Block.Processor>"),
 		BlockVerifier: Symbol("Processor<Block.Verifier>"),
 		TransactionProcessor: Symbol("Processor<Transaction.Processor>"),
-	},
-	Proposer: {
-		Selector: Symbol("Proposer<Selector>"),
 	},
 	ServiceProvider: {
 		Configuration: Symbol("ServiceProvider<Configuration>"),

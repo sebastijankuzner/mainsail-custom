@@ -1,8 +1,14 @@
-import { Contracts, Identifiers, Events } from "@mainsail/contracts";
+import { Contracts, Events, Identifiers } from "@mainsail/contracts";
 import { Identifiers as EvmConsensusIdentifiers } from "@mainsail/evm-consensus";
 import { assert, Sandbox } from "@mainsail/test-framework";
 import { BigNumber } from "@mainsail/utils";
+
 import { getAccountByAddressOrPublicKey, getLegacyColdWallets } from "./utils.js";
+
+interface WalletState {
+	balance: BigNumber;
+	nonce: BigNumber;
+}
 
 export const takeSnapshot = async (sandbox: Sandbox): Promise<Snapshot> => {
 	const snapshot = new Snapshot(sandbox);
@@ -23,11 +29,6 @@ export const takeSnapshot = async (sandbox: Sandbox): Promise<Snapshot> => {
 
 	return snapshot;
 };
-
-interface WalletState {
-	balance: BigNumber;
-	nonce: BigNumber;
-}
 
 export class Snapshot {
 	private states: Record<string, WalletState> = {};
@@ -54,7 +55,7 @@ export class Snapshot {
 				const { sender, receipt, transactionId } = data;
 
 				console.log("got receipt", sender, transactionId, receipt);
-				this.receipts[transactionId] = { sender, receipt };
+				this.receipts[transactionId] = { receipt, sender };
 			},
 		};
 
@@ -171,9 +172,6 @@ export class Snapshot {
 
 	private async collectAccountDeltas(): Promise<Record<string, WalletState>> {
 		const database = this.sandbox.app.get<Contracts.Database.DatabaseService>(Identifiers.Database.Service);
-		const gasFeeCalculator = this.sandbox.app.get<Contracts.Evm.GasFeeCalculator>(
-			Identifiers.Evm.Gas.FeeCalculator,
-		);
 
 		const stateDeltas: Record<string, WalletState> = {};
 		if (database.isEmpty()) {
@@ -218,10 +216,9 @@ export class Snapshot {
 			for (const transaction of block.transactions) {
 				const receipt = this.receipts[transaction.id!];
 				if (receipt) {
-					const consumedGas = gasFeeCalculator.calculateConsumed(
-						transaction.data.gasPrice,
-						Number(receipt.receipt.gasUsed),
-					);
+					const consumedGas = this.sandbox.app
+						.get<Contracts.BlockchainUtils.FeeCalculator>(Identifiers.BlockchainUtils.FeeCalculator)
+						.calculateConsumed(transaction.data.gasPrice, Number(receipt.receipt.gasUsed));
 					console.log(
 						"found receipt with",
 						receipt.sender,

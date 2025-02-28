@@ -83,6 +83,9 @@ export class Restore {
 	@inject(Identifiers.State.Store)
 	private readonly stateStore!: Contracts.State.Store;
 
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
+
 	@inject(ApiDatabaseIdentifiers.BlockRepositoryFactory)
 	private readonly blockRepositoryFactory!: ApiDatabaseContracts.BlockRepositoryFactory;
 
@@ -251,7 +254,7 @@ export class Restore {
 					totalAmount: block.header.totalAmount.toFixed(),
 					totalFee: block.header.totalFee.toFixed(),
 					totalGasUsed: block.header.totalGasUsed,
-					validatorRound: Utils.roundCalculator.calculateRound(block.header.height, this.configuration).round,
+					validatorRound: this.roundCalculator.calculateRound(block.header.height).round,
 					validatorSet: validatorSetPack(proof.validators).toString(),
 					version: block.header.version,
 				});

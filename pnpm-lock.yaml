@@ -476,6 +476,25 @@ importers:
         specifier: ^0.5.6
         version: 0.5.6
 
+  packages/blockchain-utils:
+    dependencies:
+      '@mainsail/container':
+        specifier: workspace:*
+        version: link:../container
+      '@mainsail/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@mainsail/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@mainsail/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      uvu:
+        specifier: ^0.5.6
+        version: 0.5.6
+
   packages/bootstrap:
     dependencies:
       '@mainsail/container':
@@ -679,9 +698,6 @@ importers:
       '@mainsail/evm-contracts':
         specifier: workspace:*
         version: link:../evm-contracts
-      '@mainsail/evm-gas-fee':
-        specifier: workspace:*
-        version: link:../evm-gas-fee
       '@mainsail/evm-service':
         specifier: workspace:*
         version: link:../evm-service
@@ -740,6 +756,9 @@ importers:
 
   packages/consensus:
     dependencies:
+      '@mainsail/blockchain-utils':
+        specifier: workspace:*
+        version: link:../blockchain-utils
       '@mainsail/container':
         specifier: workspace:*
         version: link:../container
@@ -846,6 +865,9 @@ importers:
       '@mainsail/api-transaction-pool':
         specifier: workspace:*
         version: link:../api-transaction-pool
+      '@mainsail/blockchain-utils':
+        specifier: workspace:*
+        version: link:../blockchain-utils
       '@mainsail/bootstrap':
         specifier: workspace:*
         version: link:../bootstrap
@@ -927,9 +949,6 @@ importers:
       '@mainsail/evm-contracts':
         specifier: workspace:*
         version: link:../evm-contracts
-      '@mainsail/evm-gas-fee':
-        specifier: workspace:*
-        version: link:../evm-gas-fee
       '@mainsail/evm-service':
         specifier: workspace:*
         version: link:../evm-service
@@ -1902,22 +1921,6 @@ importers:
 
   packages/evm-contracts: {}
 
-  packages/evm-gas-fee:
-    dependencies:
-      '@mainsail/container':
-        specifier: workspace:*
-        version: link:../container
-      '@mainsail/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@mainsail/kernel':
-        specifier: workspace:*
-        version: link:../kernel
-    devDependencies:
-      uvu:
-        specifier: ^0.5.6
-        version: 0.5.6
-
   packages/evm-service:
     dependencies:
       '@mainsail/container':
@@ -2269,6 +2272,9 @@ importers:
       '@hapi/teamwork':
         specifier: 6.0.0
         version: 6.0.0
+      '@mainsail/blockchain-utils':
+        specifier: workspace:*
+        version: link:../blockchain-utils
       '@mainsail/container':
         specifier: workspace:*
         version: link:../container
@@ -2354,6 +2360,9 @@ importers:
 
   packages/processor:
     dependencies:
+      '@mainsail/blockchain-utils':
+        specifier: workspace:*
+        version: link:../blockchain-utils
       '@mainsail/container':
         specifier: workspace:*
         version: link:../container
@@ -2557,9 +2566,6 @@ importers:
       '@mainsail/crypto-wif':
         specifier: workspace:*
         version: link:../crypto-wif
-      '@mainsail/evm-gas-fee':
-        specifier: workspace:*
-        version: link:../evm-gas-fee
       '@mainsail/kernel':
         specifier: workspace:*
         version: link:../kernel
@@ -2912,6 +2918,9 @@ importers:
         specifier: 17.12.2
         version: 17.12.2
     devDependencies:
+      '@mainsail/blockchain-utils':
+        specifier: workspace:*
+        version: link:../blockchain-utils
       '@mainsail/crypto-address-base58':
         specifier: workspace:*
         version: link:../crypto-address-base58
@@ -2948,9 +2957,6 @@ importers:
       '@mainsail/crypto-wif':
         specifier: workspace:*
         version: link:../crypto-wif
-      '@mainsail/evm-gas-fee':
-        specifier: workspace:*
-        version: link:../evm-gas-fee
       '@mainsail/serializer':
         specifier: workspace:*
         version: link:../serializer
@@ -3120,9 +3126,6 @@ importers:
       '@mainsail/evm-api-worker':
         specifier: workspace:*
         version: link:../../../packages/evm-api-worker
-      '@mainsail/evm-gas-fee':
-        specifier: workspace:*
-        version: link:../../../packages/evm-gas-fee
       '@mainsail/evm-service':
         specifier: workspace:*
         version: link:../../../packages/evm-service
@@ -3186,6 +3189,9 @@ importers:
 
   tests/functional/transaction-pool-api:
     devDependencies:
+      '@mainsail/blockchain-utils':
+        specifier: workspace:*
+        version: link:../../../packages/blockchain-utils
       '@mainsail/consensus':
         specifier: workspace:*
         version: link:../../../packages/consensus
@@ -3255,9 +3261,6 @@ importers:
       '@mainsail/evm-consensus':
         specifier: workspace:*
         version: link:../../../packages/evm-consensus
-      '@mainsail/evm-gas-fee':
-        specifier: workspace:*
-        version: link:../../../packages/evm-gas-fee
       '@mainsail/evm-service':
         specifier: workspace:*
         version: link:../../../packages/evm-service

@@ -29,6 +29,9 @@ export class Validator implements Contracts.Validator.Validator {
 	@inject(Identifiers.Cryptography.Message.Factory)
 	private readonly messagesFactory!: Contracts.Crypto.MessageFactory;
 
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
+
 	@inject(Identifiers.State.Store)
 	protected readonly stateStore!: Contracts.State.Store;
 
@@ -44,8 +47,8 @@ export class Validator implements Contracts.Validator.Validator {
 	@inject(Identifiers.TransactionPool.Worker)
 	private readonly txPoolWorker!: Contracts.TransactionPool.Worker;
 
-	@inject(Identifiers.Evm.Gas.FeeCalculator)
-	protected readonly gasFeeCalculator!: Contracts.Evm.GasFeeCalculator;
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	protected readonly gasFeeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
 
 	#keyPair!: Contracts.Validator.ValidatorKeyPair;
 
@@ -205,7 +208,7 @@ export class Validator implements Contracts.Validator.Validator {
 				validatorAddress: generatorAddress,
 			});
 
-			if (Utils.roundCalculator.isNewRound(previousBlock.header.height + 2, this.cryptoConfiguration)) {
+			if (this.roundCalculator.isNewRound(previousBlock.header.height + 2)) {
 				const { activeValidators } = this.cryptoConfiguration.getMilestone(previousBlock.header.height + 2);
 
 				await validator.getEvm().calculateActiveValidators({
