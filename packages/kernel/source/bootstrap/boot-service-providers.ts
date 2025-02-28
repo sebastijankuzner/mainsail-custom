@@ -1,8 +1,8 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Events, Exceptions, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 
 import { ServiceProviderRepository } from "../providers/index.js";
-import { assert } from "../utils/assert.js";
 import { ChangeServiceProviderState } from "./listeners.js";
 
 // @TODO review the implementation
@@ -25,7 +25,7 @@ export class BootServiceProviders implements Contracts.Kernel.Bootstrapper {
 		for (const [name, serviceProvider] of this.serviceProviders.all()) {
 			const serviceProviderName: string | undefined = serviceProvider.name();
 
-			assert.defined<string>(serviceProviderName);
+			assert.string(serviceProviderName);
 
 			if (await serviceProvider.bootWhen()) {
 				try {

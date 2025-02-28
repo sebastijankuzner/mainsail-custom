@@ -1,7 +1,7 @@
 import { injectable } from "@mainsail/container";
+import { assert } from "@mainsail/utils";
 
 import { Constructor } from "../../types/container.js";
-import { assert } from "../../utils/assert.js";
 
 @injectable()
 export class MixinService {
@@ -10,7 +10,7 @@ export class MixinService {
 	public get(name: string): Function {
 		const mixin: Function | undefined = this.#mixins.get(name);
 
-		assert.defined<Function>(mixin);
+		assert.defined(mixin);
 
 		return mixin;
 	}

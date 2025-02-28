@@ -1,8 +1,7 @@
 import { injectable } from "@mainsail/container";
 import { Contracts } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 import mm from "nanomatch";
-
-import { assert } from "../../../utils/assert.js";
 
 class OnceListener implements Contracts.Kernel.EventListener {
 	public constructor(
@@ -141,7 +140,7 @@ export class MemoryEventDispatcher implements Contracts.Kernel.EventDispatcher {
 
 		const listener: Set<Contracts.Kernel.EventListener> | undefined = this.#listeners.get(name);
 
-		assert.defined<Set<Contracts.Kernel.EventListener>>(listener);
+		assert.defined(listener);
 
 		return listener;
 	}

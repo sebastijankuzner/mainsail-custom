@@ -1,7 +1,7 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Events, Exceptions, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 
-import { assert } from "../utils/assert.js";
 import { ServiceProvider } from "./service-provider.js";
 
 @injectable()
@@ -34,8 +34,7 @@ export class ServiceProviderRepository {
 		const serviceProvider: ServiceProvider | undefined = this.#serviceProviders.get(
 			this.#aliases.get(name) || name,
 		);
-
-		assert.defined<ServiceProvider>(serviceProvider);
+		assert.defined(serviceProvider);
 
 		return serviceProvider;
 	}

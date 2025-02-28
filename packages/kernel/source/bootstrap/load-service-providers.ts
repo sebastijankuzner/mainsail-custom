@@ -1,11 +1,11 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 import path from "path";
 import { URL } from "url";
 
 import { PluginConfiguration, PluginManifest, ServiceProvider, ServiceProviderRepository } from "../providers/index.js";
 import { ConfigRepository } from "../services/config/index.js";
-import { assert } from "../utils/assert.js";
 
 interface PluginEntry {
 	package: string;
@@ -34,7 +34,7 @@ export class LoadServiceProviders implements Contracts.Kernel.Bootstrapper {
 
 	public async bootstrap(): Promise<void> {
 		const plugins: PluginEntry[] | undefined = this.configRepository.get<PluginEntry[]>(`app.${this.app.thread()}`);
-		assert.defined<PluginEntry[]>(plugins);
+		assert.defined(plugins);
 
 		const installedPlugins = await this.#discoverPlugins(this.app.dataPath("plugins"));
 
@@ -105,7 +105,7 @@ export class LoadServiceProviders implements Contracts.Kernel.Bootstrapper {
 	): Promise<PluginConfiguration> {
 		const serviceProviderName: string | undefined = serviceProvider.name();
 
-		assert.defined<string>(serviceProviderName);
+		assert.string(serviceProviderName);
 
 		const hasDefaults: boolean = Object.keys(serviceProvider.configDefaults()).length > 0;
 

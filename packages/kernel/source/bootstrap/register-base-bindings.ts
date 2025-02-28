@@ -1,9 +1,8 @@
 import { inject, injectable } from "@mainsail/container";
 import { Constants, Contracts, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 import path from "path";
 import { URL } from "url";
-
-import { assert } from "../utils/assert.js";
 
 @injectable()
 export class RegisterBaseBindings implements Contracts.Kernel.Bootstrapper {
@@ -21,7 +20,7 @@ export class RegisterBaseBindings implements Contracts.Kernel.Bootstrapper {
 		);
 
 		assert.defined(version);
-		assert.defined<Record<string, string>>(flags);
+		assert.defined(flags);
 
 		this.app.bind<string>(Identifiers.Application.Environment).toConstantValue(flags.env);
 		this.app.bind<string>(Identifiers.Application.Name).toConstantValue(flags.name);

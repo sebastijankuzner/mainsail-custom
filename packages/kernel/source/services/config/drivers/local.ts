@@ -1,12 +1,11 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { dotenv, get, set } from "@mainsail/utils";
+import { assert, dotenv, get, set } from "@mainsail/utils";
 import { existsSync, readFileSync } from "fs";
 import Joi from "joi";
 import { extname } from "path";
 
 import { KeyValuePair } from "../../../types/index.js";
-import { assert } from "../../../utils/assert.js";
 import { ConfigRepository } from "../repository.js";
 
 @injectable()
@@ -146,14 +145,15 @@ export class LocalConfigLoader implements Contracts.Kernel.ConfigLoader {
 
 	#loadFromLocation(files: string[]): KeyValuePair {
 		for (const file of files) {
+			3;
 			const fullPath: string = this.app.configPath(file);
 			if (existsSync(fullPath)) {
-				const config: KeyValuePair =
+				const config: KeyValuePair | undefined =
 					extname(fullPath) === ".json"
 						? JSON.parse(readFileSync(fullPath).toString())
 						: readFileSync(fullPath);
 
-				assert.defined<KeyValuePair>(config);
+				assert.defined(config);
 
 				return config;
 			}

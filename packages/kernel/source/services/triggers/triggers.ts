@@ -1,8 +1,8 @@
 import { injectable } from "@mainsail/container";
 import { Exceptions } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 
 import { ActionArguments } from "../../types/index.js";
-import { assert } from "../../utils/assert.js";
 import { Action } from "./action.js";
 
 @injectable()
@@ -46,7 +46,7 @@ export class Triggers {
 
 		const trigger: Action | undefined = this.#triggers.get(name);
 
-		assert.defined<Action>(trigger);
+		assert.defined(trigger);
 
 		return trigger;
 	}
