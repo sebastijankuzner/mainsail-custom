@@ -1,4 +1,4 @@
-import { describe } from "../../../test-framework/source";
+import { describe } from "../../test-framework/source";
 import { isBlacklisted } from "./is-blacklisted";
 
 describe("isBlacklisted", ({ assert, it }) => {

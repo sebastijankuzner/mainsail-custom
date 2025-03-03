@@ -1,6 +1,4 @@
-import { Contracts } from "@mainsail/contracts";
-
-export class Lock implements Contracts.Kernel.Lock {
+export class Lock {
 	#exclusivePromise?: Promise<unknown>;
 
 	readonly #nonExclusivePromises: Set<Promise<unknown>> = new Set<Promise<unknown>>();
