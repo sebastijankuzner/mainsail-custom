@@ -85,7 +85,9 @@ export class EthEstimateGasAction implements Contracts.Api.RPC.Action {
 			if (success) {
 				return `0x${gasUsed.toString(16)}`;
 			}
-		} catch {}
+		} catch (error) {
+			throw new Exceptions.RpcError(`execution reverted: ${error.message}`);
+		}
 
 		throw new Exceptions.RpcError("execution reverted");
 	}
