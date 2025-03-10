@@ -1,16 +1,16 @@
-use std::{collections::HashMap, path::PathBuf, sync::Arc, u64};
+use std::{collections::HashMap, sync::Arc, u64};
 
 use ctx::{
-    BlockContext, CalculateActiveValidatorsContext, ExecutionContext, GenesisContext,
-    JsCalculateActiveValidatorsContext, JsCommitKey, JsGenesisContext, JsPrepareNextCommitContext,
-    JsPreverifyTransactionContext, JsTransactionContext, JsTransactionViewContext,
-    JsUpdateRewardsAndVotesContext, PrepareNextCommitContext, PreverifyTxContext, TxContext,
-    TxViewContext, UpdateRewardsAndVotesContext,
+    BlockContext, CalculateActiveValidatorsContext, EvmOptions, ExecutionContext, GenesisContext,
+    JsCalculateActiveValidatorsContext, JsCommitKey, JsEvmOptions, JsGenesisContext,
+    JsPrepareNextCommitContext, JsPreverifyTransactionContext, JsTransactionContext,
+    JsTransactionViewContext, JsUpdateRewardsAndVotesContext, PrepareNextCommitContext,
+    PreverifyTxContext, TxContext, TxViewContext, UpdateRewardsAndVotesContext,
 };
 use logger::JsLogger;
 use mainsail_evm_core::{
     account::AccountInfoExtended,
-    db::{CommitKey, GenesisInfo, PendingCommit, PersistentDB},
+    db::{CommitKey, GenesisInfo, PendingCommit, PersistentDB, PersistentDBOptions},
     legacy::{LegacyAddress, LegacyColdWallet},
     logger::LogLevel,
     logs_bloom,
@@ -53,9 +53,18 @@ pub struct EvmInner {
 unsafe impl Send for EvmInner {}
 
 impl EvmInner {
-    pub fn new(path: PathBuf, logger_callback: Option<JsFunction>) -> Self {
-        let logger = JsLogger::new(logger_callback).expect("logger ok");
-        let persistent_db = PersistentDB::new(path, Some(logger.inner())).expect("path ok");
+    pub fn new(opts: EvmOptions) -> Self {
+        let logger = JsLogger::new(opts.logger_callback).expect("logger ok");
+
+        let mut db_opts = PersistentDBOptions::new(opts.path).with_logger(logger.inner());
+
+        if let Some(history_size) = opts.history_size {
+            if history_size > 0 {
+                db_opts = db_opts.with_history_size(history_size)
+            }
+        }
+
+        let persistent_db = PersistentDB::new(db_opts).expect("path ok");
 
         EvmInner {
             persistent_db,
@@ -117,11 +126,18 @@ impl EvmInner {
         })
     }
 
-    pub fn code_at(&mut self, address: Address) -> std::result::Result<Bytes, EVMError<String>> {
-        let account = self
-            .persistent_db
-            .basic(address)
-            .map_err(|err| EVMError::Database(format!("account lookup failed: {}", err).into()))?;
+    pub fn code_at(
+        &mut self,
+        address: Address,
+        height: Option<u64>,
+    ) -> std::result::Result<Bytes, EVMError<String>> {
+        let account = match height {
+            None => self.persistent_db.basic(address),
+            Some(height) => self
+                .persistent_db
+                .get_historical_account_info(height, address),
+        }
+        .map_err(|err| EVMError::Database(format!("account lookup failed: {}", err).into()))?;
 
         match account {
             Some(account) => {
@@ -341,8 +357,16 @@ impl EvmInner {
     pub fn get_account_info(
         &mut self,
         address: Address,
+        height: Option<u64>,
     ) -> std::result::Result<AccountInfo, EVMError<String>> {
-        match self.persistent_db.basic(address) {
+        let result = match height {
+            None => self.persistent_db.basic(address),
+            Some(height) => self
+                .persistent_db
+                .get_historical_account_info(height, address),
+        };
+
+        match result {
             Ok(account) => Ok(account.unwrap_or_default()),
             Err(err) => Err(EVMError::Database(
                 format!("account lookup failed: {}", err).into(),
@@ -940,13 +964,10 @@ pub struct JsEvmWrapper {
 #[napi]
 impl JsEvmWrapper {
     #[napi(constructor)]
-    pub fn new(path: JsString, logger_callback: Option<JsFunction>) -> Result<Self> {
-        let path = path.into_utf8()?.into_owned()?;
+    pub fn new(opts: JsEvmOptions) -> Result<Self> {
+        let opts = EvmOptions::try_from(opts)?;
         Ok(JsEvmWrapper {
-            evm: Arc::new(tokio::sync::Mutex::new(EvmInner::new(
-                path.into(),
-                logger_callback,
-            ))),
+            evm: Arc::new(tokio::sync::Mutex::new(EvmInner::new(opts))),
         })
     }
 
@@ -1038,10 +1059,21 @@ impl JsEvmWrapper {
     }
 
     #[napi(ts_return_type = "Promise<JsAccountInfo>")]
-    pub fn get_account_info(&mut self, node_env: Env, address: JsString) -> Result<JsObject> {
+    pub fn get_account_info(
+        &mut self,
+        node_env: Env,
+        address: JsString,
+        height: Option<JsBigInt>,
+    ) -> Result<JsObject> {
         let address = utils::create_address_from_js_string(address)?;
+
+        let height = match height {
+            Some(height) => Some(height.get_u64()?.0),
+            None => None,
+        };
+
         node_env.execute_tokio_future(
-            Self::get_account_info_async(self.evm.clone(), address),
+            Self::get_account_info_async(self.evm.clone(), address, height),
             |&mut node_env, result| Ok(result::JsAccountInfo::new(&node_env, result)?),
         )
     }
@@ -1167,10 +1199,20 @@ impl JsEvmWrapper {
     }
 
     #[napi(ts_return_type = "Promise<string>")]
-    pub fn code_at(&mut self, node_env: Env, address: JsString) -> Result<JsObject> {
+    pub fn code_at(
+        &mut self,
+        node_env: Env,
+        address: JsString,
+        height: Option<JsBigInt>,
+    ) -> Result<JsObject> {
         let address = utils::create_address_from_js_string(address)?;
+        let height = match height {
+            Some(height) => Some(height.get_u64()?.0),
+            None => None,
+        };
+
         node_env.execute_tokio_future(
-            Self::code_at_async(self.evm.clone(), address),
+            Self::code_at_async(self.evm.clone(), address, height),
             |&mut node_env, result| Ok(node_env.create_string_from_std(result)?),
         )
     }
@@ -1265,9 +1307,10 @@ impl JsEvmWrapper {
     async fn get_account_info_async(
         evm: Arc<tokio::sync::Mutex<EvmInner>>,
         address: Address,
+        height: Option<u64>,
     ) -> Result<AccountInfo> {
         let mut lock = evm.lock().await;
-        let result = lock.get_account_info(address);
+        let result = lock.get_account_info(address, height);
 
         match result {
             Ok(account) => Result::Ok(account),
@@ -1370,9 +1413,10 @@ impl JsEvmWrapper {
     async fn code_at_async(
         evm: Arc<tokio::sync::Mutex<EvmInner>>,
         address: Address,
+        height: Option<u64>,
     ) -> Result<String> {
         let mut lock = evm.lock().await;
-        let result = lock.code_at(address);
+        let result = lock.code_at(address, height);
 
         match result {
             Ok(code) => Result::Ok(revm::primitives::hex::encode_prefixed(code.as_ref())),

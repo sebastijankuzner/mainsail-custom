@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     account::AccountInfoExtended,
+    historical::{AccountHistory, HistoricalAccountData},
     legacy::{LegacyAccountAttributes, LegacyAddress, LegacyColdWallet},
     logger::{LogLevel, Logger},
     receipt::{TxReceipt, map_execution_result},
@@ -19,7 +20,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct AddressWrapper(Address);
+pub(crate) struct AddressWrapper(Address);
 impl heed::BytesEncode<'_> for AddressWrapper {
     type EItem = AddressWrapper;
 
@@ -37,7 +38,7 @@ impl heed::BytesDecode<'_> for AddressWrapper {
 }
 
 #[derive(Debug)]
-struct LegacyAddressWrapper(LegacyAddress);
+pub(crate) struct LegacyAddressWrapper(LegacyAddress);
 impl heed::BytesEncode<'_> for LegacyAddressWrapper {
     type EItem = LegacyAddressWrapper;
 
@@ -55,7 +56,7 @@ impl heed::BytesDecode<'_> for LegacyAddressWrapper {
 }
 
 #[derive(Debug)]
-struct ContractWrapper(B256);
+pub(crate) struct ContractWrapper(B256);
 impl heed::BytesEncode<'_> for ContractWrapper {
     type EItem = ContractWrapper;
 
@@ -64,10 +65,10 @@ impl heed::BytesEncode<'_> for ContractWrapper {
     }
 }
 
-type HeedHeight = heed::types::U64<heed::byteorder::LittleEndian>;
+type HeedHeight = heed::types::U64<heed::byteorder::BigEndian>;
 
 #[derive(Debug)]
-struct StorageEntryWrapper(U256, U256);
+pub(crate) struct StorageEntryWrapper(U256, U256);
 impl heed::BytesEncode<'_> for StorageEntryWrapper {
     type EItem = StorageEntryWrapper;
 
@@ -105,22 +106,28 @@ impl Comparator for StorageEntryDupSortCmp {
 
 // txHash -> receipt
 #[derive(Default, Debug, Serialize, Deserialize)]
-struct CommitReceipts {
+pub(crate) struct CommitReceipts {
     accounts_hash: B256,
     storage_hash: B256,
     contracts_hash: B256,
     tx_receipts: HashMap<B256, TxReceipt>,
 }
 
-struct InnerStorage {
-    accounts: heed::Database<AddressWrapper, heed::types::SerdeBincode<AccountInfo>>,
-    commits: heed::Database<HeedHeight, heed::types::SerdeBincode<CommitReceipts>>,
-    contracts: heed::Database<ContractWrapper, heed::types::SerdeBincode<Bytecode>>,
-    legacy_attributes:
+pub(crate) struct InnerStorage {
+    pub accounts: heed::Database<AddressWrapper, heed::types::SerdeBincode<AccountInfo>>,
+    pub accounts_history: Option<
+        heed::Database<
+            HeedHeight,
+            heed::types::SerdeBincode<BTreeMap<Address, HistoricalAccountData>>,
+        >,
+    >,
+    pub commits: heed::Database<HeedHeight, heed::types::SerdeBincode<CommitReceipts>>,
+    pub contracts: heed::Database<ContractWrapper, heed::types::SerdeBincode<Bytecode>>,
+    pub legacy_attributes:
         heed::Database<AddressWrapper, heed::types::SerdeBincode<LegacyAccountAttributes>>,
-    legacy_cold_wallets:
+    pub legacy_cold_wallets:
         heed::Database<LegacyAddressWrapper, heed::types::SerdeBincode<LegacyColdWallet>>,
-    storage: heed::Database<AddressWrapper, StorageEntryWrapper>,
+    pub storage: heed::Database<AddressWrapper, StorageEntryWrapper>,
 }
 
 // A (height, round) pair used to associate state with a processable unit.
@@ -157,10 +164,37 @@ pub struct GenesisInfo {
 }
 
 pub struct PersistentDB {
-    env: heed::Env,
-    inner: RefCell<InnerStorage>,
+    pub(crate) env: heed::Env,
+    pub(crate) inner: RefCell<InnerStorage>,
+    pub(crate) accounts_history: Option<AccountHistory>,
     logger: Logger,
     pub genesis_info: Option<GenesisInfo>,
+}
+
+#[derive(Default)]
+pub struct PersistentDBOptions {
+    pub path: PathBuf,
+    pub logger: Option<Logger>,
+    pub history_size: Option<u64>,
+}
+
+impl PersistentDBOptions {
+    pub fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_logger(mut self, logger: Logger) -> Self {
+        self.logger.replace(logger);
+        self
+    }
+
+    pub fn with_history_size(mut self, history_size: u64) -> Self {
+        self.history_size.replace(history_size);
+        self
+    }
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -178,20 +212,26 @@ pub enum Error {
 }
 
 impl PersistentDB {
-    pub fn new(path: PathBuf, logger: Option<Logger>) -> Result<Self, Error> {
-        std::fs::create_dir_all(&path)?;
+    pub fn new(opts: PersistentDBOptions) -> Result<Self, Error> {
+        std::fs::create_dir_all(&opts.path)?;
 
         let mut env_builder = EnvOpenOptions::new();
-        env_builder.max_dbs(6);
+
+        let mut max_dbs = 6;
+        if opts.history_size.is_some() {
+            max_dbs += 1;
+        }
+
+        env_builder.max_dbs(max_dbs);
         env_builder.map_size(1 * MAP_SIZE_UNIT);
         unsafe { env_builder.flags(EnvFlags::NO_SUB_DIR) };
 
-        let env = unsafe { env_builder.open(path.join("evm.mdb")) }?;
+        let env = unsafe { env_builder.open(opts.path.join("evm.mdb")) }?;
 
-        Self::new_with_env(env, logger)
+        Self::new_with_env(env, opts)
     }
 
-    pub fn new_with_env(env: heed::Env, logger: Option<Logger>) -> Result<Self, Error> {
+    pub fn new_with_env(env: heed::Env, opts: PersistentDBOptions) -> Result<Self, Error> {
         let real_disk_size = env.real_disk_size()?;
         if real_disk_size >= env.info().map_size as u64 {
             // ensure initial map size is always larger than disk size
@@ -206,6 +246,16 @@ impl PersistentDB {
                 &mut wtxn,
                 Some("accounts"),
             )?;
+
+        let (accounts_history_db, accounts_history) = match opts.history_size {
+            Some(history_size) if history_size > 0 => {
+                let db = env.create_database::<HeedHeight, heed::types::SerdeBincode<
+            BTreeMap<Address, HistoricalAccountData>>>(&mut wtxn, Some("accounts_history")) ?;
+                (Some(db), Some(AccountHistory::new(history_size)))
+            }
+            _ => (None, None),
+        };
+
         let commits = env
             .create_database::<HeedHeight, heed::types::SerdeBincode<CommitReceipts>>(
                 &mut wtxn,
@@ -240,13 +290,15 @@ impl PersistentDB {
             env,
             inner: RefCell::new(InnerStorage {
                 accounts,
+                accounts_history: accounts_history_db,
                 commits,
                 contracts,
                 legacy_attributes,
                 legacy_cold_wallets,
                 storage,
             }),
-            logger: logger.unwrap_or_default(),
+            accounts_history,
+            logger: opts.logger.unwrap_or_default(),
             genesis_info: None,
         })
     }
@@ -366,6 +418,37 @@ impl PersistentDB {
             Some(inner) => inner.tx_receipts.get(&tx_hash).cloned(),
             None => None,
         })
+    }
+
+    pub fn get_historical_account_info(
+        &mut self,
+        height: u64,
+        address: Address,
+    ) -> Result<Option<AccountInfo>, Error> {
+        match self.inner.borrow().accounts_history {
+            Some(db) => {
+                let tx_env = self.env.read_txn()?;
+
+                match self.accounts_history.as_ref() {
+                    Some(accounts_history) => {
+                        let data = accounts_history
+                            .get_by_block_and_address(&tx_env, &db, height, &address)?;
+
+                        match data {
+                            Some(data) => Ok(Some(AccountInfo {
+                                balance: data.balance,
+                                nonce: data.nonce,
+                                code_hash: data.code_hash,
+                                ..Default::default()
+                            })),
+                            None => Ok(None),
+                        }
+                    }
+                    None => Ok(None),
+                }
+            }
+            None => Ok(None),
+        }
     }
 
     pub fn get_legacy_attributes(
@@ -571,7 +654,7 @@ impl PersistentDB {
             storage.par_sort_by_key(|a| a.address);
 
             // Update accounts
-            for (address, account) in accounts.into_iter() {
+            for (address, account) in accounts.iter() {
                 let address = AddressWrapper(*address);
 
                 if let Some(account) = account {
@@ -579,6 +662,22 @@ impl PersistentDB {
                 } else {
                     inner.accounts.delete(rwtxn, &address)?;
                 }
+            }
+
+            // Update account history
+            if let Some(db) = &inner.accounts_history {
+                self.accounts_history
+                    .as_ref()
+                    .expect("accounts history")
+                    .insert(
+                        rwtxn,
+                        db,
+                        key.0,
+                        accounts
+                            .into_iter()
+                            .map(|a| (a.0, a.1.take().unwrap_or_default()))
+                            .collect(),
+                    )?;
             }
 
             // Update legacy attributes
@@ -814,7 +913,7 @@ fn test_open_db() {
         .tempdir()
         .unwrap();
 
-    assert!(PersistentDB::new(tmp.path().to_path_buf(), None).is_ok());
+    assert!(PersistentDB::new(PersistentDBOptions::new(tmp.path().to_path_buf())).is_ok());
 }
 
 #[test]
@@ -824,7 +923,8 @@ fn test_commit_changes() {
         .tempdir()
         .unwrap();
 
-    let mut db = PersistentDB::new(path.path().to_path_buf(), None).expect("database");
+    let mut db =
+        PersistentDB::new(PersistentDBOptions::new(path.path().to_path_buf())).expect("database");
 
     // 1) Lookup empty account
     let address = address!("bd6f65c58a46427af4b257cbe231d0ed69ed5508");
@@ -906,7 +1006,8 @@ fn test_storage() {
         .tempdir()
         .unwrap();
 
-    let mut db = PersistentDB::new(path.path().to_path_buf(), None).expect("database");
+    let mut db =
+        PersistentDB::new(PersistentDBOptions::new(path.path().to_path_buf())).expect("database");
 
     let address = address!("bd6f65c58a46427af4b257cbe231d0ed69ed5508");
     let mut state = HashMap::new();
@@ -977,7 +1078,8 @@ fn test_storage_overwrite() {
         .tempdir()
         .unwrap();
 
-    let mut db = PersistentDB::new(path.path().to_path_buf(), None).expect("database");
+    let mut db =
+        PersistentDB::new(PersistentDBOptions::new(path.path().to_path_buf())).expect("database");
 
     let address = address!("bd6f65c58a46427af4b257cbe231d0ed69ed5508");
     let mut state = HashMap::new();
@@ -1127,7 +1229,7 @@ fn test_resize_on_commit() {
 
     let env = unsafe { env_builder.open(path.path().join("evm.mdb")) }.expect("ok");
 
-    let mut db = PersistentDB::new_with_env(env, None).expect("open");
+    let mut db = PersistentDB::new_with_env(env, Default::default()).expect("open");
     assert_eq!(db.env.info().map_size, 4096 * 10);
 
     // large commit to trigger a resize
@@ -1146,7 +1248,7 @@ fn test_resize_on_commit() {
     drop(db);
 
     let env = unsafe { env_builder.open(path.path().join("evm.mdb")) }.expect("ok");
-    let db = PersistentDB::new_with_env(env, None).expect("open");
+    let db = PersistentDB::new_with_env(env, Default::default()).expect("open");
     assert_eq!(db.env.info().map_size, MAP_SIZE_UNIT);
 }
 
@@ -1157,7 +1259,8 @@ fn test_read_accounts() {
         .tempdir()
         .unwrap();
 
-    let db = PersistentDB::new(path.path().to_path_buf(), None).expect("database");
+    let db =
+        PersistentDB::new(PersistentDBOptions::new(path.path().to_path_buf())).expect("database");
 
     let addresses = [
         address!("27b1fdb04752bbc536007a920d24acb045561c26"),
@@ -1232,7 +1335,8 @@ fn test_read_receipts() {
         .tempdir()
         .unwrap();
 
-    let db = PersistentDB::new(path.path().to_path_buf(), None).expect("database");
+    let db =
+        PersistentDB::new(PersistentDBOptions::new(path.path().to_path_buf())).expect("database");
 
     let target_height = 100;
     let mut total_receipts = 0;

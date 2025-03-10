@@ -14,39 +14,43 @@ export class EvmInstance implements Contracts.Evm.Instance {
 
 	@postConstruct()
 	public initialize() {
-		this.#evm = new Evm(this.app.dataPath(), (level: LogLevel, message: string) => {
-			try {
-				switch (level) {
-					case LogLevel.Info: {
-						this.logger.info(message);
-						break;
+		this.#evm = new Evm({
+			historySize: 256n,
+			logger: (level: LogLevel, message: string) => {
+				try {
+					switch (level) {
+						case LogLevel.Info: {
+							this.logger.info(message);
+							break;
+						}
+						case LogLevel.Debug: {
+							this.logger.debug(message);
+							break;
+						}
+						case LogLevel.Notice: {
+							this.logger.notice(message);
+							break;
+						}
+						case LogLevel.Emergency: {
+							this.logger.emergency(message);
+							break;
+						}
+						case LogLevel.Alert: {
+							this.logger.alert(message);
+							break;
+						}
+						case LogLevel.Critical: {
+							this.logger.critical(message);
+							break;
+						}
+						case LogLevel.Warning: {
+							this.logger.warning(message);
+							break;
+						}
 					}
-					case LogLevel.Debug: {
-						this.logger.debug(message);
-						break;
-					}
-					case LogLevel.Notice: {
-						this.logger.notice(message);
-						break;
-					}
-					case LogLevel.Emergency: {
-						this.logger.emergency(message);
-						break;
-					}
-					case LogLevel.Alert: {
-						this.logger.alert(message);
-						break;
-					}
-					case LogLevel.Critical: {
-						this.logger.critical(message);
-						break;
-					}
-					case LogLevel.Warning: {
-						this.logger.warning(message);
-						break;
-					}
-				}
-			} catch {}
+				} catch {}
+			},
+			path: this.app.dataPath(),
 		});
 	}
 
@@ -82,8 +86,8 @@ export class EvmInstance implements Contracts.Evm.Instance {
 		});
 	}
 
-	public async getAccountInfo(address: string): Promise<Contracts.Evm.AccountInfo> {
-		return this.#evm.getAccountInfo(address);
+	public async getAccountInfo(address: string, height?: bigint): Promise<Contracts.Evm.AccountInfo> {
+		return this.#evm.getAccountInfo(address, height);
 	}
 
 	public async getAccountInfoExtended(
@@ -136,8 +140,8 @@ export class EvmInstance implements Contracts.Evm.Instance {
 		unit.setAccountUpdates(result.dirtyAccounts);
 	}
 
-	public async codeAt(address: string): Promise<string> {
-		return this.#evm.codeAt(address);
+	public async codeAt(address: string, height?: bigint): Promise<string> {
+		return this.#evm.codeAt(address, height);
 	}
 
 	public async storageAt(address: string, slot: bigint): Promise<string> {
