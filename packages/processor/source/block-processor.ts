@@ -99,7 +99,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	}
 
 	public async commit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
-		if (this.apiSync && unit.height > 0) {
+		if (this.apiSync && unit.height > this.configuration.getGenesisHeight()) {
 			await this.apiSync.beforeCommit();
 		}
 
@@ -119,7 +119,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		await this.txPoolWorker.onCommit(unit);
 		await this.evmWorker.onCommit(unit);
 
-		if (this.apiSync && unit.height > 0) {
+		if (this.apiSync && unit.height > this.configuration.getGenesisHeight()) {
 			await this.apiSync.onCommit(unit);
 		}
 
@@ -196,7 +196,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 
 	async #verifyStateHash(block: Contracts.Crypto.Block): Promise<void> {
 		let previousStateHash;
-		if (block.header.height === 0) {
+		if (block.header.height === this.configuration.getGenesisHeight()) {
 			// Assume snapshot is present if the previous block points to a non-zero hash
 			if (block.header.previousBlock !== "0000000000000000000000000000000000000000000000000000000000000000") {
 				assert.defined(this.snapshotImporter);
@@ -227,7 +227,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		});
 
 		if (block.header.logsBloom !== logsBloom) {
-			throw new Error(`Logs bloom mismatch! ${block.header.stateHash} != ${logsBloom}`);
+			throw new Error(`Logs bloom mismatch! ${block.header.logsBloom} != ${logsBloom}`);
 		}
 	}
 

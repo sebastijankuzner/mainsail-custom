@@ -5,6 +5,7 @@ import deepmerge from "deepmerge";
 import clone from "lodash.clone";
 import get from "lodash.get";
 import set from "lodash.set";
+
 @injectable()
 export class Configuration implements Contracts.Crypto.Configuration {
 	#config: Contracts.Crypto.NetworkConfig | undefined;
@@ -20,6 +21,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 			milestones: clone(config.milestones) as Contracts.Crypto.Milestone[],
 			network: clone(config.network),
 		};
+		this.#height = this.#config.genesisBlock.block.height;
 
 		this.#validateMilestones();
 		this.#buildConstants();
@@ -69,6 +71,11 @@ export class Configuration implements Contracts.Crypto.Configuration {
 		return this.#height;
 	}
 
+	public getGenesisHeight(): number {
+		assert.defined(this.#config);
+		return this.#config.genesisBlock.block.height;
+	}
+
 	public isNewMilestone(height?: number): boolean {
 		if (height === undefined) {
 			height = this.#height;
@@ -83,7 +90,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 
 	public getMilestone(height?: number): Contracts.Crypto.Milestone {
 		if (!this.#milestone || !this.#milestones) {
-			throw new Error();
+			throw new Error(`Milestones are not initialized`);
 		}
 
 		if (height === undefined) {
@@ -210,13 +217,15 @@ export class Configuration implements Contracts.Crypto.Configuration {
 			throw new Error();
 		}
 
+		const initialHeight = this.#config.genesisBlock.block.height;
+
 		const validatorMilestones = this.#config.milestones
 			.sort((a, b) => a.height - b.height)
 			.filter((milestone) => milestone.activeValidators !== undefined);
 
 		for (let index = 0; index < validatorMilestones.length; index++) {
 			const current = validatorMilestones[index];
-			if (current.height > 0 && current.activeValidators === 0) {
+			if (current.height > initialHeight && current.activeValidators === 0) {
 				throw new Exceptions.InvalidNumberOfActiveValidatorsError(
 					`Bad milestone at height: ${current.height}. The number of validators must be greater than 0.`,
 				);
@@ -232,7 +241,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 				continue;
 			}
 
-			if (previous.height === 0 && previous.activeValidators === 0) {
+			if (previous.height === initialHeight && previous.activeValidators === 0) {
 				continue;
 			}
 

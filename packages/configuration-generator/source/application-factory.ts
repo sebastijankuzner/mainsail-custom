@@ -60,7 +60,9 @@ export const makeApplication = async (configurationPath: string, options: Record
 
 	await app.resolve(CoreSerializer).register();
 	await app.resolve(CoreValidation).register();
-	await app.resolve(CoreCryptoConfig).register();
+	try {
+		await app.resolve(CoreCryptoConfig).register();
+	} catch {}
 	await app.resolve(CoreCryptoValidation).register();
 	await app.resolve(CoreCryptoHashBcrypto).register();
 	await app.resolve(CoreCryptoSignatureEcdsa).register();
@@ -78,8 +80,13 @@ export const makeApplication = async (configurationPath: string, options: Record
 	await app.resolve(CoreSnapshotLegacyImporter).register();
 	await app.resolve(EvmService).register();
 
-	// @ts-ignore
 	app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration).setConfig({
+		genesisBlock: {
+			// @ts-ignore
+			block: {
+				height: 0,
+			},
+		},
 		milestones: [
 			{
 				evmSpec: Contracts.Evm.SpecId.SHANGHAI,

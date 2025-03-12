@@ -71,6 +71,7 @@ export class ConfigurationGenerator {
 			epoch: new Date(),
 			explorer: "",
 			force: false,
+			initialHeight: 0,
 			maxBlockGasLimit: 10_000_000,
 			maxBlockPayload: 2_097_152,
 			maxTxPerBlock: 150,
@@ -132,8 +133,12 @@ export class ConfigurationGenerator {
 						.generate();
 
 					this.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration).setConfig({
-						// @ts-ignore
-						genesisBlock: {},
+						genesisBlock: {
+							// @ts-ignore
+							block: {
+								height: internalOptions.initialHeight,
+							},
+						},
 						milestones,
 						// @ts-ignore
 						network: {},
@@ -242,6 +247,17 @@ export class ConfigurationGenerator {
 
 	#preparteEnvironmentOptions(options: Contracts.NetworkGenerator.EnvironmentOptions): EnvironmentData {
 		const data: EnvironmentData = {
+			CORE_API_EVM_ENABLED: "1",
+
+			CORE_API_EVM_HOST: "127.0.0.1",
+
+			CORE_API_EVM_PORT: 4008,
+
+			CORE_API_TRANSACTION_POOL_HOST: "127.0.0.1",
+
+			CORE_API_TRANSACTION_POOL_PORT: 4007,
+
+			CORE_CRYPTO_WORKER_COUNT: 2,
 			// CORE_DB_HOST: options.coreDBHost,
 			// CORE_DB_PORT: options.coreDBPort,
 			CORE_P2P_PORT: options.coreP2PPort,

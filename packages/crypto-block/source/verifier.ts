@@ -1,6 +1,6 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers, Utils } from "@mainsail/contracts";
-import { assert, BigNumber } from "@mainsail/utils";
+import { BigNumber } from "@mainsail/utils";
 
 @injectable()
 export class Verifier implements Contracts.Crypto.BlockVerifier {
@@ -22,58 +22,19 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 		};
 
 		try {
-			const constants = this.configuration.getMilestone(blockData.height);
-
-			if (blockData.height === 0) {
-				let validPreviousBlock = false;
-				if (constants.snapshot) {
-					assert.defined(constants.snapshot.hash);
-					validPreviousBlock = blockData.previousBlock === constants.snapshot.hash;
-				} else {
-					validPreviousBlock =
-						blockData.previousBlock === "0000000000000000000000000000000000000000000000000000000000000000";
-				}
-
-				if (!validPreviousBlock) {
-					result.errors.push("Genesis block has invalid previous block");
-				}
-			}
-
-			if (blockData.height !== 0 && !blockData.previousBlock) {
-				result.errors.push("Invalid previous block");
-			}
-
-			if (!blockData.reward.isEqualTo(constants.reward)) {
-				result.errors.push(
-					["Invalid block reward:", blockData.reward, "expected:", constants.reward].join(" "),
-				);
-			}
-
-			if (blockData.version !== constants.block.version) {
-				result.errors.push("Invalid block version");
-			}
+			const milestone = this.configuration.getMilestone(blockData.height);
 
 			const totalSize = this.headerSize() + block.header.payloadLength;
-			if (totalSize > constants.block.maxPayload) {
-				result.errors.push(`Payload is too large: ${totalSize} > ${constants.block.maxPayload}`);
+			if (totalSize > milestone.block.maxPayload) {
+				result.errors.push(`Payload is too large: ${totalSize} > ${milestone.block.maxPayload}`);
 			}
 
 			if (totalSize !== Buffer.byteLength(block.serialized, "hex")) {
 				result.errors.push("Serialized payload size mismatch");
 			}
 
-			if (blockData.totalGasUsed > constants.block.maxGasLimit && blockData.height > 0) {
-				result.errors.push(
-					`Total gas used ${blockData.totalGasUsed} exceeds max gas limit ${constants.block.maxGasLimit}`,
-				);
-			}
-
 			if (block.transactions.length !== blockData.numberOfTransactions) {
 				result.errors.push("Invalid number of transactions");
-			}
-
-			if (block.transactions.length > constants.block.maxTransactions && blockData.height > 0) {
-				result.errors.push("Transactions length is too high");
 			}
 
 			// Checking if transactions of the block adds up to block values.
@@ -107,7 +68,7 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 
 			if (
 				!totalAmount.isEqualTo(blockData.totalAmount) && // Only the genesis block can have a 'totalAmount' while having no transactions.
-				(block.header.height > 0 || block.header.transactions.length > 0)
+				(block.header.height > 0 || block.header.transactions.length > 0) // TODO: check if can be removed
 			) {
 				result.errors.push("Invalid total amount");
 			}
