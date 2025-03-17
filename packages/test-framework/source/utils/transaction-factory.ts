@@ -26,8 +26,6 @@ export class TransactionFactory {
 	protected builder: any;
 	protected app: Contracts.Kernel.Application;
 
-	// @ts-ignore
-	#network = "testnet";
 	#networkConfig: Contracts.Crypto.NetworkConfig | undefined;
 	#nonce: BigNumber | undefined;
 	#fee: BigNumber | undefined;
@@ -121,12 +119,6 @@ export class TransactionFactory {
 
 	public withFee(fee: number): TransactionFactory {
 		this.#fee = BigNumber.make(fee);
-
-		return this;
-	}
-
-	public withNetwork(network: string): TransactionFactory {
-		this.#network = network;
 
 		return this;
 	}

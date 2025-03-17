@@ -14,7 +14,6 @@ export const Builder = {
 				plugins: context.plugins,
 			});
 
-			// eslint-disable-next-line @typescript-eslint/await-thenable
 			await app.boot();
 		}
 
