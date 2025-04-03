@@ -68,16 +68,16 @@ export class Validator implements Contracts.Validator.Validator {
 		timestamp: number,
 	): Promise<Contracts.Crypto.Block> {
 		const previousBlock = this.stateStore.getLastBlock();
-		const height = previousBlock.header.height + 1;
+		const height = previousBlock.header.number + 1;
 
-		const { logsBloom, stateHash, transactions } = await this.#getTransactionsForForging(
-			generatorAddress,
-			timestamp,
-			{
-				height: BigInt(height),
-				round: BigInt(round),
-			},
-		);
+		const {
+			logsBloom,
+			stateRoot: stateHash,
+			transactions,
+		} = await this.#getTransactionsForForging(generatorAddress, timestamp, {
+			height: BigInt(height),
+			round: BigInt(round),
+		});
 		return this.#makeBlock(round, generatorAddress, logsBloom, stateHash, transactions, timestamp);
 	}
 
@@ -140,7 +140,7 @@ export class Validator implements Contracts.Validator.Validator {
 		generatorAddress: string,
 		timestamp: number,
 		commitKey: Contracts.Evm.CommitKey,
-	): Promise<{ logsBloom: string; stateHash: string; transactions: Contracts.Crypto.Transaction[] }> {
+	): Promise<{ logsBloom: string; stateRoot: string; transactions: Contracts.Crypto.Transaction[] }> {
 		const transactionBytes = await this.txPoolWorker.getTransactionBytes();
 
 		const validator = this.createTransactionValidator();
@@ -208,8 +208,8 @@ export class Validator implements Contracts.Validator.Validator {
 				validatorAddress: generatorAddress,
 			});
 
-			if (this.roundCalculator.isNewRound(previousBlock.header.height + 2)) {
-				const { activeValidators } = this.cryptoConfiguration.getMilestone(previousBlock.header.height + 2);
+			if (this.roundCalculator.isNewRound(previousBlock.header.number + 2)) {
+				const { activeValidators } = this.cryptoConfiguration.getMilestone(previousBlock.header.number + 2);
 
 				await validator.getEvm().calculateActiveValidators({
 					activeValidators: BigNumber.make(activeValidators).toBigInt(),
@@ -221,11 +221,11 @@ export class Validator implements Contracts.Validator.Validator {
 			}
 
 			const logsBloom = await validator.getEvm().logsBloom(commitKey);
-			const stateHash = await validator.getEvm().stateHash(commitKey, previousBlock.header.stateHash);
+			const stateRoot = await validator.getEvm().stateHash(commitKey, previousBlock.header.stateRoot);
 
 			return {
 				logsBloom,
-				stateHash,
+				stateRoot,
 				transactions: candidateTransactions,
 			};
 		} finally {
@@ -235,15 +235,15 @@ export class Validator implements Contracts.Validator.Validator {
 
 	async #makeBlock(
 		round: number,
-		generatorAddress: string,
+		proposer: string,
 		logsBloom: string,
-		stateHash: string,
+		stateRoot: string,
 		transactions: Contracts.Crypto.Transaction[],
 		timestamp: number,
 	): Promise<Contracts.Crypto.Block> {
 		const previousBlock = this.stateStore.getLastBlock();
-		const height = previousBlock.header.height + 1;
-		const milestone = this.cryptoConfiguration.getMilestone(height);
+		const number = previousBlock.header.number + 1;
+		const milestone = this.cryptoConfiguration.getMilestone(number);
 
 		const totals: { amount: BigNumber; fee: BigNumber; gasUsed: number } = {
 			amount: BigNumber.ZERO,
@@ -255,7 +255,7 @@ export class Validator implements Contracts.Validator.Validator {
 
 		// The payload length needs to account for the overhead of each serialized transaction
 		// which is a uint32 per transaction to store the individual length.
-		let payloadLength = transactions.length * 4;
+		let payloadSize = transactions.length * 4;
 
 		for (const transaction of transactions) {
 			const { data, serialized } = transaction;
@@ -269,26 +269,26 @@ export class Validator implements Contracts.Validator.Validator {
 
 			payloadBuffers.push(Buffer.from(data.id, "hex"));
 			transactionData.push(data);
-			payloadLength += serialized.length;
+			payloadSize += serialized.length;
 		}
 
 		return this.blockFactory.make(
 			{
-				generatorAddress,
-				height,
+				amount: totals.amount,
+				fee: totals.fee,
+				gasUsed: totals.gasUsed,
 				logsBloom,
-				numberOfTransactions: transactionData.length,
-				payloadHash: (await this.hashFactory.sha256(payloadBuffers)).toString("hex"),
-				payloadLength,
-				previousBlock: previousBlock.header.id,
+				number,
+				parentHash: previousBlock.header.hash,
+				payloadSize,
+				proposer,
 				reward: BigNumber.make(milestone.reward),
 				round,
-				stateHash,
+				stateRoot,
 				timestamp,
-				totalAmount: totals.amount,
-				totalFee: totals.fee,
-				totalGasUsed: totals.gasUsed,
 				transactions: transactionData,
+				transactionsCount: transactionData.length,
+				transactionsRoot: (await this.hashFactory.sha256(payloadBuffers)).toString("hex"),
 				version: 1,
 			},
 			transactions,

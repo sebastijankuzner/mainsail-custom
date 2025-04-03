@@ -22,9 +22,9 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 		};
 
 		try {
-			const milestone = this.configuration.getMilestone(blockData.height);
+			const milestone = this.configuration.getMilestone(blockData.number);
 
-			const totalSize = this.headerSize() + block.header.payloadLength;
+			const totalSize = this.headerSize() + block.header.payloadSize;
 			if (totalSize > milestone.block.maxPayload) {
 				result.errors.push(`Payload is too large: ${totalSize} > ${milestone.block.maxPayload}`);
 			}
@@ -33,14 +33,14 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 				result.errors.push("Serialized payload size mismatch");
 			}
 
-			if (block.transactions.length !== blockData.numberOfTransactions) {
+			if (block.transactions.length !== blockData.transactionsCount) {
 				result.errors.push("Invalid number of transactions");
 			}
 
 			// Checking if transactions of the block adds up to block values.
 			const appliedTransactions: Record<string, Contracts.Crypto.TransactionData> = {};
 
-			let totalAmount: BigNumber = BigNumber.ZERO;
+			let amount: BigNumber = BigNumber.ZERO;
 
 			// The initial payload length takes the overhead for each serialized transaction into account
 			// which is a uint32 per transaction to store the individual length.
@@ -60,21 +60,21 @@ export class Verifier implements Contracts.Crypto.BlockVerifier {
 
 				appliedTransactions[transaction.id] = transaction.data;
 
-				totalAmount = totalAmount.plus(transaction.data.value);
+				amount = amount.plus(transaction.data.value);
 				totalPayloadLength += transaction.serialized.byteLength;
 
 				payloadBuffers.push(bytes);
 			}
 
-			if (!totalAmount.isEqualTo(blockData.totalAmount)) {
-				result.errors.push("Invalid total amount");
+			if (!amount.isEqualTo(blockData.amount)) {
+				result.errors.push("Invalid amount");
 			}
 
-			if (totalPayloadLength !== blockData.payloadLength) {
+			if (totalPayloadLength !== blockData.payloadSize) {
 				result.errors.push("Invalid payload length");
 			}
 
-			if ((await this.hashFactory.sha256(payloadBuffers)).toString("hex") !== blockData.payloadHash) {
+			if ((await this.hashFactory.sha256(payloadBuffers)).toString("hex") !== blockData.transactionsRoot) {
 				result.errors.push("Invalid payload hash");
 			}
 		} catch (error) {

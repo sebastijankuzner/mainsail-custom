@@ -145,7 +145,7 @@ export class Sync implements Contracts.ApiSync.Service {
 			const receipt = receipts?.get(transaction.id);
 			if (receipt) {
 				transactionReceipts.push({
-					blockHeight: header.height.toFixed(),
+					blockHeight: header.number.toFixed(),
 					deployedContractAddress: receipt.deployedContractAddress,
 					gasRefunded: Number(receipt.gasRefunded),
 					gasUsed: Number(receipt.gasUsed),
@@ -171,7 +171,7 @@ export class Sync implements Contracts.ApiSync.Service {
 
 		const validatorAttributes = (address: string) => {
 			const dirtyValidator = dirtyValidators[address];
-			const isBlockValidator = header.generatorAddress === address;
+			const isBlockValidator = header.proposer === address;
 
 			return {
 				...(dirtyValidator
@@ -188,12 +188,12 @@ export class Sync implements Contracts.ApiSync.Service {
 				...(isBlockValidator
 					? {
 							// incrementally applied in UPSERT below
-							validatorForgedFees: header.totalFee.toFixed(),
-							validatorForgedRewards: header.totalAmount.toFixed(),
-							validatorForgedTotal: header.totalFee.plus(header.totalAmount).toFixed(),
+							validatorForgedFees: header.fee.toFixed(),
+							validatorForgedRewards: header.amount.toFixed(),
+							validatorForgedTotal: header.fee.plus(header.amount).toFixed(),
 							validatorLastBlock: {
-								height: header.height,
-								id: header.id,
+								height: header.number,
+								id: header.hash,
 								timestamp: header.timestamp,
 							},
 							validatorProducedBlocks: 1,
@@ -228,7 +228,7 @@ export class Sync implements Contracts.ApiSync.Service {
 				BigNumber.make(account.balance).toFixed(),
 				BigNumber.make(account.nonce).toFixed(),
 				attributes,
-				header.height.toFixed(),
+				header.number.toFixed(),
 			];
 		});
 
@@ -236,7 +236,7 @@ export class Sync implements Contracts.ApiSync.Service {
 		// thus ensure they are manually inserted.
 		for (const validatorAddress of [
 			...new Set([
-				header.generatorAddress,
+				header.proposer,
 				...Object.values<Contracts.State.ValidatorWallet>(dirtyValidators).map((v) => v.address),
 			]),
 		]) {
@@ -249,7 +249,7 @@ export class Sync implements Contracts.ApiSync.Service {
 					{
 						...validatorAttributes(validatorAddress),
 					},
-					header.height.toFixed(),
+					header.number.toFixed(),
 				]);
 			}
 		}
@@ -257,22 +257,22 @@ export class Sync implements Contracts.ApiSync.Service {
 		const deferredSync: DeferredSync = {
 			block: {
 				commitRound: proof.round,
-				generatorAddress: header.generatorAddress,
-				height: header.height.toFixed(),
-				id: header.id,
-				numberOfTransactions: header.numberOfTransactions,
-				payloadHash: header.payloadHash,
-				payloadLength: header.payloadLength,
-				previousBlock: header.previousBlock,
+				generatorAddress: header.proposer,
+				height: header.number.toFixed(),
+				id: header.hash,
+				numberOfTransactions: header.transactionsCount,
+				payloadHash: header.transactionsRoot,
+				payloadLength: header.payloadSize,
+				previousBlock: header.parentHash,
 				reward: header.reward.toFixed(),
 				round: header.round,
 				signature: proof.signature,
-				stateHash: header.stateHash,
+				stateHash: header.stateRoot,
 				timestamp: header.timestamp.toFixed(),
-				totalAmount: header.totalAmount.toFixed(),
-				totalFee: header.totalFee.toFixed(),
-				totalGasUsed: header.totalGasUsed,
-				validatorRound: this.roundCalculator.calculateRound(header.height).round,
+				totalAmount: header.amount.toFixed(),
+				totalFee: header.fee.toFixed(),
+				totalGasUsed: header.gasUsed,
+				validatorRound: this.roundCalculator.calculateRound(header.number).round,
 				validatorSet: validatorSetPack(proof.validators).toString(),
 				version: header.version,
 			},
@@ -283,8 +283,8 @@ export class Sync implements Contracts.ApiSync.Service {
 
 			transactions: transactions.map(({ data }) => ({
 				amount: data.value.toFixed(),
-				blockHeight: header.height.toFixed(),
-				blockId: header.id,
+				blockHeight: header.number.toFixed(),
+				blockId: header.hash,
 				data: data.data,
 				gasLimit: data.gasLimit,
 				gasPrice: data.gasPrice,
@@ -300,15 +300,15 @@ export class Sync implements Contracts.ApiSync.Service {
 			})),
 			wallets,
 
-			...(this.roundCalculator.isNewRound(header.height + 1)
+			...(this.roundCalculator.isNewRound(header.number + 1)
 				? {
-						validatorRound: this.#createValidatorRound(header.height + 1),
+						validatorRound: this.#createValidatorRound(header.number + 1),
 					}
 				: {}),
 
-			...(this.configuration.isNewMilestone(header.height + 1)
+			...(this.configuration.isNewMilestone(header.number + 1)
 				? {
-						newMilestones: this.configuration.getMilestone(header.height + 1),
+						newMilestones: this.configuration.getMilestone(header.number + 1),
 					}
 				: {}),
 		};
@@ -316,7 +316,7 @@ export class Sync implements Contracts.ApiSync.Service {
 		return this.#queueDeferredSync(deferredSync);
 	}
 
-	#createValidatorRound(height: number): Models.ValidatorRound {
+	#createValidatorRound(number: number): Models.ValidatorRound {
 		const activeValidators = this.validatorSet.getActiveValidators();
 
 		// Map the active validator set (static, vote-weighted, etc.) to actual proposal order
@@ -326,7 +326,7 @@ export class Sync implements Contracts.ApiSync.Service {
 		);
 
 		return {
-			...this.roundCalculator.calculateRound(height),
+			...this.roundCalculator.calculateRound(number),
 			validators: validatorWallets.map((v) => v.address),
 			votes: validatorWallets.map((v) => v.voteBalance.toFixed()),
 		};
@@ -515,7 +515,7 @@ export class Sync implements Contracts.ApiSync.Service {
 		const genesisHeight = this.configuration.getGenesisHeight();
 		const lastHeight = (await this.databaseService.isEmpty())
 			? genesisHeight
-			: (await this.databaseService.getLastCommit()).block.header.height;
+			: (await this.databaseService.getLastCommit()).block.header.number;
 
 		const [blocks] = await this.dataSource.query(
 			"select coalesce(max(height), $1)::bigint as max_height, count(1) as count from blocks",

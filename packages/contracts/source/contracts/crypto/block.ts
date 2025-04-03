@@ -20,53 +20,53 @@ export interface Block {
 }
 
 export interface BlockData {
-	readonly id: string;
+	readonly hash: string;
 
 	readonly timestamp: number;
 	readonly version: number;
-	readonly height: number;
+	readonly number: number;
 	readonly round: number;
-	readonly previousBlock: string;
-	readonly stateHash: string;
+	readonly parentHash: string;
+	readonly stateRoot: string;
 	readonly logsBloom: string;
-	readonly numberOfTransactions: number;
-	readonly totalGasUsed: number;
-	readonly totalAmount: BigNumber;
-	readonly totalFee: BigNumber;
+	readonly transactionsCount: number;
+	readonly gasUsed: number;
+	readonly amount: BigNumber;
+	readonly fee: BigNumber;
 	readonly reward: BigNumber;
-	readonly payloadLength: number;
-	readonly payloadHash: string;
-	readonly generatorAddress: string;
+	readonly payloadSize: number;
+	readonly transactionsRoot: string;
+	readonly proposer: string;
 
 	// TODO: transactions field is missing when retrieved from storage
-	// and numberOfTransactions = 0
+	// and transactionsCount = 0
 	readonly transactions: TransactionData[];
 }
 
 export interface BlockJson {
-	readonly id: string;
+	readonly hash: string;
 
 	readonly timestamp: number;
 	readonly version: number;
-	readonly height: number;
+	readonly number: number;
 	readonly round: number;
-	readonly previousBlock: string;
-	readonly stateHash: string;
+	readonly parentHash: string;
+	readonly stateRoot: string;
 	readonly logsBloom: string;
-	readonly numberOfTransactions: number;
-	readonly totalGasUsed: number;
-	readonly totalAmount: string;
-	readonly totalFee: string;
+	readonly transactionsCount: number;
+	readonly gasUsed: number;
+	readonly amount: string;
+	readonly fee: string;
 	readonly reward: string;
-	readonly payloadLength: number;
-	readonly payloadHash: string;
-	readonly generatorAddress: string;
+	readonly payloadSize: number;
+	readonly transactionsRoot: string;
+	readonly proposer: string;
 
 	readonly serialized?: string;
 	readonly transactions: TransactionJson[];
 }
 
-export type BlockDataSerializable = Omit<BlockData, "id">;
+export type BlockDataSerializable = Omit<BlockData, "hash">;
 
 export interface BlockFactory {
 	make(data: Mutable<BlockDataSerializable>, transactions: Transaction[]): Promise<Block>;

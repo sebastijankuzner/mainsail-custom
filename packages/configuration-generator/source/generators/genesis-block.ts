@@ -247,7 +247,7 @@ export class GenesisBlockGenerator extends Generator {
 			round: BigInt(0),
 		};
 		const timestamp = BigInt(dayjs(options.epoch).valueOf());
-		const generatorAddress = await this.app
+		const proposer = await this.app
 			.getTagged<Contracts.Crypto.AddressFactory>(
 				Identifiers.Cryptography.Identity.Address.Factory,
 				"type",
@@ -257,7 +257,7 @@ export class GenesisBlockGenerator extends Generator {
 
 		// The initial payload length takes the overhead for each serialized transaction into account
 		// which is a uint32 per transaction to store the individual length.
-		let payloadLength = transactions.length * 4;
+		let payloadSize = transactions.length * 4;
 
 		await this.evm.prepareNextCommit({ commitKey });
 
@@ -272,7 +272,7 @@ export class GenesisBlockGenerator extends Generator {
 					commitKey,
 					gasLimit: BigInt(30_000_000),
 					timestamp,
-					validatorAddress: generatorAddress,
+					validatorAddress: proposer,
 				},
 				caller: transaction.data.senderAddress,
 				data: Buffer.from(transaction.data.data, "hex"),
@@ -292,7 +292,7 @@ export class GenesisBlockGenerator extends Generator {
 
 			payloadBuffers.push(Buffer.from(data.id, "hex"));
 			transactionData.push(data);
-			payloadLength += serialized.length;
+			payloadSize += serialized.length;
 		}
 
 		await this.evm.updateRewardsAndVotes({
@@ -300,7 +300,7 @@ export class GenesisBlockGenerator extends Generator {
 			commitKey,
 			specId: Contracts.Evm.SpecId.SHANGHAI,
 			timestamp,
-			validatorAddress: generatorAddress,
+			validatorAddress: proposer,
 		});
 
 		await this.evm.calculateActiveValidators({
@@ -308,37 +308,37 @@ export class GenesisBlockGenerator extends Generator {
 			commitKey,
 			specId: Contracts.Evm.SpecId.SHANGHAI,
 			timestamp,
-			validatorAddress: generatorAddress,
+			validatorAddress: proposer,
 		});
 
 		return {
 			block: await this.app.get<Contracts.Crypto.BlockFactory>(Identifiers.Cryptography.Block.Factory).make(
 				{
-					generatorAddress,
-					height: options.initialHeight ?? 0,
+					amount: options.snapshot ? BigNumber.make(options.premine) : totals.amount,
+					fee: totals.fee,
+					gasUsed: totals.gasUsed,
 					logsBloom: await this.evm.logsBloom(commitKey),
-					numberOfTransactions: transactions.length,
-					payloadHash: (
-						await this.app
-							.get<Contracts.Crypto.HashFactory>(Identifiers.Cryptography.Hash.Factory)
-							.sha256(payloadBuffers)
-					).toString("hex"),
-					payloadLength,
-					previousBlock:
+					number: options.initialHeight ?? 0,
+					parentHash:
 						options.snapshot?.previousGenesisBlockHash ??
 						"0000000000000000000000000000000000000000000000000000000000000000",
+					payloadSize,
+					proposer,
 					reward: BigNumber.ZERO,
 					round: 0,
-					stateHash: await this.evm.stateHash(
+					stateRoot: await this.evm.stateHash(
 						commitKey,
 						options.snapshot?.snapshotHash ??
 							"0000000000000000000000000000000000000000000000000000000000000000",
 					),
 					timestamp: dayjs(options.epoch).valueOf(),
-					totalAmount: options.snapshot ? BigNumber.make(options.premine) : totals.amount,
-					totalFee: totals.fee,
-					totalGasUsed: totals.gasUsed,
 					transactions: transactionData,
+					transactionsCount: transactions.length,
+					transactionsRoot: (
+						await this.app
+							.get<Contracts.Crypto.HashFactory>(Identifiers.Cryptography.Hash.Factory)
+							.sha256(payloadBuffers)
+					).toString("hex"),
 					version: 1,
 				},
 				transactions,

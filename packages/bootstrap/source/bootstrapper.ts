@@ -100,7 +100,7 @@ export class Bootstrapper {
 			return;
 		}
 
-		if (this.stateStore.getGenesisCommit().block.data.id !== genesisBlock.data.id) {
+		if (this.stateStore.getGenesisCommit().block.data.hash !== genesisBlock.data.hash) {
 			throw new Error("Block from crypto.json doesn't match stored genesis block");
 		}
 	}
@@ -151,7 +151,7 @@ export class Bootstrapper {
 
 			await this.blockProcessor.commit(commitState);
 		} catch (error) {
-			await this.app.terminate(`Failed to process block at height ${commit.block.data.height}`, error);
+			await this.app.terminate(`Failed to process block at height ${commit.block.data.number}`, error);
 		}
 	}
 
@@ -161,8 +161,7 @@ export class Bootstrapper {
 
 		// assume snapshot is present if the previous block points to a non-zero hash
 		if (
-			genesisBlock.block.header.previousBlock ===
-			"0000000000000000000000000000000000000000000000000000000000000000"
+			genesisBlock.block.header.parentHash === "0000000000000000000000000000000000000000000000000000000000000000"
 		) {
 			if (milestone.snapshot) {
 				throw new Error("previous block set to snapshot but no hash in milestone");

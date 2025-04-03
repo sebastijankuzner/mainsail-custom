@@ -194,7 +194,7 @@ export class DatabaseService implements Contracts.Database.DatabaseService {
 
 	public async onCommit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
 		const commit = await unit.getCommit();
-		this.#state.height = commit.block.data.height;
+		this.#state.height = commit.block.data.number;
 		this.#state.totalRound += commit.proof.round + 1;
 	}
 
@@ -223,7 +223,7 @@ export class DatabaseService implements Contracts.Database.DatabaseService {
 		const blockHeader = await this.blockDeserializer.deserializeHeader(blockBuffer);
 
 		const transactions: Buffer[] = [];
-		for (let index = 0; index < blockHeader.numberOfTransactions; index++) {
+		for (let index = 0; index < blockHeader.transactionsCount; index++) {
 			const key = `${height}-${index}`;
 
 			const transaction = await this.storage.getTransactionBytes(key);
@@ -256,7 +256,7 @@ export class DatabaseService implements Contracts.Database.DatabaseService {
 		const blockBuffer = await this.#readBlockHeaderBytes(height);
 		assert.buffer(blockBuffer);
 		const block = await this.blockDeserializer.deserializeHeader(blockBuffer);
-		transaction.data.blockId = block.id;
+		transaction.data.blockId = block.hash;
 
 		return transaction;
 	}

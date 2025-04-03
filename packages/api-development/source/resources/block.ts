@@ -12,10 +12,10 @@ export class BlockResource implements Contracts.Api.Resource {
 
 		return {
 			forged: {
-				amount: blockData.totalAmount.toFixed(),
-				fee: blockData.totalFee.toFixed(),
+				amount: blockData.amount.toFixed(),
+				fee: blockData.fee.toFixed(),
 				reward: blockData.reward.toFixed(),
-				total: blockData.reward.plus(blockData.totalFee).toFixed(),
+				total: blockData.reward.plus(blockData.fee).toFixed(),
 			},
 			// TODO: Fix
 			// generator: {
@@ -23,15 +23,15 @@ export class BlockResource implements Contracts.Api.Resource {
 			// 	publicKey: generator.getPublicKey(),
 			// 	username: generator.hasAttribute("username") ? generator.getAttribute("username") : undefined,
 			// },
-			height: +blockData.height,
-			id: blockData.id,
+			height: +blockData.number,
+			id: blockData.hash,
 			payload: {
-				hash: blockData.payloadHash,
-				length: blockData.payloadLength,
+				hash: blockData.transactionsRoot,
+				length: blockData.payloadSize,
 			},
-			previous: blockData.previousBlock,
+			previous: blockData.parentHash,
 			timestamp: blockData.timestamp,
-			transactions: blockData.numberOfTransactions,
+			transactions: blockData.transactionsCount,
 			version: blockData.version,
 		};
 	}

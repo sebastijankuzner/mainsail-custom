@@ -68,8 +68,8 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 
 			await this.evm.prepareNextCommit({
 				commitKey: {
-					blockId: block.header.id,
-					height: BigInt(block.header.height),
+					blockId: block.header.hash,
+					height: BigInt(block.header.number),
 					round: BigInt(block.header.round),
 				},
 			});
@@ -134,13 +134,13 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		if (!this.state.isBootstrap()) {
 			const block = unit.getBlock();
 			this.logger.info(
-				`Block ${unit.height.toLocaleString()}/${unit.round.toLocaleString()} with ${block.data.numberOfTransactions.toLocaleString()} tx(s) committed (gasUsed=${block.data.totalGasUsed.toLocaleString()})`,
+				`Block ${unit.height.toLocaleString()}/${unit.round.toLocaleString()} with ${block.data.transactionsCount.toLocaleString()} tx(s) committed (gasUsed=${block.data.gasUsed.toLocaleString()})`,
 			);
 		}
 	}
 
 	#logNewRound(unit: Contracts.Processor.ProcessableUnit): void {
-		const height = unit.getBlock().data.height;
+		const height = unit.getBlock().data.number;
 		if (this.roundCalculator.isNewRound(height + 1)) {
 			const roundInfo = this.roundCalculator.calculateRound(height + 1);
 
@@ -157,7 +157,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		processorResult: Contracts.Processor.BlockProcessorResult,
 		gasUsed: number,
 	): void {
-		const totalGas = block.header.totalGasUsed;
+		const totalGas = block.header.gasUsed;
 
 		if (processorResult.gasUsed + gasUsed > totalGas) {
 			throw new Error("Cannot consume more gas");
@@ -170,7 +170,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		block: Contracts.Crypto.Block,
 		processorResult: Contracts.Processor.BlockProcessorResult,
 	): void {
-		const totalGas = block.header.totalGasUsed;
+		const totalGas = block.header.gasUsed;
 		if (totalGas !== processorResult.gasUsed) {
 			throw new Error(`Block gas ${totalGas} does not match consumed gas ${processorResult.gasUsed}`);
 		}
@@ -186,41 +186,41 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 			);
 		}
 
-		if (!totalGas.isEqualTo(block.header.totalFee)) {
-			throw new Error(`Block fee ${block.header.totalFee} does not match consumed fee ${totalGas}`);
+		if (!totalGas.isEqualTo(block.header.fee)) {
+			throw new Error(`Block fee ${block.header.fee} does not match consumed fee ${totalGas}`);
 		}
 	}
 
 	async #verifyStateHash(block: Contracts.Crypto.Block): Promise<void> {
-		let previousStateHash;
-		if (block.header.height === this.configuration.getGenesisHeight()) {
+		let previousStateRoot;
+		if (block.header.number === this.configuration.getGenesisHeight()) {
 			// Assume snapshot is present if the previous block points to a non-zero hash
-			if (block.header.previousBlock !== "0000000000000000000000000000000000000000000000000000000000000000") {
+			if (block.header.parentHash !== "0000000000000000000000000000000000000000000000000000000000000000") {
 				assert.defined(this.snapshotImporter);
 				assert.defined(this.snapshotImporter.result);
-				previousStateHash = this.snapshotImporter.snapshotHash;
+				previousStateRoot = this.snapshotImporter.snapshotHash;
 			} else {
-				previousStateHash = "0000000000000000000000000000000000000000000000000000000000000000";
+				previousStateRoot = "0000000000000000000000000000000000000000000000000000000000000000";
 			}
 		} else {
 			const previousBlock = this.stateStore.getLastBlock();
-			previousStateHash = previousBlock.header.stateHash;
+			previousStateRoot = previousBlock.header.stateRoot;
 		}
 
-		const stateHash = await this.evm.stateHash(
-			{ blockId: block.header.id, height: BigInt(block.header.height), round: BigInt(block.header.round) },
-			previousStateHash,
+		const stateRoot = await this.evm.stateHash(
+			{ blockId: block.header.hash, height: BigInt(block.header.number), round: BigInt(block.header.round) },
+			previousStateRoot,
 		);
 
-		if (block.header.stateHash !== stateHash) {
-			throw new Error(`State hash mismatch! ${block.header.stateHash} != ${stateHash}`);
+		if (block.header.stateRoot !== stateRoot) {
+			throw new Error(`State root mismatch! ${block.header.stateRoot} != ${stateRoot}`);
 		}
 	}
 
 	async #verifyLogsBloom(block: Contracts.Crypto.Block): Promise<void> {
 		const logsBloom = await this.evm.logsBloom({
-			blockId: block.header.id,
-			height: BigInt(block.header.height),
+			blockId: block.header.hash,
+			height: BigInt(block.header.number),
 			round: BigInt(block.header.round),
 		});
 
@@ -246,13 +246,13 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		await this.evm.updateRewardsAndVotes({
 			blockReward: BigNumber.make(milestone.reward).toBigInt(),
 			commitKey: {
-				blockId: block.header.id,
-				height: BigInt(block.header.height),
+				blockId: block.header.hash,
+				height: BigInt(block.header.number),
 				round: BigInt(block.header.round),
 			},
 			specId: milestone.evmSpec,
 			timestamp: BigInt(block.header.timestamp),
-			validatorAddress: block.header.generatorAddress,
+			validatorAddress: block.header.proposer,
 		});
 	}
 
@@ -268,13 +268,13 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		await this.evm.calculateActiveValidators({
 			activeValidators: BigNumber.make(activeValidators).toBigInt(),
 			commitKey: {
-				blockId: block.header.id,
-				height: BigInt(block.header.height),
+				blockId: block.header.hash,
+				height: BigInt(block.header.number),
 				round: BigInt(block.header.round),
 			},
 			specId: evmSpec,
 			timestamp: BigInt(block.header.timestamp),
-			validatorAddress: block.header.generatorAddress,
+			validatorAddress: block.header.proposer,
 		});
 	}
 

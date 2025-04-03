@@ -144,10 +144,10 @@ export abstract class EvmInstance implements Contracts.Evm.Instance, Contracts.E
 	}
 
 	public async onCommit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
-		const { height, round, id: blockId } = unit.getBlock().header;
+		const { number, round, hash: blockId } = unit.getBlock().header;
 		const commitData = await this.#prepareCommitData(unit);
 
-		const result = await this.#evm.commit({ blockId, height: BigInt(height), round: BigInt(round) }, commitData);
+		const result = await this.#evm.commit({ blockId, height: BigInt(number), round: BigInt(round) }, commitData);
 		unit.setAccountUpdates(result.dirtyAccounts);
 	}
 
@@ -209,7 +209,7 @@ export abstract class EvmInstance implements Contracts.Evm.Instance, Contracts.E
 		const { block, serialized } = await unit.getCommit();
 
 		const {
-			header: { height, id },
+			header: { number: height, hash: id },
 		} = block;
 
 		const proofSize = this.proofSize();

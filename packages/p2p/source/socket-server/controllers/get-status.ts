@@ -17,8 +17,8 @@ export class GetStatusController implements Contracts.P2P.Controller {
 		return {
 			config: getPeerConfig(this.app),
 			state: {
-				height: lastBlock.data.height,
-				id: lastBlock.data.id,
+				height: lastBlock.data.number,
+				id: lastBlock.data.hash,
 			},
 		};
 	}

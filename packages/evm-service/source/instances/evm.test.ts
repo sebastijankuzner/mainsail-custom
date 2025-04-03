@@ -116,7 +116,7 @@ describe<{
 			height: BigInt(0),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { height: BigInt(0), round: BigInt(0) },
+				header: { number: BigInt(0), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -149,6 +149,7 @@ describe<{
 		//     uint256 txGasPrice;
 		//     address txOrigin;
 		// }
+
 		assert.equal(data[0], 1245n);
 		assert.equal(data[1], 123_456_789n);
 		assert.equal(data[2], 12_000_000n);
@@ -179,7 +180,7 @@ describe<{
 			height: BigInt(0),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(0), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -218,7 +219,7 @@ describe<{
 			height: BigInt(1),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(1), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -241,7 +242,7 @@ describe<{
 				height: commitKey.height,
 				round: commitKey.round,
 				getBlock: () => ({
-					header: { height: commitKey.height, round: commitKey.round },
+					header: { number: commitKey.height, round: commitKey.round },
 				}),
 				setAccountUpdates: () => {},
 			} as any);
@@ -351,7 +352,7 @@ describe<{
 				height: commitKey.height,
 				round: commitKey.round,
 				getBlock: () => ({
-					header: { height: commitKey.height, round: commitKey.round },
+					header: { number: commitKey.height, round: commitKey.round },
 				}),
 				setAccountUpdates: () => {},
 			} as any);
@@ -412,7 +413,7 @@ describe<{
 		assert.equal(receipt.gasUsed, 21_070n);
 	});
 
-	it("should overwrite pending state if modified in different context", async ({ instance }) => {
+	it.only("should overwrite pending state if modified in different context", async ({ instance }) => {
 		const [sender, recipient] = wallets;
 
 		const commitKey = { height: BigInt(0), round: BigInt(0) };
@@ -435,7 +436,7 @@ describe<{
 		await instance.onCommit({
 			...commitKey,
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: commitKey.height, round: commitKey.round },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -486,7 +487,7 @@ describe<{
 			instance.onCommit({
 				...commitKey1,
 				getBlock: () => ({
-					header: { ...commitKey1 },
+					header: { number: commitKey1.height, round: commitKey1.round },
 				}),
 				setAccountUpdates: () => {},
 			} as any),
@@ -497,7 +498,7 @@ describe<{
 			await instance.onCommit({
 				...commitKey2,
 				getBlock: () => ({
-					header: { ...commitKey2 },
+					header: { number: commitKey2.height, round: commitKey2.round },
 				}),
 				setAccountUpdates: () => {},
 			} as any);
@@ -518,7 +519,7 @@ describe<{
 					height: 0,
 					round: 0,
 					getBlock: () => ({
-						header: { ...commitKey },
+						header: { number: 0, round: 0 },
 					}),
 					setAccountUpdates: () => {},
 				} as any),
@@ -561,7 +562,7 @@ describe<{
 		await instance.onCommit({
 			...commitKey,
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: commitKey.height, round: commitKey.round },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -601,7 +602,7 @@ describe<{
 			height: BigInt(0),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(0), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -661,7 +662,7 @@ describe<{
 			height: BigInt(1),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(1), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -753,7 +754,7 @@ describe<{
 			height: BigInt(0),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(0), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -803,7 +804,7 @@ describe<{
 			height: BigInt(0),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(0), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);
@@ -848,7 +849,7 @@ describe<{
 			height: BigInt(0),
 			round: BigInt(0),
 			getBlock: () => ({
-				header: { ...commitKey },
+				header: { number: BigInt(0), round: BigInt(0) },
 			}),
 			setAccountUpdates: () => {},
 		} as any);

@@ -139,22 +139,22 @@ describe<{
 	it("#fromData - should throw on invalid input data - block property has an unexpected value", async ({
 		factory,
 	}) => {
-		const b2 = Object.assign({}, blockData, { totalAmount: "abcd" });
+		const b2 = Object.assign({}, blockData, { amount: "abcd" });
 		await assert.rejects(
 			() => factory.fromData(b2),
-			'Invalid data at /totalAmount: must pass "bignumber" keyword validation: undefined',
+			'Invalid data at /amount: must pass "bignumber" keyword validation: undefined',
 		);
 	});
 
 	it("#fromData - should throw on invalid input data - required block property is missing", async ({ factory }) => {
 		const partialBlock = {
 			...blockDataClone,
-			generatorAddress: undefined,
+			proposer: undefined,
 		} as unknown as Contracts.Crypto.BlockData;
 
 		await assert.rejects(
 			() => factory.fromData(partialBlock),
-			" Invalid data: must have required property 'generatorAddress': undefined",
+			" Invalid data: must have required property 'proposer': undefined",
 		);
 	});
 
@@ -172,7 +172,7 @@ describe<{
 		const block = await factory.fromJson(blockDataJson);
 
 		// Recalculated id
-		blockDataClone.id = blockDataJson.id;
+		blockDataClone.hash = blockDataJson.hash;
 
 		assertBlockData(assert, block.data, blockDataClone);
 		assertBlockData(assert, block.header, blockDataClone);
@@ -184,7 +184,7 @@ describe<{
 		const block = await factory.fromJson(blockDataWithTransactionsJson);
 
 		// Recalculated id
-		blockDataWithTransactionsClone.id = blockDataWithTransactionsJson.id;
+		blockDataWithTransactionsClone.hash = blockDataWithTransactionsJson.hash;
 
 		assertBlockData(assert, block.data, blockDataWithTransactionsClone);
 		assertBlockData(assert, block.header, blockDataWithTransactionsClone);

@@ -17,16 +17,16 @@ export class ChainedVerifier implements Contracts.Processor.Handler {
 	public async execute(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
 		const blockData = unit.getBlock().data;
 
-		if (blockData.height === this.configuration.getGenesisHeight()) {
+		if (blockData.number === this.configuration.getGenesisHeight()) {
 			const milestone = this.configuration.getMilestone();
 
 			let validPreviousBlock = false;
 			if (milestone.snapshot) {
 				assert.defined(milestone.snapshot);
-				validPreviousBlock = blockData.previousBlock === milestone.snapshot.previousGenesisBlockHash;
+				validPreviousBlock = blockData.parentHash === milestone.snapshot.previousGenesisBlockHash;
 			} else {
 				validPreviousBlock =
-					blockData.previousBlock === "0000000000000000000000000000000000000000000000000000000000000000";
+					blockData.parentHash === "0000000000000000000000000000000000000000000000000000000000000000";
 			}
 
 			if (!validPreviousBlock) {

@@ -10,13 +10,13 @@ export class TransactionLengthVerifier implements Contracts.Processor.Handler {
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
 	public async execute(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
-		if (unit.getBlock().data.height === this.configuration.getGenesisHeight()) {
+		if (unit.getBlock().data.number === this.configuration.getGenesisHeight()) {
 			return;
 		}
 
 		const maxTransactions = this.configuration.getMilestone().block.maxTransactions;
 
-		if (unit.getBlock().data.numberOfTransactions > maxTransactions) {
+		if (unit.getBlock().data.transactionsCount > maxTransactions) {
 			throw new Exceptions.InvalidBlockTransactionLength(unit.getBlock());
 		}
 	}

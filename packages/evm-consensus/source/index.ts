@@ -31,10 +31,10 @@ export class ServiceProvider extends Providers.ServiceProvider {
 		this.app.bind(EvmConsensusIdentifiers.Internal.Deployer).to(Deployer).inSingletonScope();
 
 		await this.app.get<Deployer>(EvmConsensusIdentifiers.Internal.Deployer).deploy({
-			generatorAddress: genesisBlock.block.generatorAddress,
-			initialHeight: genesisBlock.block.height,
+			generatorAddress: genesisBlock.block.proposer,
+			initialHeight: genesisBlock.block.number,
 			timestamp: genesisBlock.block.timestamp,
-			totalAmount: genesisBlock.block.totalAmount,
+			totalAmount: genesisBlock.block.amount,
 		});
 	}
 }

@@ -23,7 +23,7 @@ export const registerBlockFactory = async (
 
 		const { reward } = app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
-			.getMilestone(previousBlock.height);
+			.getMilestone(previousBlock.number);
 
 		const transactions: Contracts.Crypto.Transaction[] = options.transactions || [];
 		if (options.transactionsCount) {
@@ -55,7 +55,7 @@ export const registerBlockFactory = async (
 		};
 		const payloadBuffers: Buffer[] = [];
 		const transactionData: Contracts.Crypto.TransactionData[] = [];
-		let payloadLength = transactions.length * 4;
+		let payloadSize = transactions.length * 4;
 
 		for (const transaction of transactions) {
 			const { data, serialized } = transaction;
@@ -67,7 +67,7 @@ export const registerBlockFactory = async (
 
 			payloadBuffers.push(Buffer.from(data.id, "hex"));
 			transactionData.push(data);
-			payloadLength += serialized.length;
+			payloadSize += serialized.length;
 		}
 
 		const passphrase = options.passphrase || secrets[0];
@@ -75,31 +75,31 @@ export const registerBlockFactory = async (
 		const commit = {
 			block: await app.get<Contracts.Crypto.BlockFactory>(Identifiers.Cryptography.Block.Factory).make(
 				{
-					generatorAddress: await app
+					amount: BigNumber.make(totals.value),
+					fee: BigNumber.make(totals.gasPrice),
+					gasUsed: totals.gasUsed,
+					logsBloom: "0".repeat(512),
+					number: previousBlock.number + 1,
+					parentHash: previousBlock.hash,
+					payloadSize,
+					proposer: await app
 						.getTagged<Contracts.Crypto.AddressFactory>(
 							Identifiers.Cryptography.Identity.Address.Factory,
 							"type",
 							"wallet",
 						)
 						.fromMnemonic(passphrase),
-					height: previousBlock.height + 1,
-					logsBloom: "0".repeat(512),
-					numberOfTransactions: transactions.length,
-					payloadHash: (
+					reward: BigNumber.make(options.reward || reward),
+					round: 0,
+					stateRoot: "0".repeat(64),
+					timestamp: options.timestamp || dayjs().valueOf(),
+					transactions: transactionData,
+					transactionsCount: transactions.length,
+					transactionsRoot: (
 						await app
 							.get<Contracts.Crypto.HashFactory>(Identifiers.Cryptography.Hash.Factory)
 							.sha256(payloadBuffers)
 					).toString("hex"),
-					payloadLength,
-					previousBlock: previousBlock.id,
-					reward: BigNumber.make(options.reward || reward),
-					round: 0,
-					stateHash: "0".repeat(64),
-					timestamp: options.timestamp || dayjs().valueOf(),
-					totalAmount: BigNumber.make(totals.value),
-					totalFee: BigNumber.make(totals.gasPrice),
-					totalGasUsed: totals.gasUsed,
-					transactions: transactionData,
 					version: 1,
 				},
 				transactions,

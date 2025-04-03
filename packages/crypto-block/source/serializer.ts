@@ -12,7 +12,7 @@ export class Serializer implements Contracts.Crypto.BlockSerializer {
 	private readonly headerSize!: () => number;
 
 	public totalSize(block: Contracts.Crypto.BlockDataSerializable): number {
-		return this.headerSize() + block.payloadLength;
+		return this.headerSize() + block.payloadSize;
 	}
 
 	public async serializeHeader(block: Contracts.Crypto.BlockDataSerializable): Promise<Buffer> {
@@ -26,43 +26,43 @@ export class Serializer implements Contracts.Crypto.BlockSerializer {
 				timestamp: {
 					type: "uint48",
 				},
-				height: {
+				number: {
 					type: "uint32",
 				},
 				round: {
 					type: "uint32",
 				},
-				previousBlock: {
+				parentHash: {
 					type: "hash",
 				},
-				stateHash: {
+				stateRoot: {
 					type: "hash",
 				},
 				logsBloom: {
 					type: "hash",
 				},
-				numberOfTransactions: {
+				transactionsCount: {
 					type: "uint16",
 				},
-				totalGasUsed: {
+				gasUsed: {
 					type: "uint32",
 				},
-				totalAmount: {
+				amount: {
 					type: "uint256",
 				},
-				totalFee: {
+				fee: {
 					type: "uint256",
 				},
 				reward: {
 					type: "uint256",
 				},
-				payloadLength: {
+				payloadSize: {
 					type: "uint32",
 				},
-				payloadHash: {
+				transactionsRoot: {
 					type: "hash",
 				},
-				generatorAddress: {
+				proposer: {
 					type: "address",
 				},
 			},
@@ -80,43 +80,43 @@ export class Serializer implements Contracts.Crypto.BlockSerializer {
 				timestamp: {
 					type: "uint48",
 				},
-				height: {
+				number: {
 					type: "uint32",
 				},
 				round: {
 					type: "uint32",
 				},
-				previousBlock: {
+				parentHash: {
 					type: "hash",
 				},
-				stateHash: {
+				stateRoot: {
 					type: "hash",
 				},
 				logsBloom: {
 					type: "hash",
 				},
-				numberOfTransactions: {
+				transactionsCount: {
 					type: "uint16",
 				},
-				totalGasUsed: {
+				gasUsed: {
 					type: "uint32",
 				},
-				totalAmount: {
+				amount: {
 					type: "uint256",
 				},
-				totalFee: {
+				fee: {
 					type: "uint256",
 				},
 				reward: {
 					type: "uint256",
 				},
-				payloadLength: {
+				payloadSize: {
 					type: "uint32",
 				},
-				payloadHash: {
+				transactionsRoot: {
 					type: "hash",
 				},
-				generatorAddress: {
+				proposer: {
 					type: "address",
 				},
 				transactions: {
