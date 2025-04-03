@@ -167,16 +167,16 @@ export class Validator implements Contracts.Validator.Validator {
 				}
 
 				const transaction = await this.transactionFactory.fromBytes(bytes);
-				transaction.data.sequence = candidateTransactions.length;
+				transaction.data.transactionIndex = candidateTransactions.length;
 
 				if (failedSenders.has(transaction.data.senderPublicKey)) {
 					continue;
 				}
 
 				try {
-					const gasLimit = transaction.data.gasLimit;
+					const gas = transaction.data.gas;
 
-					if (gasLeft - gasLimit < 0) {
+					if (gasLeft - gas < 0) {
 						break;
 					}
 
@@ -191,10 +191,10 @@ export class Validator implements Contracts.Validator.Validator {
 					candidateTransactions.push(transaction);
 				} catch (error) {
 					this.logger.warning(
-						`tx ${transaction.id} from ${transaction.data.senderAddress} failed to collate: ${error.message}`,
+						`tx ${transaction.hash} from ${transaction.data.from} failed to collate: ${error.message}`,
 					);
 
-					await this.txPoolWorker.removeTransaction(transaction.data.senderAddress, transaction.id);
+					await this.txPoolWorker.removeTransaction(transaction.data.from, transaction.hash);
 
 					failedSenders.add(transaction.data.senderPublicKey);
 				}
@@ -259,7 +259,7 @@ export class Validator implements Contracts.Validator.Validator {
 
 		for (const transaction of transactions) {
 			const { data, serialized } = transaction;
-			assert.string(data.id);
+			assert.string(data.hash);
 			assert.number(data.gasUsed);
 
 			totals.amount = totals.amount.plus(data.value);
@@ -267,7 +267,7 @@ export class Validator implements Contracts.Validator.Validator {
 			totals.fee = totals.fee.plus(this.gasFeeCalculator.calculateConsumed(data.gasPrice, data.gasUsed));
 			totals.gasUsed += data.gasUsed;
 
-			payloadBuffers.push(Buffer.from(data.id, "hex"));
+			payloadBuffers.push(Buffer.from(data.hash, "hex"));
 			transactionData.push(data);
 			payloadSize += serialized.length;
 		}

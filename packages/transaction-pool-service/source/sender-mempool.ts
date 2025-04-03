@@ -48,7 +48,7 @@ export class SenderMempool implements Contracts.TransactionPool.SenderMempool {
 					this.configuration.getRequired<number>("maxTransactionsPerSender");
 				if (this.#transactions.length >= maxTransactionsPerSender) {
 					const allowedSenders: string[] = this.configuration.getOptional<string[]>("allowedSenders", []);
-					if (!allowedSenders.includes(transaction.data.senderAddress)) {
+					if (!allowedSenders.includes(transaction.data.from)) {
 						throw new Exceptions.SenderExceededMaximumTransactionCountError(
 							transaction,
 							maxTransactionsPerSender,
@@ -65,7 +65,7 @@ export class SenderMempool implements Contracts.TransactionPool.SenderMempool {
 	}
 
 	public removeTransaction(id: string): Contracts.Crypto.Transaction[] {
-		const index = this.#transactions.findIndex((t) => t.id === id);
+		const index = this.#transactions.findIndex((t) => t.hash === id);
 		if (index === -1) {
 			return [];
 		}

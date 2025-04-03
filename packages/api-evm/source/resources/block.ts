@@ -38,7 +38,7 @@ export class BlockResource {
 			timestamp: `0x${blockData.timestamp.toString(16)}`,
 			transactions: transactionObject
 				? await this.#transformTransactions(block)
-				: block.transactions.map((transaction) => transaction.id),
+				: block.transactions.map((transaction) => transaction.hash),
 			uncles: [],
 		};
 		/* eslint-enable sort-keys-fix/sort-keys-fix */
@@ -48,8 +48,8 @@ export class BlockResource {
 		const transactionResource = this.app.resolve(TransactionResource);
 		return Promise.all(
 			block.transactions.map(async (transaction) => {
-				transaction.data.blockId = block.data.hash;
-				transaction.data.blockHeight = block.data.number;
+				transaction.data.blockHash = block.data.hash;
+				transaction.data.blockNumber = block.data.number;
 				return await transactionResource.transform(transaction.data);
 			}),
 		);

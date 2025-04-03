@@ -23,7 +23,7 @@ export abstract class TransactionHandler implements Contracts.Transactions.Trans
 	protected readonly eventDispatcher!: Contracts.Kernel.EventDispatcher;
 
 	public async verify(transaction: Contracts.Crypto.Transaction): Promise<boolean> {
-		assert.string(transaction.data.senderAddress);
+		assert.string(transaction.data.from);
 		return this.verifier.verifyHash(transaction.data);
 	}
 
@@ -67,15 +67,15 @@ export abstract class TransactionHandler implements Contracts.Transactions.Trans
 
 		const preverified = await evm.preverifyTransaction({
 			blockGasLimit: BigInt(milestone.block.maxGasLimit),
-			caller: transaction.data.senderAddress,
+			caller: transaction.data.from,
 			data: Buffer.from(transaction.data.data, "hex"),
-			gasLimit: BigInt(transaction.data.gasLimit),
+			gasLimit: BigInt(transaction.data.gas),
 			gasPrice: BigInt(transaction.data.gasPrice),
 			legacyAddress: transaction.data.senderLegacyAddress,
 			nonce: transaction.data.nonce.toBigInt(),
-			recipient: transaction.data.recipientAddress,
+			recipient: transaction.data.to,
 			specId: milestone.evmSpec,
-			txHash: transaction.data.id,
+			txHash: transaction.data.hash,
 			value: transaction.data.value.toBigInt(),
 		});
 

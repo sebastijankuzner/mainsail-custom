@@ -63,13 +63,13 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 	}
 
 	public senderAddress(senderAddress: string): TBuilder {
-		this.data.senderAddress = senderAddress;
+		this.data.from = senderAddress;
 
 		return this.instance();
 	}
 
 	public recipientAddress(recipientAddress: string): TBuilder {
-		this.data.recipientAddress = recipientAddress;
+		this.data.to = recipientAddress;
 
 		return this.instance();
 	}
@@ -118,7 +118,7 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 
 	public async getStruct(): Promise<Contracts.Crypto.TransactionData> {
 		if (
-			!this.data.senderAddress ||
+			!this.data.from ||
 			!this.data.senderPublicKey ||
 			!this.data.r ||
 			!this.data.s ||
@@ -128,14 +128,14 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 		}
 
 		const struct: Contracts.Crypto.TransactionData = {
+			from: this.data.from,
 			gasPrice: this.data.gasPrice,
-			id: await this.utils.getId(await this.build()),
+			hash: await this.utils.getHash(await this.build()),
 			legacySecondSignature: this.data.legacySecondSignature,
 			network: this.data.network,
 			nonce: this.data.nonce,
 			r: this.data.r,
 			s: this.data.s,
-			senderAddress: this.data.senderAddress,
 			senderPublicKey: this.data.senderPublicKey,
 			v: this.data.v,
 		} as Contracts.Crypto.TransactionData;
@@ -145,10 +145,10 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 
 	async #signWithKeyPair(keys: Contracts.Crypto.KeyPair): Promise<TBuilder> {
 		this.data.senderPublicKey = keys.publicKey;
-		this.data.senderAddress = await this.addressFactory.fromPublicKey(keys.publicKey);
+		this.data.from = await this.addressFactory.fromPublicKey(keys.publicKey);
 
 		if (this.signWithSenderAsRecipient) {
-			this.data.recipientAddress = this.data.senderAddress;
+			this.data.to = this.data.from;
 		}
 
 		const data = this.#getSigningObject();

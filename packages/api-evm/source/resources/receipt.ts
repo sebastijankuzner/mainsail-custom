@@ -10,12 +10,12 @@ export class ReceiptResource {
 	): Promise<object> {
 		/* eslint-disable sort-keys-fix/sort-keys-fix */
 		return {
-			transactionHash: `0x${transaction.id}`,
-			transactionIndex: `0x${transaction.sequence?.toString(16)}`,
-			blockHash: `0x${transaction.blockId}`,
-			blockNumber: `0x${transaction.blockHeight?.toString(16)}`,
-			from: transaction.senderAddress,
-			to: transaction.recipientAddress,
+			transactionHash: `0x${transaction.hash}`,
+			transactionIndex: `0x${transaction.transactionIndex?.toString(16)}`,
+			blockHash: `0x${transaction.blockHash}`,
+			blockNumber: `0x${transaction.blockNumber?.toString(16)}`,
+			from: transaction.from,
+			to: transaction.to,
 			// TODO: Calculate
 			cumulativeGasUsed: "0x0", // The sum of the base fee and tip paid per unit of gas.
 			effectiveGasUsed: "0x0", // The total amount of gas used when this transaction was executed in the block.

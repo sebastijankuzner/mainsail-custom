@@ -33,7 +33,7 @@ export const registerBlockFactory = async (
 			);
 
 			const genesisAddresses = (previousBlock.transactions ?? [])
-				.map((transaction) => transaction.recipientAddress)
+				.map((transaction) => transaction.to)
 				.filter((address: string | undefined) => !!address);
 
 			for (let index = 0; index < options.transactionsCount; index++) {
@@ -59,13 +59,14 @@ export const registerBlockFactory = async (
 
 		for (const transaction of transactions) {
 			const { data, serialized } = transaction;
-			assert.string(data.id);
+			assert.string(data.hash);
 
 			totals.value = totals.value.plus(data.value);
 			totals.gasPrice = totals.gasPrice.plus(data.gasPrice);
-			totals.gasUsed += data.gasLimit;
+			// TODO: calculate actual gas used
+			totals.gasUsed += data.gas;
 
-			payloadBuffers.push(Buffer.from(data.id, "hex"));
+			payloadBuffers.push(Buffer.from(data.hash, "hex"));
 			transactionData.push(data);
 			payloadSize += serialized.length;
 		}

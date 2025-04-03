@@ -59,7 +59,7 @@ export class QueryIterable implements Contracts.TransactionPool.QueryIterable {
 	}
 
 	public whereId(id: string): QueryIterable {
-		return this.wherePredicate(async (t) => t.id === id);
+		return this.wherePredicate(async (t) => t.hash === id);
 	}
 
 	async #satisfiesPredicates(transaction: Contracts.Crypto.Transaction): Promise<boolean> {
@@ -113,7 +113,7 @@ export class Query implements Contracts.TransactionPool.Query {
 				continue;
 			}
 
-			transactionsBySenderMempool[transactions[0].data.senderAddress] = transactions;
+			transactionsBySenderMempool[transactions[0].data.from] = transactions;
 		}
 
 		// Add first transaction of each sender mempool
@@ -134,7 +134,7 @@ export class Query implements Contracts.TransactionPool.Query {
 			selectedTransactions.push(transaction);
 
 			// Remove the selected transaction from sender mempool
-			const senderMempool = transactionsBySenderMempool[transaction.data.senderAddress];
+			const senderMempool = transactionsBySenderMempool[transaction.data.from];
 			senderMempool.shift();
 
 			// If the sender has more transactions, add the next one to the queue

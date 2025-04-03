@@ -142,14 +142,14 @@ export class Sync implements Contracts.ApiSync.Service {
 				addressToPublicKey[address] = senderPublicKey;
 			}
 
-			const receipt = receipts?.get(transaction.id);
+			const receipt = receipts?.get(transaction.hash);
 			if (receipt) {
 				transactionReceipts.push({
 					blockHeight: header.number.toFixed(),
 					deployedContractAddress: receipt.deployedContractAddress,
 					gasRefunded: Number(receipt.gasRefunded),
 					gasUsed: Number(receipt.gasUsed),
-					id: transaction.id,
+					id: transaction.hash,
 					logs: receipt.logs,
 					output: receipt.output,
 					success: receipt.success,
@@ -286,15 +286,15 @@ export class Sync implements Contracts.ApiSync.Service {
 				blockHeight: header.number.toFixed(),
 				blockId: header.hash,
 				data: data.data,
-				gasLimit: data.gasLimit,
+				gasLimit: data.gas,
 				gasPrice: data.gasPrice,
-				id: data.id as unknown as string,
+				id: data.hash,
 				legacySecondSignature: data.legacySecondSignature,
 				nonce: data.nonce.toFixed(),
-				recipientAddress: data.recipientAddress,
-				senderAddress: data.senderAddress,
+				recipientAddress: data.to,
+				senderAddress: data.from,
 				senderPublicKey: data.senderPublicKey,
-				sequence: data.sequence as unknown as number,
+				sequence: data.transactionIndex!,
 				signature: `${data.r}${data.s}${data.v!.toString(16)}`,
 				timestamp: header.timestamp.toFixed(),
 			})),

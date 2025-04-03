@@ -5,7 +5,7 @@ import type { MultiSignatureAsset } from "./legacy.js";
 import type { SchemaValidationResult } from "./validator.js";
 
 export interface Transaction {
-	readonly id: string;
+	readonly hash: string;
 	readonly key: string;
 
 	data: TransactionData;
@@ -17,20 +17,20 @@ export type TransactionSchema = Record<string, any>;
 export interface TransactionData {
 	network: number;
 
-	senderAddress: string;
+	from: string;
 	senderLegacyAddress?: string;
 	senderPublicKey: string;
-	recipientAddress?: string;
+	to?: string;
 
 	value: BigNumber;
 
-	gasLimit: number;
+	gas: number;
 	gasPrice: number;
 
 	nonce: BigNumber;
 	data: string;
 
-	id: string;
+	hash: string;
 	timestamp: number;
 
 	v?: number;
@@ -38,38 +38,38 @@ export interface TransactionData {
 	s?: string;
 	legacySecondSignature?: string;
 
-	sequence?: number;
+	transactionIndex?: number;
 	gasUsed?: number;
-	blockId?: string;
-	blockHeight?: number;
+	blockHash?: string;
+	blockNumber?: number;
 }
 
 export interface TransactionJson {
 	network?: number;
 
-	senderAddress: string;
+	from: string;
 	senderPublicKey: string;
-	recipientAddress?: string;
+	to?: string;
 
 	value: string;
 
-	gasLimit: number;
+	gas: number;
 	gasPrice: number;
 
 	nonce: string;
 	data: string;
 
-	id?: string;
+	hash?: string;
 	timestamp?: number;
 
 	v?: number;
 	r?: string;
 	s?: string;
 
-	sequence?: number;
+	transactionIndex?: number;
 	gasUsed?: number;
-	blockId?: string;
-	blockHeight?: number;
+	blockHash?: string;
+	blockNumber?: number;
 }
 
 export interface SerializeOptions {
@@ -87,7 +87,7 @@ export interface TransactionVerifier {
 
 	verifyHash(data: TransactionData): Promise<boolean>;
 
-	verifySchema(data: Omit<TransactionData, "id">, strict?: boolean): Promise<SchemaValidationResult>;
+	verifySchema(data: Omit<TransactionData, "hash">, strict?: boolean): Promise<SchemaValidationResult>;
 
 	verifyLegacySecondSignature(data: TransactionData, legacySecondPublicKey: string): Promise<boolean>;
 }
@@ -128,5 +128,5 @@ export interface TransactionUtilities {
 
 	toHash(transaction: TransactionData, options?: SerializeOptions): Promise<Buffer>;
 
-	getId(transaction: Transaction): Promise<string>;
+	getHash(transaction: Transaction): Promise<string>;
 }

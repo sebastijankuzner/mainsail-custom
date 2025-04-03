@@ -79,7 +79,7 @@ export class TransactionFactory implements Contracts.Crypto.TransactionFactory {
 				s: transaction.data.s,
 				v: transaction.data.v,
 			});
-			transaction.data.senderAddress = await this.addressFactory.fromPublicKey(transaction.data.senderPublicKey);
+			transaction.data.from = await this.addressFactory.fromPublicKey(transaction.data.senderPublicKey);
 
 			if (this.legacyAddressFactory) {
 				transaction.data.senderLegacyAddress = await this.legacyAddressFactory.fromPublicKey(
@@ -87,7 +87,7 @@ export class TransactionFactory implements Contracts.Crypto.TransactionFactory {
 				);
 			}
 
-			transaction.data.id = await this.utils.getId(transaction);
+			transaction.data.hash = await this.utils.getHash(transaction);
 
 			const { error } = await this.verifier.verifySchema(transaction.data, strict);
 

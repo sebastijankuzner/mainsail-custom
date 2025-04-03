@@ -10,8 +10,8 @@ export class EvmCallBuilder extends TransactionBuilder<EvmCallBuilder> {
 		this.initializeData();
 
 		this.data.value = BigNumber.ZERO;
-		this.data.senderAddress = "";
-		this.data.gasLimit = 1_000_000;
+		this.data.from = "";
+		this.data.gas = 1_000_000;
 		this.data.gasPrice = 5 * 1e9;
 		this.data.data = "";
 	}
@@ -23,7 +23,7 @@ export class EvmCallBuilder extends TransactionBuilder<EvmCallBuilder> {
 	}
 
 	public gasLimit(gasLimit: number): EvmCallBuilder {
-		this.data.gasLimit = gasLimit;
+		this.data.gas = gasLimit;
 
 		return this;
 	}
@@ -32,7 +32,7 @@ export class EvmCallBuilder extends TransactionBuilder<EvmCallBuilder> {
 		const struct: Contracts.Crypto.TransactionData = await super.getStruct();
 
 		struct.value = this.data.value;
-		struct.recipientAddress = this.data.recipientAddress;
+		struct.to = this.data.to;
 
 		return struct;
 	}

@@ -26,7 +26,7 @@ export class TransactionValidator implements Contracts.Transactions.TransactionV
 		const deserialized: Contracts.Crypto.Transaction = await this.transactionFactory.fromBytes(
 			transaction.serialized,
 		);
-		strictEqual(transaction.id, deserialized.id);
+		strictEqual(transaction.hash, deserialized.hash);
 
 		const { commitKey, gasLimit, timestamp, generatorAddress } = context;
 
@@ -46,7 +46,7 @@ export class TransactionValidator implements Contracts.Transactions.TransactionV
 			transaction,
 		);
 
-		assert.string(transaction.data.senderAddress);
+		assert.string(transaction.data.from);
 
 		return receipt;
 	}

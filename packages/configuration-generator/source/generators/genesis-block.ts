@@ -265,7 +265,7 @@ export class GenesisBlockGenerator extends Generator {
 		for (const transaction of transactions) {
 			const { serialized, data } = transaction;
 
-			assert.string(data.id);
+			assert.string(data.hash);
 
 			const { receipt } = await this.evm.process({
 				blockContext: {
@@ -274,15 +274,15 @@ export class GenesisBlockGenerator extends Generator {
 					timestamp,
 					validatorAddress: proposer,
 				},
-				caller: transaction.data.senderAddress,
+				caller: transaction.data.from,
 				data: Buffer.from(transaction.data.data, "hex"),
-				gasLimit: BigInt(transaction.data.gasLimit),
+				gasLimit: BigInt(transaction.data.gas),
 				gasPrice: BigInt(transaction.data.gasPrice),
 				nonce: transaction.data.nonce.toBigInt(),
-				recipient: transaction.data.recipientAddress,
-				sequence: transaction.data.sequence,
+				recipient: transaction.data.to,
+				sequence: transaction.data.transactionIndex,
 				specId: Contracts.Evm.SpecId.SHANGHAI,
-				txHash: transaction.id,
+				txHash: transaction.hash,
 				value: transaction.data.value.toBigInt(),
 			});
 
@@ -290,7 +290,7 @@ export class GenesisBlockGenerator extends Generator {
 			totals.fee = totals.fee.plus(data.gasPrice);
 			totals.gasUsed += Number(receipt.gasUsed);
 
-			payloadBuffers.push(Buffer.from(data.id, "hex"));
+			payloadBuffers.push(Buffer.from(data.hash, "hex"));
 			transactionData.push(data);
 			payloadSize += serialized.length;
 		}

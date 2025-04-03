@@ -30,33 +30,33 @@ export class EvmCallTransactionHandler extends Handlers.TransactionHandler {
 		context: Contracts.Transactions.TransactionHandlerContext,
 		transaction: Contracts.Crypto.Transaction,
 	): Promise<Contracts.Evm.TransactionReceipt> {
-		assert.string(transaction.id);
+		assert.string(transaction.hash);
 
 		const { evmSpec } = this.configuration.getMilestone();
 
-		const { senderAddress, senderLegacyAddress } = transaction.data;
+		const { from, senderLegacyAddress } = transaction.data;
 
 		try {
 			const { instance, blockContext } = context.evm;
 			const { receipt } = await instance.process({
 				blockContext,
-				caller: senderAddress,
+				caller: from,
 				data: Buffer.from(transaction.data.data, "hex"),
-				gasLimit: BigInt(transaction.data.gasLimit),
+				gasLimit: BigInt(transaction.data.gas),
 				gasPrice: BigInt(transaction.data.gasPrice),
 				legacyAddress: senderLegacyAddress,
 				nonce: transaction.data.nonce.toBigInt(),
-				recipient: transaction.data.recipientAddress,
-				sequence: transaction.data.sequence,
+				recipient: transaction.data.to,
+				sequence: transaction.data.transactionIndex,
 				specId: evmSpec,
-				txHash: transaction.id,
+				txHash: transaction.hash,
 				value: transaction.data.value.toBigInt(),
 			});
 
 			void this.#emit(Events.EvmEvent.TransactionReceipt, {
 				receipt,
-				sender: senderAddress,
-				transactionId: transaction.id,
+				sender: from,
+				transactionId: transaction.hash,
 			});
 
 			return receipt;

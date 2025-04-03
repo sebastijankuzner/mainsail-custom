@@ -413,7 +413,7 @@ describe<{
 		assert.equal(receipt.gasUsed, 21_070n);
 	});
 
-	it.only("should overwrite pending state if modified in different context", async ({ instance }) => {
+	it("should overwrite pending state if modified in different context", async ({ instance }) => {
 		const [sender, recipient] = wallets;
 
 		const commitKey = { height: BigInt(0), round: BigInt(0) };
