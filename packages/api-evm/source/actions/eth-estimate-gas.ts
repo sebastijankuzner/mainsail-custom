@@ -66,7 +66,7 @@ export class EthEstimateGasAction implements Contracts.Api.RPC.Action {
 			}
 		}
 
-		const commitKey = { height: BigInt(this.configuration.getHeight()), round: BigInt(0) };
+		const commitKey = { blockNumber: BigInt(this.configuration.getHeight()), round: BigInt(0) };
 
 		let maxGasLimit = data.gas ? BigInt(data.gas) : BigInt(block.maxGasLimit);
 		let minGasLimit = maxGasLimit;
@@ -78,13 +78,13 @@ export class EthEstimateGasAction implements Contracts.Api.RPC.Action {
 				timestamp: BigInt(dayjs().valueOf()),
 				validatorAddress: "0x0000000000000000000000000000000000000001",
 			},
-			caller: data.from,
 			data: data.data ? Buffer.from(data.data.slice(2), "hex") : Buffer.alloc(0),
+			from: data.from,
 			gasLimit: maxGasLimit,
 			gasPrice: data.gasPrice ? BigInt(data.gasPrice) : BigInt(gas.minimumGasPrice),
 			nonce: accountInfo.nonce,
-			recipient: data.to,
 			specId: evmSpec,
+			to: data.to,
 			txHash: "0".repeat(64),
 			value: data.value ? BigInt(data.value) : BigInt(0),
 		};
@@ -164,7 +164,7 @@ export class EthEstimateGasAction implements Contracts.Api.RPC.Action {
 
 		try {
 			const { receipt } = await this.evm.process(context);
-			return { receipt, success: receipt.success };
+			return { receipt, success: receipt.status === 1 };
 		} catch (error) {
 			return { executionError: error.message, success: false };
 		}

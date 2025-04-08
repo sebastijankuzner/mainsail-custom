@@ -102,7 +102,7 @@ export class GenesisBlockGenerator extends Generator {
 
 		await this.app.resolve(Deployer).deploy({
 			generatorAddress: genesisWalletAddress,
-			initialHeight: options.snapshot
+			initialBlockNumber: options.snapshot
 				? Number(this.snapshotLegacyImporter!.genesisHeight)
 				: options.initialHeight,
 			timestamp: dayjs(options.epoch).valueOf(),
@@ -243,7 +243,7 @@ export class GenesisBlockGenerator extends Generator {
 
 		const payloadBuffers: Buffer[] = [];
 		const commitKey = {
-			height: BigInt(options.initialHeight),
+			blockNumber: BigInt(options.initialHeight),
 			round: BigInt(0),
 		};
 		const timestamp = BigInt(dayjs(options.epoch).valueOf());
@@ -274,14 +274,14 @@ export class GenesisBlockGenerator extends Generator {
 					timestamp,
 					validatorAddress: proposer,
 				},
-				caller: transaction.data.from,
 				data: Buffer.from(transaction.data.data, "hex"),
+				from: transaction.data.from,
 				gasLimit: BigInt(transaction.data.gas),
 				gasPrice: BigInt(transaction.data.gasPrice),
+				index: transaction.data.transactionIndex,
 				nonce: transaction.data.nonce.toBigInt(),
-				recipient: transaction.data.to,
-				sequence: transaction.data.transactionIndex,
 				specId: Contracts.Evm.SpecId.SHANGHAI,
+				to: transaction.data.to,
 				txHash: transaction.hash,
 				value: transaction.data.value.toBigInt(),
 			});
@@ -369,7 +369,7 @@ export class GenesisBlockGenerator extends Generator {
 		// Load snapshot into EVM
 		const result = await this.snapshotLegacyImporter.import({
 			commitKey: {
-				height: this.snapshotLegacyImporter.genesisHeight,
+				blockNumber: this.snapshotLegacyImporter.genesisHeight,
 				round: 0n,
 			},
 			timestamp: dayjs(options.epoch).valueOf(),

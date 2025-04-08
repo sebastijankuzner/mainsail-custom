@@ -116,7 +116,7 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 		}
 
 		const result = await this.import({
-			commitKey: { height: BigInt(header.number), round: BigInt(header.round) },
+			commitKey: { blockNumber: BigInt(header.number), round: BigInt(header.round) },
 			timestamp: header.timestamp,
 		});
 
@@ -238,7 +238,7 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 	public async import(
 		options: Contracts.Snapshot.LegacyImportOptions,
 	): Promise<Contracts.Snapshot.LegacyImportResult> {
-		await this.evm.prepareNextCommit({ commitKey: { height: options.commitKey.height, round: 0n } });
+		await this.evm.prepareNextCommit({ commitKey: { blockNumber: options.commitKey.blockNumber, round: 0n } });
 
 		const deployerAccount = await this.evm.getAccountInfo(this.deployerAddress);
 		this.#nonce = deployerAccount.nonce;
@@ -328,11 +328,11 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 				this.#getTransactionContext({
 					...options,
 					data,
-					recipient: this.#consensusProxyContractAddress,
+					to: this.#consensusProxyContractAddress,
 				}),
 			);
 
-			if (!result.receipt.success) {
+			if (!result.receipt.status) {
 				throw new Error("failed to add validator");
 			}
 		}
@@ -362,11 +362,11 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 				this.#getTransactionContext({
 					...options,
 					data,
-					recipient: this.#consensusProxyContractAddress,
+					to: this.#consensusProxyContractAddress,
 				}),
 			);
 
-			if (!result.receipt.success) {
+			if (!result.receipt.status) {
 				throw new Error("failed to add vote");
 			}
 		}
@@ -388,11 +388,11 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 				this.#getTransactionContext({
 					...options,
 					data,
-					recipient: this.#usernamesProxyContractAddress,
+					to: this.#usernamesProxyContractAddress,
 				}),
 			);
 
-			if (!result.receipt.success) {
+			if (!result.receipt.status) {
 				throw new Error("failed to add username");
 			}
 		}
@@ -401,7 +401,7 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 	#getTransactionContext(
 		options: Contracts.Snapshot.LegacyImportOptions & {
 			data: string;
-			recipient: string;
+			to: string;
 		},
 	): Contracts.Evm.TransactionContext {
 		const { evmSpec } = this.configuration.getMilestone();
@@ -414,13 +414,13 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 				timestamp: BigInt(options.timestamp),
 				validatorAddress: this.deployerAddress,
 			},
-			caller: this.deployerAddress,
 			data: Buffer.from(options.data, "hex"),
+			from: this.deployerAddress,
 			gasLimit: BigInt(10_000_000),
 			gasPrice: BigInt(0),
 			nonce,
-			recipient: options.recipient,
 			specId: evmSpec,
+			to: options.to,
 			txHash: this.#generateTxHash(),
 			value: 0n,
 		} as Contracts.Evm.TransactionContext;

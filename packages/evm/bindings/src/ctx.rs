@@ -19,27 +19,27 @@ pub struct JsEvmOptions {
 
 #[napi(object)]
 pub struct JsTransactionContext {
-    pub caller: JsString,
+    pub from: JsString,
     pub legacy_address: Option<JsString>,
     /// Omit recipient when deploying a contract
-    pub recipient: Option<JsString>,
+    pub to: Option<JsString>,
     pub gas_limit: JsBigInt,
     pub gas_price: JsBigInt,
     pub value: JsBigInt,
     pub nonce: JsBigInt,
     pub data: JsBuffer,
     pub tx_hash: JsString,
-    pub sequence: Option<JsNumber>,
+    pub index: Option<JsNumber>,
     pub block_context: JsBlockContext,
     pub spec_id: JsString,
 }
 
 #[napi(object)]
 pub struct JsPreverifyTransactionContext {
-    pub caller: JsString,
+    pub from: JsString,
     pub legacy_address: Option<JsString>,
     /// Omit recipient when deploying a contract
-    pub recipient: Option<JsString>,
+    pub to: Option<JsString>,
     pub gas_limit: JsBigInt,
     pub gas_price: JsBigInt,
     pub value: JsBigInt,
@@ -52,8 +52,8 @@ pub struct JsPreverifyTransactionContext {
 
 #[napi(object)]
 pub struct JsTransactionViewContext {
-    pub caller: JsString,
-    pub recipient: JsString,
+    pub from: JsString,
+    pub to: JsString,
     pub data: JsBuffer,
     pub spec_id: JsString,
     pub gas_limit: Option<JsBigInt>,
@@ -73,7 +73,7 @@ pub struct JsGenesisContext {
     pub deployer_account: JsString,
     pub validator_contract: JsString,
     pub username_contract: JsString,
-    pub initial_height: JsBigInt,
+    pub initial_block_number: JsBigInt,
     pub initial_supply: JsBigInt,
 }
 
@@ -97,17 +97,17 @@ pub struct JsUpdateRewardsAndVotesContext {
 
 #[napi(object)]
 pub struct JsCommitKey {
-    pub height: JsBigInt,
+    pub block_number: JsBigInt,
     pub round: JsBigInt,
-    pub block_id: Option<JsString>,
+    pub block_hash: Option<JsString>,
 }
 
 #[napi(object)]
 pub struct JsCommitData {
-    pub block_id: JsString,
+    pub block_hash: JsString,
     pub block: JsBuffer,
     pub proof: JsBuffer,
-    pub transaction_ids: Vec<JsString>,
+    pub transaction_hashes: Vec<JsString>,
     pub transactions: Vec<JsBuffer>,
 }
 
@@ -123,10 +123,10 @@ pub struct PrepareNextCommitContext {
 
 #[derive(Debug)]
 pub struct PreverifyTxContext {
-    pub caller: Address,
+    pub from: Address,
     pub legacy_address: Option<LegacyAddress>,
     /// Omit recipient when deploying a contract
-    pub recipient: Option<Address>,
+    pub to: Option<Address>,
     pub gas_limit: u64,
     pub gas_price: u128,
     pub value: U256,
@@ -139,25 +139,25 @@ pub struct PreverifyTxContext {
 
 #[derive(Debug)]
 pub struct TxContext {
-    pub caller: Address,
+    pub from: Address,
     pub legacy_address: Option<LegacyAddress>,
     /// Omit recipient when deploying a contract
-    pub recipient: Option<Address>,
+    pub to: Option<Address>,
     pub gas_limit: u64,
     pub gas_price: u128,
     pub value: U256,
     pub nonce: u64,
     pub data: Bytes,
     pub tx_hash: B256,
-    pub sequence: Option<u32>,
+    pub index: Option<u32>,
     pub block_context: BlockContext,
     pub spec_id: SpecId,
 }
 
 #[derive(Debug)]
 pub struct TxViewContext {
-    pub caller: Address,
-    pub recipient: Address,
+    pub from: Address,
+    pub to: Address,
     pub data: Bytes,
     pub spec_id: SpecId,
     pub gas_limit: Option<u64>,
@@ -177,7 +177,7 @@ pub struct GenesisContext {
     pub deployer_account: Address,
     pub validator_contract: Address,
     pub username_contract: Address,
-    pub initial_height: u64,
+    pub initial_block_number: u64,
     pub initial_supply: U256,
 }
 
@@ -207,8 +207,8 @@ pub struct EvmOptions {
 
 #[derive(Debug)]
 pub struct ExecutionContext {
-    pub caller: Address,
-    pub recipient: Option<Address>,
+    pub from: Address,
+    pub to: Option<Address>,
     pub gas_limit: Option<u64>,
     pub gas_price: u128,
     pub value: U256,
@@ -222,8 +222,8 @@ pub struct ExecutionContext {
 impl From<TxViewContext> for ExecutionContext {
     fn from(value: TxViewContext) -> Self {
         Self {
-            caller: value.caller,
-            recipient: Some(value.recipient),
+            from: value.from,
+            to: Some(value.to),
             gas_limit: value.gas_limit,
             gas_price: 0,
             value: U256::ZERO,
@@ -239,8 +239,8 @@ impl From<TxViewContext> for ExecutionContext {
 impl From<TxContext> for ExecutionContext {
     fn from(value: TxContext) -> Self {
         Self {
-            caller: value.caller,
-            recipient: value.recipient,
+            from: value.from,
+            to: value.to,
             gas_limit: Some(value.gas_limit),
             gas_price: value.gas_price,
             value: value.value,
@@ -257,16 +257,16 @@ impl TryFrom<JsCommitKey> for CommitKey {
     type Error = anyhow::Error;
 
     fn try_from(value: JsCommitKey) -> Result<Self, Self::Error> {
-        let block_id = if let Some(block_id) = value.block_id {
-            utils::convert_string_to_b256(block_id)?
+        let block_hash = if let Some(block_hash) = value.block_hash {
+            utils::convert_string_to_b256(block_hash)?
         } else {
             B256::ZERO
         };
 
         Ok(CommitKey(
-            value.height.get_u64()?.0,
+            value.block_number.get_u64()?.0,
             value.round.get_u64()?.0,
-            block_id,
+            block_hash,
         ))
     }
 }
@@ -277,11 +277,11 @@ impl TryFrom<JsCommitData> for CommitData {
     fn try_from(value: JsCommitData) -> Result<Self, Self::Error> {
         let proof = utils::convert_js_buffer_to_bytes(value.proof)?;
         let block = utils::convert_js_buffer_to_bytes(value.block)?;
-        let block_id = utils::convert_string_to_b256(value.block_id)?;
+        let block_hash = utils::convert_string_to_b256(value.block_hash)?;
 
-        let mut transaction_ids = Vec::with_capacity(value.transaction_ids.len());
-        for transaction_id in value.transaction_ids {
-            transaction_ids.push(utils::convert_string_to_b256(transaction_id)?);
+        let mut transaction_hashes = Vec::with_capacity(value.transaction_hashes.len());
+        for transaction_hash in value.transaction_hashes {
+            transaction_hashes.push(utils::convert_string_to_b256(transaction_hash)?);
         }
 
         let mut transactions = Vec::with_capacity(value.transactions.len());
@@ -289,13 +289,13 @@ impl TryFrom<JsCommitData> for CommitData {
             transactions.push(utils::convert_js_buffer_to_bytes(transaction)?);
         }
 
-        assert_eq!(transaction_ids.len(), transactions.len());
+        assert_eq!(transaction_hashes.len(), transactions.len());
 
         Ok(CommitData {
-            block_id,
+            block_hash,
             block,
             proof,
-            transaction_ids,
+            transaction_hashes,
             transactions,
         })
     }
@@ -330,8 +330,8 @@ impl TryFrom<JsTransactionContext> for TxContext {
     fn try_from(mut value: JsTransactionContext) -> std::result::Result<Self, Self::Error> {
         let buf = value.data.into_value()?;
 
-        let recipient = if let Some(recipient) = value.recipient {
-            Some(utils::create_address_from_js_string(recipient)?)
+        let to = if let Some(to) = value.to {
+            Some(utils::create_address_from_js_string(to)?)
         } else {
             None
         };
@@ -342,23 +342,23 @@ impl TryFrom<JsTransactionContext> for TxContext {
             None
         };
 
-        let sequence = if let Some(sequence) = value.sequence {
-            Some(sequence.get_uint32()?)
+        let index = if let Some(index) = value.index {
+            Some(index.get_uint32()?)
         } else {
             None
         };
 
         let tx_ctx = TxContext {
-            recipient,
+            to,
             gas_limit: value.gas_limit.try_into()?,
             gas_price: value.gas_price.get_u128()?.1,
-            caller: utils::create_address_from_js_string(value.caller)?,
+            from: utils::create_address_from_js_string(value.from)?,
             legacy_address,
             value: utils::convert_bigint_to_u256(value.value)?,
             nonce: value.nonce.get_u64()?.0,
             data: Bytes::from(buf.as_ref().to_owned()),
             tx_hash: utils::convert_string_to_b256(value.tx_hash)?,
-            sequence,
+            index,
             block_context: value.block_context.try_into()?,
             spec_id: parse_spec_id(value.spec_id)?,
         };
@@ -375,8 +375,8 @@ impl TryFrom<JsPreverifyTransactionContext> for PreverifyTxContext {
     ) -> std::result::Result<Self, Self::Error> {
         let buf = value.data.into_value()?;
 
-        let recipient = if let Some(recipient) = value.recipient {
-            Some(utils::create_address_from_js_string(recipient)?)
+        let to = if let Some(to) = value.to {
+            Some(utils::create_address_from_js_string(to)?)
         } else {
             None
         };
@@ -388,10 +388,10 @@ impl TryFrom<JsPreverifyTransactionContext> for PreverifyTxContext {
         };
 
         let tx_ctx = PreverifyTxContext {
-            recipient,
+            to,
             gas_limit: value.gas_limit.try_into()?,
             gas_price: value.gas_price.get_u128()?.1,
-            caller: utils::create_address_from_js_string(value.caller)?,
+            from: utils::create_address_from_js_string(value.from)?,
             legacy_address,
             value: utils::convert_bigint_to_u256(value.value)?,
             nonce: value.nonce.get_u64()?.0,
@@ -418,8 +418,8 @@ impl TryFrom<JsTransactionViewContext> for TxViewContext {
         };
 
         let tx_ctx = TxViewContext {
-            caller: utils::create_address_from_js_string(value.caller)?,
-            recipient: utils::create_address_from_js_string(value.recipient)?,
+            from: utils::create_address_from_js_string(value.from)?,
+            to: utils::create_address_from_js_string(value.to)?,
             data: Bytes::from(buf.as_ref().to_owned()),
             spec_id: parse_spec_id(value.spec_id)?,
             gas_limit,
@@ -438,7 +438,7 @@ impl TryFrom<JsGenesisContext> for GenesisContext {
             validator_contract: utils::create_address_from_js_string(value.validator_contract)?,
             username_contract: utils::create_address_from_js_string(value.username_contract)?,
             deployer_account: utils::create_address_from_js_string(value.deployer_account)?,
-            initial_height: value.initial_height.get_u64()?.0,
+            initial_block_number: value.initial_block_number.get_u64()?.0,
             initial_supply: utils::convert_bigint_to_u256(value.initial_supply)?,
         })
     }
