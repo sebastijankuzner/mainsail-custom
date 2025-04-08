@@ -41,7 +41,7 @@ export class Controller extends AbstractController {
 	protected async getState(): Promise<Models.State> {
 		const stateRepository = this.stateRepositoryFactory();
 		const state = await stateRepository.createQueryBuilder().getOne();
-		return state ?? ({ height: "0", supply: "0" } as Models.State);
+		return state ?? ({ blockNumber: "0", supply: "0" } as Models.State);
 	}
 
 	protected async getConfiguration(): Promise<Models.Configuration> {
@@ -51,17 +51,17 @@ export class Controller extends AbstractController {
 		return configuration ?? ({} as Models.Configuration);
 	}
 
-	protected async getReceipts(ids: string[], full = false): Promise<Record<string, Models.Receipt>> {
+	protected async getReceipts(hashes: string[], full = false): Promise<Record<string, Models.Receipt>> {
 		const receiptRepository = this.receiptRepositoryFactory();
 
 		const receipts = await receiptRepository
 			.createQueryBuilder("receipt")
 			.select(this.getReceiptColumns(full))
-			.whereInIds(ids)
+			.whereInIds(hashes)
 			.getMany();
 
 		return receipts.reduce((accumulator, current) => {
-			accumulator[current.id] = current;
+			accumulator[current.transactionHash] = current;
 			return accumulator;
 		}, {});
 	}
@@ -74,7 +74,7 @@ export class Controller extends AbstractController {
 
 		const enriched: Promise<EnrichedBlock | null>[] = [];
 		for (const block of resultPage.results) {
-			enriched.push(this.enrichBlock(block, state, generators[block.generatorAddress]));
+			enriched.push(this.enrichBlock(block, state, generators[block.proposer]));
 		}
 
 		// @ts-ignore
@@ -106,7 +106,7 @@ export class Controller extends AbstractController {
 					generator = await this.walletRepositoryFactory()
 						.createQueryBuilder()
 						.select()
-						.where("address = :address", { address: block.generatorAddress })
+						.where("address = :address", { address: block.proposer })
 						.getOneOrFail();
 				})(),
 			);
@@ -129,7 +129,7 @@ export class Controller extends AbstractController {
 		const [state, receipts] = await Promise.all([
 			context?.state ?? this.getState(),
 			this.getReceipts(
-				resultPage.results.map((tx) => tx.id),
+				resultPage.results.map((tx) => tx.hash),
 				context?.fullReceipt ?? false,
 			),
 		]);
@@ -138,7 +138,7 @@ export class Controller extends AbstractController {
 			...resultPage,
 			results: await Promise.all(
 				resultPage.results.map((tx) =>
-					this.enrichTransaction(tx, state, receipts[tx.id] ?? null, context?.fullReceipt),
+					this.enrichTransaction(tx, state, receipts[tx.hash] ?? null, context?.fullReceipt),
 				),
 			),
 		};
@@ -152,25 +152,25 @@ export class Controller extends AbstractController {
 	): Promise<EnrichedTransaction> {
 		const [_state, receipts] = await Promise.all([
 			state ? state : this.getState(),
-			receipt !== undefined ? receipt : this.getReceipts([transaction.id], fullReceipt),
+			receipt !== undefined ? receipt : this.getReceipts([transaction.hash], fullReceipt),
 		]);
 
-		return { ...transaction, receipt: receipt ?? receipts?.[transaction.id] ?? undefined, state: _state };
+		return { ...transaction, receipt: receipt ?? receipts?.[transaction.hash] ?? undefined, state: _state };
 	}
 
 	protected getBlockCriteriaByIdOrHeight(idOrHeight: string): Search.Criteria.OrBlockCriteria {
 		const asHeight = Number(idOrHeight);
 		// NOTE: This assumes all block ids are sha256 and never a valid number below this threshold.
-		return !isNaN(asHeight) && asHeight <= Number.MAX_SAFE_INTEGER ? { height: asHeight } : { id: idOrHeight };
+		return !isNaN(asHeight) && asHeight <= Number.MAX_SAFE_INTEGER ? { number: asHeight } : { hash: idOrHeight };
 	}
 
 	protected getReceiptColumns(fullReceipt?: boolean): string[] {
 		let columns = [
-			"receipt.id",
-			"receipt.success",
+			"receipt.transactionHash",
+			"receipt.status",
 			"receipt.gasUsed",
 			"receipt.gasRefunded",
-			"receipt.deployedContractAddress",
+			"receipt.contractAddress",
 		];
 		if (fullReceipt) {
 			columns = [...columns, "receipt.output", "receipt.logs"];

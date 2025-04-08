@@ -145,14 +145,14 @@ export class Sync implements Contracts.ApiSync.Service {
 			const receipt = receipts?.get(transaction.hash);
 			if (receipt) {
 				transactionReceipts.push({
-					blockHeight: header.number.toFixed(),
-					deployedContractAddress: receipt.deployedContractAddress,
+					blockNumber: header.number.toFixed(),
+					contractAddress: receipt.deployedContractAddress,
 					gasRefunded: Number(receipt.gasRefunded),
 					gasUsed: Number(receipt.gasUsed),
-					id: transaction.hash,
 					logs: receipt.logs,
 					output: receipt.output,
-					success: receipt.success,
+					status: receipt.success ? 1 : 0,
+					transactionHash: transaction.hash,
 				});
 			}
 		}
@@ -192,8 +192,8 @@ export class Sync implements Contracts.ApiSync.Service {
 							validatorForgedRewards: header.amount.toFixed(),
 							validatorForgedTotal: header.fee.plus(header.amount).toFixed(),
 							validatorLastBlock: {
-								height: header.number,
 								id: header.hash,
+								number: header.number,
 								timestamp: header.timestamp,
 							},
 							validatorProducedBlocks: 1,
@@ -256,22 +256,22 @@ export class Sync implements Contracts.ApiSync.Service {
 
 		const deferredSync: DeferredSync = {
 			block: {
+				amount: header.amount.toFixed(),
 				commitRound: proof.round,
-				generatorAddress: header.proposer,
-				height: header.number.toFixed(),
-				id: header.hash,
-				numberOfTransactions: header.transactionsCount,
-				payloadHash: header.transactionsRoot,
-				payloadLength: header.payloadSize,
-				previousBlock: header.parentHash,
+				fee: header.fee.toFixed(),
+				gasUsed: header.gasUsed,
+				hash: header.hash,
+				number: header.number.toFixed(),
+				parentHash: header.parentHash,
+				payloadSize: header.payloadSize,
+				proposer: header.proposer,
 				reward: header.reward.toFixed(),
 				round: header.round,
 				signature: proof.signature,
-				stateHash: header.stateRoot,
+				stateRoot: header.stateRoot,
 				timestamp: header.timestamp.toFixed(),
-				totalAmount: header.amount.toFixed(),
-				totalFee: header.fee.toFixed(),
-				totalGasUsed: header.gasUsed,
+				transactionsCount: header.transactionsCount,
+				transactionsRoot: header.transactionsRoot,
 				validatorRound: this.roundCalculator.calculateRound(header.number).round,
 				validatorSet: validatorSetPack(proof.validators).toString(),
 				version: header.version,
@@ -282,21 +282,21 @@ export class Sync implements Contracts.ApiSync.Service {
 			receipts: transactionReceipts,
 
 			transactions: transactions.map(({ data }) => ({
-				amount: data.value.toFixed(),
-				blockHeight: header.number.toFixed(),
-				blockId: header.hash,
+				blockHash: header.hash,
+				blockNumber: header.number.toFixed(),
 				data: data.data,
-				gasLimit: data.gas,
+				from: data.from,
+				gas: data.gas,
 				gasPrice: data.gasPrice,
-				id: data.hash,
+				hash: data.hash,
 				legacySecondSignature: data.legacySecondSignature,
 				nonce: data.nonce.toFixed(),
-				recipientAddress: data.to,
-				senderAddress: data.from,
 				senderPublicKey: data.senderPublicKey,
-				sequence: data.transactionIndex!,
 				signature: `${data.r}${data.s}${data.v!.toString(16)}`,
 				timestamp: header.timestamp.toFixed(),
+				to: data.to,
+				transactionIndex: data.transactionIndex!,
+				value: data.value.toFixed(),
 			})),
 			wallets,
 
@@ -362,7 +362,7 @@ export class Sync implements Contracts.ApiSync.Service {
 						const nextAttemptDelay = Math.min(baseDelay + attempts * 500, maxDelay);
 						attempts++;
 						this.logger.warning(
-							`sync encountered exception: ${error.message}. retry #${attempts} in ... ${nextAttemptDelay}ms`,
+							`sync encountered exception: ${error.message} (query: ${error.query}). retry #${attempts} in ... ${nextAttemptDelay}ms`,
 						);
 						await sleep(nextAttemptDelay);
 					}
@@ -390,12 +390,12 @@ export class Sync implements Contracts.ApiSync.Service {
 				.createQueryBuilder()
 				.update()
 				.set({
-					height: deferred.block.height,
+					blockNumber: deferred.block.number,
 					supply: () => `supply + ${deferred.block.reward}`,
 				})
 				.where("id = :id", { id: 1 })
-				.andWhere("height = :previousHeight", {
-					previousHeight: BigNumber.make(deferred.block.height).minus(1).toFixed(),
+				.andWhere("blockNumber = :previousBlockNumber", {
+					previousBlockNumber: BigNumber.make(deferred.block.number).minus(1).toFixed(),
 				})
 				.execute();
 
@@ -507,7 +507,7 @@ export class Sync implements Contracts.ApiSync.Service {
 		const t1 = performance.now();
 
 		if (!this.state.isBootstrap()) {
-			this.logger.debug(`synced commit: ${deferred.block.height} in ${t1 - t0}ms`);
+			this.logger.debug(`synced commit: ${deferred.block.number} in ${t1 - t0}ms`);
 		}
 	}
 
@@ -518,7 +518,7 @@ export class Sync implements Contracts.ApiSync.Service {
 			: (await this.databaseService.getLastCommit()).block.header.number;
 
 		const [blocks] = await this.dataSource.query(
-			"select coalesce(max(height), $1)::bigint as max_height, count(1) as count from blocks",
+			"select coalesce(max(number), $1)::bigint as max_height, count(1) as count from blocks",
 			[genesisHeight],
 		);
 		const blocksOk = blocks.count !== "0" && blocks.max_height === lastHeight.toFixed();

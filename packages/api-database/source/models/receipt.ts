@@ -10,19 +10,19 @@ export class Receipt {
 		primary: true,
 		type: "varchar",
 	})
-	public readonly id!: string;
+	public readonly transactionHash!: string;
 
 	@Column({
 		nullable: false,
-		type: "boolean",
+		type: "smallint",
 	})
-	public readonly success!: boolean;
+	public readonly status!: number;
 
 	@Column({
 		nullable: false,
 		type: "bigint",
 	})
-	public readonly blockHeight!: string;
+	public readonly blockNumber!: string;
 
 	@Column({
 		nullable: false,
@@ -41,7 +41,7 @@ export class Receipt {
 		nullable: true,
 		type: "varchar",
 	})
-	public readonly deployedContractAddress: string | undefined;
+	public readonly contractAddress: string | undefined;
 
 	@Column({
 		default: undefined,

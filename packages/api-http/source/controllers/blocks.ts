@@ -31,7 +31,7 @@ export class BlocksController extends Controller {
 			return this.toPagination(blocks, BlockResource, request.query.transform);
 		}
 
-		const generatorAddresses = blocks.results.map(({ generatorAddress }) => generatorAddress);
+		const generatorAddresses = blocks.results.map(({ proposer }) => proposer);
 		const generators = await this.walletRepositoryFactory()
 			.createQueryBuilder()
 			.select()
@@ -55,7 +55,7 @@ export class BlocksController extends Controller {
 		const block = await this.blockRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.where("height = :height", { height: 0 })
+			.where("number = :number", { number: 0 })
 			.getOne();
 
 		return this.respondEnrichedBlock(block, request);
@@ -65,7 +65,7 @@ export class BlocksController extends Controller {
 		const block = await this.blockRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.orderBy("height", "DESC")
+			.orderBy("number", "DESC")
 			.limit(1)
 			.getOne();
 
@@ -94,7 +94,8 @@ export class BlocksController extends Controller {
 		const options = this.getListingOptions();
 
 		const walletRepository = this.walletRepositoryFactory();
-		const criteria: Search.Criteria.TransactionCriteria = { ...request.query, blockId: block.id };
+		// TODO: Check
+		const criteria: Search.Criteria.TransactionCriteria = { ...request.query, blockHash: block.hash };
 
 		const transactions = await this.transactionRepositoryFactory().findManyByCriteria(
 			walletRepository,

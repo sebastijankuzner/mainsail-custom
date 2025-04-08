@@ -23,10 +23,10 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 			},
 			validate: {
 				query: Joi.object({
+					from: walletId,
 					fullReceipt: Joi.bool().default(true),
-					recipient: address,
-					sender: walletId,
-					txHash: transactionCriteriaSchemaObject.id,
+					to: address,
+					transactionHash: transactionCriteriaSchemaObject.hash,
 				}).concat(Schemas.pagination),
 			},
 		},
@@ -39,14 +39,14 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 		options: {
 			validate: {
 				params: Joi.object({
-					id: Joi.string().hex().length(64),
+					transactionHash: Joi.string().hex().length(64),
 				}),
 				query: Joi.object({
 					fullReceipt: Joi.bool().default(true),
 				}),
 			},
 		},
-		path: "/receipts/{id}",
+		path: "/receipts/{transactionHash}",
 	});
 
 	server.route({
@@ -60,8 +60,8 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 			},
 			validate: {
 				query: Joi.object({
+					from: walletId,
 					fullReceipt: Joi.bool().default(false),
-					sender: walletId,
 				}).concat(Schemas.pagination),
 			},
 		},

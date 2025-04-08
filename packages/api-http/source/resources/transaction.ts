@@ -20,27 +20,27 @@ export class TransactionResource implements Contracts.Api.Resource {
 
 	public async transform(resource: EnrichedTransaction): Promise<object> {
 		let confirmations: number | undefined;
-		if (resource.blockHeight) {
-			confirmations = +resource.state.height - +resource.blockHeight + 1;
+		if (resource.blockNumber) {
+			confirmations = +resource.state.blockNumber - +resource.blockNumber + 1;
 		}
 
 		return {
-			amount: resource.amount,
-			blockId: resource.blockId,
-
+			blockHash: resource.blockHash,
 			confirmations,
+
 			data: resource.data === "0x" ? "" : resource.data,
-			gasLimit: resource.gasLimit,
+			from: resource.from,
+			gas: resource.gas,
 
 			gasPrice: resource.gasPrice,
-			id: resource.id,
+			hash: resource.hash,
 			nonce: resource.nonce,
 
-			recipient: resource.recipientAddress,
-			senderAddress: resource.senderAddress,
 			senderPublicKey: resource.senderPublicKey,
-
 			signature: resource.signature,
+			to: resource.to,
+
+			value: resource.value,
 
 			...(resource.legacySecondSignature ? { legacySecondSignature: resource.legacySecondSignature } : {}),
 
@@ -49,12 +49,12 @@ export class TransactionResource implements Contracts.Api.Resource {
 			...(resource.receipt
 				? {
 						receipt: {
-							deployedContractAddress: resource.receipt.deployedContractAddress ?? undefined,
+							contractAddress: resource.receipt.contractAddress ?? undefined,
 							gasRefunded: resource.receipt.gasRefunded,
 							gasUsed: resource.receipt.gasUsed,
 							logs: resource.receipt.logs,
 							output: resource.receipt.output,
-							success: resource.receipt.success,
+							status: resource.receipt.status,
 						},
 					}
 				: {}),

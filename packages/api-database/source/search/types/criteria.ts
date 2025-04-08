@@ -13,19 +13,19 @@ export type OrLikeCriteria<T> = OrCriteria<LikeCriteria<T>>;
 export type OrContainsCriteria<T> = OrCriteria<ContainsCriteria<T>>;
 
 export type BlockCriteria = {
-	id?: OrEqualCriteria<string>;
+	hash?: OrEqualCriteria<string>;
 	version?: OrEqualCriteria<number>;
 	timestamp?: OrNumericCriteria<number>;
-	previousBlock?: OrEqualCriteria<string>;
-	height?: OrNumericCriteria<number | string>;
+	parentHash?: OrEqualCriteria<string>;
+	number?: OrNumericCriteria<number | string>;
 	round?: OrEqualCriteria<number>;
-	numberOfTransactions?: OrNumericCriteria<number>;
-	totalAmount?: OrNumericCriteria<number | string>;
-	totalFee?: OrNumericCriteria<number | string>;
+	transactionsCount?: OrNumericCriteria<number>;
+	amount?: OrNumericCriteria<number | string>;
+	fee?: OrNumericCriteria<number | string>;
 	reward?: OrNumericCriteria<number | string>;
-	payloadLength?: OrNumericCriteria<number>;
-	payloadHash?: OrEqualCriteria<string>;
-	generatorAddress?: OrEqualCriteria<string>;
+	payloadSize?: OrNumericCriteria<number>;
+	transactionsRoot?: OrEqualCriteria<string>;
+	proposer?: OrEqualCriteria<string>;
 };
 
 export type OrBlockCriteria = OrCriteria<BlockCriteria>;
@@ -38,16 +38,16 @@ export type BlockDataWithTransactionData = {
 export type TransactionCriteria = {
 	address?: OrEqualCriteria<string>;
 	senderId?: OrEqualCriteria<string>;
-	recipientId?: OrEqualCriteria<string>;
-	id?: OrEqualCriteria<string>;
+	to?: OrEqualCriteria<string>;
+	hash?: OrEqualCriteria<string>;
 	version?: OrEqualCriteria<number>;
-	blockId?: OrEqualCriteria<string>;
-	sequence?: OrNumericCriteria<number>;
+	blockHash?: OrEqualCriteria<string>;
+	transactionIndex?: OrNumericCriteria<number>;
 	timestamp?: OrNumericCriteria<number>;
 	nonce?: OrNumericCriteria<string>;
 	senderPublicKey?: OrEqualCriteria<string>;
-	senderAddress?: OrEqualCriteria<string>;
-	amount?: OrNumericCriteria<string>;
+	from?: OrEqualCriteria<string>;
+	value?: OrNumericCriteria<string>;
 	gasPrice?: OrNumericCriteria<number>;
 	data?: OrEqualCriteria<string>;
 };
@@ -64,27 +64,27 @@ export type WalletCriteria = {
 
 export type OrWalletCriteria = OrCriteria<WalletCriteria>;
 
-export type DelegateResourceLastBlock = {
+export type ValidatorResourceLastBlock = {
 	id?: OrEqualCriteria<string>;
-	height?: OrNumericCriteria<number>;
+	number?: OrNumericCriteria<number>;
 };
 
-export type DelegateForged = {
+export type ValidatorForged = {
 	fees?: OrNumericCriteria<string>;
 	rewards?: OrNumericCriteria<string>;
 	total?: OrNumericCriteria<string>;
 };
 
-export type DelegateProduction = {
+export type ValidatorProduction = {
 	approval?: OrNumericCriteria<number>;
 };
 
-export type DelegateBlocks = {
+export type ValidatorBlocks = {
 	produced?: OrNumericCriteria<number>;
-	last?: DelegateResourceLastBlock;
+	last?: ValidatorResourceLastBlock;
 };
 
-export type DelegateCriteria = {
+export type ValidatorCriteria = {
 	address?: OrEqualCriteria<string>;
 	publicKey?: OrEqualCriteria<string>;
 	balance?: OrNumericCriteria<string>;
@@ -93,14 +93,14 @@ export type DelegateCriteria = {
 	rank?: OrEqualCriteria<number>;
 	isResigned?: OrEqualCriteria<boolean>;
 
-	forged?: DelegateForged;
-	production?: DelegateProduction;
-	blocks?: DelegateBlocks;
+	forged?: ValidatorForged;
+	production?: ValidatorProduction;
+	blocks?: ValidatorBlocks;
 
 	attributes?: OrContainsCriteria<Record<string, any>>;
 };
 
-export type OrDelegateCriteria = OrCriteria<DelegateCriteria>;
+export type OrValidatorCriteria = OrCriteria<ValidatorCriteria>;
 
 export type PeerCriteria = {
 	ip?: OrEqualCriteria<string>;
@@ -117,9 +117,9 @@ export type ApiNodeCriteria = {
 export type OrApiNodeCriteria = OrCriteria<ApiNodeCriteria>;
 
 export type ReceiptCriteria = {
-	txHash?: OrEqualCriteria<string>;
-	sender?: OrEqualCriteria<string>;
-	recipient?: OrEqualCriteria<string>;
+	transactionHash?: OrEqualCriteria<string>;
+	from?: OrEqualCriteria<string>;
+	to?: OrEqualCriteria<string>;
 };
 
 export type OrReceiptCriteria = OrCriteria<ReceiptCriteria>;

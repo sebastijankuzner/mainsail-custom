@@ -4,13 +4,13 @@ import Joi from "joi";
 import { blockCriteriaSchemaObject } from "./blocks.js";
 import { walletAddressSchema, walletCriteriaSchemaObject } from "./wallets.js";
 
-export const delegateCriteriaSchemaObject = {
+export const validatorCriteriaSchemaObject = {
 	address: Schemas.orEqualCriteria(walletAddressSchema),
 	attributes: Joi.object(),
 	blocks: {
 		last: {
-			height: blockCriteriaSchemaObject.height,
-			id: blockCriteriaSchemaObject.id,
+			hash: blockCriteriaSchemaObject.hash,
+			number: blockCriteriaSchemaObject.number,
 		},
 		produced: Schemas.createRangeCriteriaSchema(Joi.number().integer().min(0)),
 	},
@@ -29,13 +29,13 @@ export const delegateCriteriaSchemaObject = {
 	votes: Schemas.createRangeCriteriaSchema(Joi.number().integer().positive()),
 };
 
-export const delegateCriteriaSchema = Schemas.createCriteriaSchema({
-	...delegateCriteriaSchemaObject,
+export const validatorCriteriaSchema = Schemas.createCriteriaSchema({
+	...validatorCriteriaSchemaObject,
 	address: walletAddressSchema,
 });
-export const delegateSortingSchema = Schemas.createSortingSchema(
+export const validatorSortingSchema = Schemas.createSortingSchema(
 	{
-		...delegateCriteriaSchemaObject,
+		...validatorCriteriaSchemaObject,
 		address: walletAddressSchema,
 	},
 	["attributes"],

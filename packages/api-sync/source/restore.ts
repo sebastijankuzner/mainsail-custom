@@ -235,22 +235,22 @@ export class Restore {
 
 			for await (const { proof, block } of commits) {
 				blocks.push({
+					amount: block.header.amount.toFixed(),
 					commitRound: proof.round,
-					generatorAddress: block.header.proposer,
-					height: block.header.number.toFixed(),
-					id: block.header.hash,
-					numberOfTransactions: block.header.transactionsCount,
-					payloadHash: block.header.transactionsRoot,
-					payloadLength: block.header.payloadSize,
-					previousBlock: block.header.parentHash,
+					fee: block.header.fee.toFixed(),
+					gasUsed: block.header.gasUsed,
+					hash: block.header.hash,
+					number: block.header.number.toFixed(),
+					parentHash: block.header.parentHash,
+					payloadSize: block.header.payloadSize,
+					proposer: block.header.proposer,
 					reward: block.header.reward.toFixed(),
 					round: block.header.round,
 					signature: proof.signature,
-					stateHash: block.header.stateRoot,
+					stateRoot: block.header.stateRoot,
 					timestamp: block.header.timestamp.toFixed(),
-					totalAmount: block.header.amount.toFixed(),
-					totalFee: block.header.fee.toFixed(),
-					totalGasUsed: block.header.gasUsed,
+					transactionsCount: block.header.transactionsCount,
+					transactionsRoot: block.header.transactionsRoot,
 					validatorRound: this.roundCalculator.calculateRound(block.header.number).round,
 					validatorSet: validatorSetPack(proof.validators).toString(),
 					version: block.header.version,
@@ -281,21 +281,21 @@ export class Restore {
 					}
 
 					transactions.push({
-						amount: data.value.toFixed(),
-						blockHeight: block.header.number.toFixed(),
-						blockId: block.header.hash,
+						blockHash: block.header.hash,
+						blockNumber: block.header.number.toFixed(),
 						data: data.data,
-						gasLimit: data.gas,
+						from: data.from,
+						gas: data.gas,
 						gasPrice: data.gasPrice,
-						id: data.hash,
+						hash: data.hash,
 						legacySecondSignature: data.legacySecondSignature,
 						nonce: data.nonce.toFixed(),
-						recipientAddress: data.to,
-						senderAddress: data.from,
 						senderPublicKey: data.senderPublicKey,
-						sequence: data.transactionIndex!,
 						signature: `${data.r}${data.s}${data.v!.toString(16)}`,
 						timestamp: block.header.timestamp.toFixed(),
+						to: data.to,
+						transactionIndex: data.transactionIndex!,
+						value: data.value.toFixed(),
 					});
 				}
 
@@ -393,8 +393,8 @@ export class Restore {
 										.toFixed(),
 									validatorLastBlock: validatorAttributes.lastBlock
 										? {
-												height: validatorAttributes.lastBlock.number,
 												id: validatorAttributes.lastBlock.hash,
+												number: validatorAttributes.lastBlock.number,
 												timestamp: validatorAttributes.lastBlock.timestamp,
 											}
 										: {},
@@ -512,22 +512,22 @@ export class Restore {
 
 			for (const receipt of result.receipts) {
 				assert.defined(receipt.txHash);
-				assert.defined(receipt.blockHeight);
+				assert.defined(receipt.blockNumber);
 
 				// Initial deployment receipts
-				if (receipt.blockHeight >= BigInt(2 ** 32)) {
+				if (receipt.blockNumber >= BigInt(2 ** 32)) {
 					continue;
 				}
 
 				receipts.push({
-					blockHeight: BigNumber.make(receipt.blockHeight).toFixed(),
-					deployedContractAddress: receipt.deployedContractAddress,
+					blockNumber: BigNumber.make(receipt.blockNumber).toFixed(),
+					contractAddress: receipt.deployedContractAddress,
 					gasRefunded: Number(receipt.gasRefunded),
 					gasUsed: Number(receipt.gasUsed),
-					id: receipt.txHash.slice(2),
 					logs: receipt.logs,
 					output: receipt.output,
-					success: receipt.success,
+					status: receipt.success ? 1 : 0,
+					transactionHash: receipt.txHash.slice(2),
 				});
 			}
 
@@ -631,7 +631,7 @@ export class Restore {
 			.insert()
 			.orIgnore()
 			.values({
-				height: context.lastHeight.toFixed(),
+				blockNumber: context.lastHeight.toFixed(),
 				id: 1,
 				supply: context.totalSupply.toFixed(),
 			})

@@ -1,6 +1,9 @@
 import { AnySchemaObject } from "ajv";
 
-export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHeader" | "logsBloom", AnySchemaObject> = {
+export const schemas: Record<
+	"block" | "blockHash" | "prefixedBlockHash" | "blockHeader" | "logsBloom",
+	AnySchemaObject
+> = {
 	block: {
 		$id: "block",
 		$ref: "blockHeader",
@@ -14,16 +17,27 @@ export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHea
 		},
 		type: "object",
 	},
+	blockHash: {
+		$id: "blockHash",
+		allOf: [
+			{
+				$ref: "hex",
+				maxLength: 64,
+				minLength: 64,
+			},
+		],
+		type: "string",
+	},
 	blockHeader: {
 		$id: "blockHeader",
 		properties: {
 			amount: { bignumber: { minimum: 0 } },
 			fee: { bignumber: { minimum: 0 } },
 			gasUsed: { minimum: 0, type: "integer" },
-			hash: { $ref: "blockId" },
+			hash: { $ref: "blockHash" },
 			logsBloom: { $ref: "logsBloom" },
 			number: { minimum: 0, type: "integer" },
-			parentHash: { $ref: "blockId" },
+			parentHash: { $ref: "blockHash" },
 			payloadSize: { minimum: 0, type: "integer" },
 			proposer: { $ref: "address" },
 			reward: { bignumber: { minimum: 0 } },
@@ -52,17 +66,6 @@ export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHea
 		],
 		type: "object",
 	},
-	blockId: {
-		$id: "blockId",
-		allOf: [
-			{
-				$ref: "hex",
-				maxLength: 64,
-				minLength: 64,
-			},
-		],
-		type: "string",
-	},
 	logsBloom: {
 		$id: "logsBloom",
 		allOf: [
@@ -74,8 +77,8 @@ export const schemas: Record<"block" | "blockId" | "prefixedBlockId" | "blockHea
 		],
 		type: "string",
 	},
-	prefixedBlockId: {
-		$id: "prefixedBlockId",
+	prefixedBlockHash: {
+		$id: "prefixedBlockHash",
 		allOf: [
 			{
 				$ref: "prefixedHex",

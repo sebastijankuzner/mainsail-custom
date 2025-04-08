@@ -10,25 +10,25 @@ export class Transaction {
 		primary: true,
 		type: "varchar",
 	})
-	public readonly id!: string;
+	public readonly hash!: string;
 
 	@Column({
 		nullable: false,
 		type: "varchar",
 	})
-	public readonly blockId!: string;
+	public readonly blockHash!: string;
 
 	@Column({
 		nullable: false,
 		type: "bigint",
 	})
-	public readonly blockHeight!: string;
+	public readonly blockNumber!: string;
 
 	@Column({
 		nullable: false,
 		type: "smallint",
 	})
-	public readonly sequence!: number;
+	public readonly transactionIndex!: number;
 
 	@Column({
 		nullable: false,
@@ -52,20 +52,20 @@ export class Transaction {
 		nullable: false,
 		type: "varchar",
 	})
-	public readonly senderAddress!: string;
+	public readonly from!: string;
 
 	@Column({
 		default: undefined,
 		nullable: true,
 		type: "varchar",
 	})
-	public readonly recipientAddress!: string | undefined;
+	public readonly to!: string | undefined;
 
 	@Column({
 		nullable: false,
 		type: "numeric",
 	})
-	public readonly amount!: string;
+	public readonly value!: string;
 
 	@Column({
 		nullable: false,
@@ -77,7 +77,7 @@ export class Transaction {
 		nullable: false,
 		type: "bigint",
 	})
-	public readonly gasLimit!: number;
+	public readonly gas!: number;
 
 	@Column({
 		default: undefined,
