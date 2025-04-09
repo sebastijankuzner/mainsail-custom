@@ -8,8 +8,8 @@ message GetStatusRequest {
 
 message GetStatusResponse {
     message State {
-        uint32 height = 1;
-		string id = 2;
+        uint32 blockNumber = 1;
+		string blockHash = 2;
     }
 
     message Config {

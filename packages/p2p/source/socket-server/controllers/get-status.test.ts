@@ -38,8 +38,8 @@ describe<{
 		assert.equal(status, {
 			config: {},
 			state: {
-				height: number,
-				id: hash,
+				blockNumber: number,
+				blockHash: hash,
 			},
 		});
 	});
