@@ -548,27 +548,23 @@ export class Consensus implements Contracts.Consensus.Service {
 	}
 
 	async #bootstrap(): Promise<void> {
+		this.#blockNumber = this.stateStore.getLastBlock().data.number + 1;
+
 		const state = await this.bootstrapper.run();
 
-		if (state && state.blockNumber === this.stateStore.getLastBlock().data.number + 1) {
-			this.#step = state.step;
-			this.#blockNumber = state.blockNumber;
-			this.#round = state.round;
-			this.#lockedValue = state.lockedValue;
-			this.#validValue = state.validValue;
-		} else {
-			if (state) {
+		if (state) {
+			if (state.blockNumber === this.#blockNumber) {
+				this.#step = state.step;
+				this.#round = state.round;
+				this.#lockedValue = state.lockedValue;
+				this.#validValue = state.validValue;
+			} else {
 				this.logger.warning(
-					`Skipping state restore, because stored block number is ${state.blockNumber}, but should be ${
-						this.stateStore.getLastBlock().data.number + 1
-					}`,
+					`Skipping state restore, because stored block number is ${state.blockNumber}, but should be ${this.#blockNumber}`,
 				);
 
 				this.roundStateRepository.clear();
 			}
-
-			const lastBlock = this.stateStore.getLastBlock();
-			this.#blockNumber = lastBlock.data.number + 1;
 		}
 
 		if (this.#blockNumber !== this.configuration.getHeight()) {
