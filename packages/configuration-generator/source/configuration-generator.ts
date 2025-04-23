@@ -71,7 +71,7 @@ export class ConfigurationGenerator {
 			epoch: new Date(),
 			explorer: "",
 			force: false,
-			initialHeight: 0,
+			initialBlockNumber: 0,
 			maxBlockGasLimit: 10_000_000,
 			maxBlockPayload: 2_097_152,
 			maxTxPerBlock: 150,
@@ -132,13 +132,13 @@ export class ConfigurationGenerator {
 							Identifiers.Snapshot.Legacy.Importer,
 						);
 						await importer.prepare(options.snapshot.path);
-						internalOptions.initialHeight = Number(importer.genesisHeight);
+						internalOptions.initialBlockNumber = Number(importer.genesisBlockNumber);
 					}
 
 					const milestones = this.milestonesGenerator
 						.setInitial(internalOptions)
 						.setReward(
-							internalOptions.initialHeight + internalOptions.rewardHeight,
+							internalOptions.initialBlockNumber + internalOptions.rewardHeight,
 							internalOptions.rewardAmount,
 						)
 						.generate();
@@ -147,7 +147,7 @@ export class ConfigurationGenerator {
 						genesisBlock: {
 							// @ts-ignore
 							block: {
-								number: internalOptions.initialHeight,
+								number: internalOptions.initialBlockNumber,
 							},
 						},
 						milestones,
@@ -164,7 +164,7 @@ export class ConfigurationGenerator {
 							snapshotHash: importer.snapshotHash,
 						};
 
-						if (importer.validators) {
+						if (importer.validators && options.mockFakeValidatorBlsKeys) {
 							const importedValidatorMnemonics: string[] = [];
 							// create fake mnemonics for testing
 							const consensusKeyPairFactory = this.app.getTagged<Contracts.Crypto.KeyPairFactory>(
@@ -257,7 +257,7 @@ export class ConfigurationGenerator {
 		logger?.info(`Configuration generated on location: ${this.configurationPath}`);
 	}
 
-	#preparteEnvironmentOptions(options: Contracts.NetworkGenerator.EnvironmentOptions): EnvironmentData {
+	#preparteEnvironmentOptions(options: Contracts.NetworkGenerator.InternalOptions): EnvironmentData {
 		const data: EnvironmentData = {
 			CORE_API_EVM_ENABLED: "1",
 
@@ -275,6 +275,10 @@ export class ConfigurationGenerator {
 			CORE_P2P_PORT: options.coreP2PPort,
 			CORE_WEBHOOKS_PORT: options.coreWebhooksPort,
 		};
+
+		if (options.mockFakeValidatorBlsKeys) {
+			data.CORE_SNAPSHOT_MOCK_FAKE_VALIDATOR_BLS_KEYS = "1";
+		}
 
 		// if (options.coreDBDatabase) {
 		// 	data.CORE_DB_DATABASE = options.coreDBDatabase;
