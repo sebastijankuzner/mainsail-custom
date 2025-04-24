@@ -28,4 +28,5 @@ export const defaults = {
 			Environment.get(Constants.EnvironmentVariables.CORE_DB_USERNAME) ??
 			Environment.get(Constants.EnvironmentVariables.CORE_TOKEN),
 	},
+	enabled: Environment.isTrue(Constants.EnvironmentVariables.CORE_API_SYNC_ENABLED),
 };
