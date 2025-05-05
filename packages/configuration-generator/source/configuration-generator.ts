@@ -2,6 +2,7 @@ import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Application } from "@mainsail/kernel";
 import { ensureDirSync, pathExistsSync } from "fs-extra/esm";
+import { join } from "path";
 
 import { ConfigurationWriter } from "./configuration-writer.js";
 import { EnvironmentData } from "./contracts.js";
@@ -93,6 +94,7 @@ export class ConfigurationGenerator {
 			writeEnvironment: true,
 			writeGenesisBlock: true,
 			writePeers: true,
+			writeSnapshot: !!options.snapshot,
 			writeValidators: true,
 			...writeOptions,
 		};
@@ -199,6 +201,20 @@ export class ConfigurationGenerator {
 					this.configurationWriter.writeCrypto(genesisBlock, milestones, network);
 				},
 				title: "Writing crypto.json in core config path.",
+			});
+		}
+
+		if (writeOptions.writeSnapshot) {
+			tasks.push({
+				task: async () => {
+					if (!options.snapshot || !options.snapshot.snapshotHash) {
+						throw new Error("missing snapshot config");
+					}
+
+					ensureDirSync(join(this.configurationPath, "snapshot"));
+					this.configurationWriter.writeSnapshot(options.snapshot.path, options.snapshot.snapshotHash);
+				},
+				title: `Writing snapshot.json in core config path.`,
 			});
 		}
 
