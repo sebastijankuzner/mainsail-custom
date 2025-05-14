@@ -1,4 +1,6 @@
 import { createHash } from "node:crypto";
+import { promisify } from "node:util";
+import { brotliDecompress } from "node:zlib";
 
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
@@ -112,7 +114,10 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 		const milestone = this.configuration.getMilestone(this.configuration.getGenesisHeight());
 		assert.defined(milestone.snapshot);
 
-		const snapshotPath = path.join(this.app.configPath("snapshot"), `${milestone.snapshot.snapshotHash}.json`);
+		const snapshotPath = path.join(
+			this.app.configPath("snapshot"),
+			`${milestone.snapshot.snapshotHash}.compressed`,
+		);
 		this.logger.info(`Importing genesis snapshot: ${snapshotPath}`);
 
 		await this.prepare(snapshotPath);
@@ -136,7 +141,7 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 	}
 
 	public async prepare(snapshotPath: string): Promise<void> {
-		const snapshot = this.fileSystem.readJSONSync<Interfaces.LegacySnapshot>(snapshotPath);
+		const snapshot = await this.#readSnapshot(snapshotPath);
 
 		const hash = createHash("sha256");
 
@@ -464,4 +469,23 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 	}
 
 	#generateTxHash = () => sha256(Buffer.from(`tx-${this.deployerAddress}-${this.#nonce++}`, "utf8")).slice(2);
+
+	async #readSnapshot(snapshotPath: string): Promise<Interfaces.LegacySnapshot> {
+		if (snapshotPath.endsWith(".compressed")) {
+			return this.#decompressBrotli(snapshotPath);
+		}
+
+		return this.fileSystem.readJSONSync<Interfaces.LegacySnapshot>(snapshotPath);
+	}
+
+	async #decompressBrotli(inputPath: string): Promise<Interfaces.LegacySnapshot> {
+		try {
+			const compressedData = await this.fileSystem.get(inputPath);
+			const decompressed = await promisify(brotliDecompress)(compressedData);
+			return JSON.parse(decompressed.toString()) as Interfaces.LegacySnapshot;
+		} catch (error) {
+			console.error("Error decompressing snapshot", error);
+			throw error;
+		}
+	}
 }
