@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 import Joi from "joi";
@@ -5,6 +6,7 @@ import Joi from "joi";
 import { Listeners } from "./listeners.js";
 import { Sync } from "./service.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		if (!this.#isEnabled()) {

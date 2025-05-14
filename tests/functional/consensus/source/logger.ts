@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Services } from "@mainsail/kernel";
 import { isEmpty } from "@mainsail/utils";
 import { format } from "date-fns";
@@ -7,6 +8,7 @@ type Options = {
 	id: number;
 };
 
+@injectable()
 export class TestLogger extends Services.Log.MemoryLogger {
 	#options!: Options;
 

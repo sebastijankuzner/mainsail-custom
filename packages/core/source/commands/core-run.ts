@@ -1,6 +1,6 @@
 import { Keystore } from "@chainsafe/bls-keystore";
 import { Commands, Contracts, Utils } from "@mainsail/cli";
-import { injectable } from "@mainsail/container";
+import { injectable, postConstruct } from "@mainsail/container";
 import { assert } from "@mainsail/utils";
 import { existsSync } from "fs";
 import { readJSONSync } from "fs-extra/esm";
@@ -14,6 +14,7 @@ export class Command extends Commands.Command {
 
 	public description = "Run the Core process in foreground. Exiting the process will stop it from running.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag("env", "", Joi.string().default("production"))

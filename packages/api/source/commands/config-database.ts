@@ -1,5 +1,5 @@
 import { Commands, Contracts, Identifiers, Services } from "@mainsail/cli";
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 @injectable()
@@ -13,6 +13,7 @@ export class Command extends Commands.Command {
 
 	readonly #validFlags: string[] = ["host", "port", "database", "username", "password"];
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag("host", "The host address of the database.", Joi.string())

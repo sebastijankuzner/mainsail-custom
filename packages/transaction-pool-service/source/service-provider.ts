@@ -1,4 +1,5 @@
-import { Identifiers } from "@mainsail/contracts";
+import { injectable } from "@mainsail/container";
+import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers, Services } from "@mainsail/kernel";
 import Joi from "joi";
 
@@ -11,6 +12,7 @@ import { SenderState } from "./sender-state.js";
 import { Service } from "./service.js";
 import { Storage } from "./storage.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.#registerServices();
@@ -48,11 +50,15 @@ export class ServiceProvider extends Providers.ServiceProvider {
 		this.app.bind(Identifiers.TransactionPool.Mempool).to(Mempool).inSingletonScope();
 		this.app.bind(Identifiers.TransactionPool.Processor).to(Processor);
 		this.app.bind(Identifiers.TransactionPool.Query).to(Query);
-		this.app.bind(Identifiers.TransactionPool.SenderMempool.Factory).toFactory(
-			({ container }) =>
-				async (address: string, legacyAddress?: string) =>
-					await container.resolve(SenderMempool).configure(address, legacyAddress),
-		);
+		this.app
+			.bind<
+				(address: string, legacyAddress?: string) => Promise<SenderMempool>
+			>(Identifiers.TransactionPool.SenderMempool.Factory)
+			.toFactory(
+				(context: Contracts.Kernel.Container.ResolutionContext) =>
+					async (address: string, legacyAddress?: string) =>
+						await context.get(SenderMempool, { autobind: true }).configure(address, legacyAddress),
+			);
 		this.app.bind(Identifiers.TransactionPool.SenderState).to(SenderState);
 		this.app.bind(Identifiers.TransactionPool.Service).to(Service).inSingletonScope();
 		this.app.bind(Identifiers.TransactionPool.Storage).to(Storage).inSingletonScope();

@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
@@ -15,9 +16,10 @@ export * from "./schemas.js";
 export * from "./serializer.js";
 export * from "./verifier.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
-		this.app.bind(Identifiers.Cryptography.Block.HeaderSize).toFunction(() => {
+		this.app.bind(Identifiers.Cryptography.Block.HeaderSize).toConstantValue(() => {
 			const hashByteLength = this.app.get<number>(Identifiers.Cryptography.Hash.Size.SHA256);
 			const generatorAddressByteLength = this.app.get<number>(Identifiers.Cryptography.Identity.Address.Size);
 

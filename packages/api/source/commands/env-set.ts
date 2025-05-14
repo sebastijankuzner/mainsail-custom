@@ -1,6 +1,6 @@
 // eslint-disable-next-line unicorn/prevent-abbreviations
 import { Commands, Identifiers, Services } from "@mainsail/cli";
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 @injectable()
@@ -12,6 +12,7 @@ export class Command extends Commands.Command {
 
 	public description = "Set the value of an environment variable.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag(

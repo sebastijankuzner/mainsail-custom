@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 import { open, RootDatabase } from "lmdb";
@@ -5,6 +6,7 @@ import { join } from "path";
 
 import { Service } from "./service.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.#registerStorage();

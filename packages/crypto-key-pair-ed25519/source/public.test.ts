@@ -9,7 +9,7 @@ import { PublicKeyFactory } from "./public";
 const mnemonic =
 	"program fragile industry scare sun visit race erase daughter empty anxiety cereal cycle hunt airport educate giggle picture sunset apart jewel similar pulp moment";
 
-describe<{ container: Container.Container }>("PrivateKeyFactory", ({ assert, beforeEach, it }) => {
+describe<{ container: Container }>("PrivateKeyFactory", ({ assert, beforeEach, it }) => {
 	beforeEach((context) => {
 		context.container = new Container();
 		context.container.bind(Identifiers.Cryptography.Configuration).to(Configuration).inSingletonScope();
@@ -18,7 +18,7 @@ describe<{ container: Container.Container }>("PrivateKeyFactory", ({ assert, bef
 
 	it("should derive a key pair from an mnemonic", async (context) => {
 		assert.is(
-			await context.container.resolve(PublicKeyFactory).fromMnemonic(mnemonic),
+			await context.container.get(PublicKeyFactory, { autobind: true }).fromMnemonic(mnemonic),
 			"ddfadb0a7938faa598f1ea34cab907e1e520db0652eb40a7edfe6c195511780b",
 		);
 	});
@@ -26,7 +26,7 @@ describe<{ container: Container.Container }>("PrivateKeyFactory", ({ assert, bef
 	it("should derive from a WIF", async (context) => {
 		assert.is(
 			await context.container
-				.resolve(PublicKeyFactory)
+				.get(PublicKeyFactory, { autobind: true })
 				.fromWIF("KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", 128),
 			"4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29",
 		);

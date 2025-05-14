@@ -1,5 +1,5 @@
 import { Commands, Contracts, Identifiers, Utils } from "@mainsail/cli";
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 @injectable()
@@ -11,6 +11,7 @@ export class Command extends Commands.Command {
 
 	public description = "Start the Core process.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag("env", "", Joi.string().default("production"))

@@ -1,5 +1,5 @@
 import { Commands, Contracts, Utils } from "@mainsail/cli";
-import { injectable } from "@mainsail/container";
+import { injectable, postConstruct } from "@mainsail/container";
 import { assert } from "@mainsail/utils";
 import { readJSONSync } from "fs-extra/esm";
 import Joi from "joi";
@@ -12,6 +12,7 @@ export class Command extends Commands.Command {
 
 	public description = "Run the API process in foreground. Exiting the process will stop it from running.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag("env", "", Joi.string().default("production"))

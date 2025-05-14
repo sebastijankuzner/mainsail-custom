@@ -1,8 +1,10 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Services } from "@mainsail/kernel";
 
 import { PeerProcessor } from "../peer-processor.js";
 
+@injectable()
 export class ValidateAndAcceptPeerAction extends Services.Triggers.Action {
 	#app: Contracts.Kernel.Application;
 

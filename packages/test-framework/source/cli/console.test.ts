@@ -1,5 +1,5 @@
 import { Commands } from "@mainsail/cli";
-import { injectable } from "@mainsail/container";
+import { injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 import { describe } from "../index";
@@ -35,6 +35,7 @@ describe("Console", ({ beforeEach, it, assert, spyFn }) => {
 		 * @returns {void}
 		 * @memberof Command
 		 */
+		@postConstruct()
 		public configure(): void {
 			this.definition.setFlag("flagName", "The test message.", Joi.string().default("flagValue"));
 

@@ -1,4 +1,4 @@
-import { injectable } from "@mainsail/container";
+import { injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 import { Console, describe } from "../../../test-framework/source";
@@ -8,6 +8,7 @@ import { Command } from "./command";
 
 @injectable()
 class StubCommand extends Command {
+	@postConstruct()
 	public configure(): void {
 		this.definition.setArgument("firstName", "description", Joi.string());
 		this.definition.setArgument("lastName", "description", Joi.string());

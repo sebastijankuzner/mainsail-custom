@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Ipc, Providers } from "@mainsail/kernel";
 import Joi from "joi";
@@ -8,17 +9,25 @@ import { Worker } from "worker_threads";
 import { Worker as WorkerInstance } from "./worker.js";
 import { WorkerPool } from "./worker-pool.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.app.bind(Identifiers.CryptoWorker.Worker.Instance).to(WorkerInstance);
-		this.app.bind(Identifiers.CryptoWorker.Worker.Factory).toAutoFactory(Identifiers.CryptoWorker.Worker.Instance);
+		this.app
+			.bind<() => WorkerInstance>(Identifiers.CryptoWorker.Worker.Factory)
+			.toFactory(
+				(context: Contracts.Kernel.Container.ResolutionContext) => () =>
+					context.get<WorkerInstance>(Identifiers.CryptoWorker.Worker.Instance),
+			);
 
 		this.app.bind(Identifiers.CryptoWorker.WorkerPool).to(WorkerPool).inSingletonScope();
 
-		this.app.bind(Identifiers.CryptoWorker.WorkerSubprocess.Factory).toFactory(() => () => {
-			const subprocess = new Worker(`${new URL(".", import.meta.url).pathname}/worker-script.js`, {});
-			return new Ipc.Subprocess(subprocess);
-		});
+		this.app
+			.bind<() => Ipc.Subprocess<any>>(Identifiers.CryptoWorker.WorkerSubprocess.Factory)
+			.toFactory(() => () => {
+				const subprocess = new Worker(`${new URL(".", import.meta.url).pathname}/worker-script.js`, {});
+				return new Ipc.Subprocess(subprocess);
+			});
 	}
 
 	public async boot(): Promise<void> {

@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
@@ -5,9 +6,10 @@ import { Deserializer } from "./deserializer.js";
 import { CommitFactory } from "./factory.js";
 import { Serializer } from "./serializer.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
-		this.app.bind(Identifiers.Cryptography.Commit.ProofSize).toFunction(
+		this.app.bind(Identifiers.Cryptography.Commit.ProofSize).toConstantValue(
 			() =>
 				4 + // round
 				this.app.getTagged<number>(Identifiers.Cryptography.Signature.Size, "type", "consensus") + // signature

@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
@@ -8,6 +9,7 @@ import { AddressSerializer } from "./serializer.js";
 export * from "./address.factory.js";
 export * from "./schemas.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.app.bind(Identifiers.Cryptography.Legacy.Identity.AddressSize).toConstantValue(21);

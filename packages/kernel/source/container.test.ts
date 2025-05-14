@@ -32,7 +32,7 @@ describe<{
 		assert.is(container.get("key"), "value");
 		assert.true(container.isBound("key"));
 
-		container.rebind("key").toConstantValue("value-new");
+		container.rebindSync("key").toConstantValue("value-new");
 
 		assert.is(container.get("key"), "value-new");
 	});
@@ -54,6 +54,6 @@ describe<{
 	});
 
 	it("should resolve a value from the IoC container", () => {
-		assert.instance(container.resolve(StubClass), StubClass);
+		assert.instance(container.get(StubClass, { autobind: true }), StubClass);
 	});
 });

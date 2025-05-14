@@ -1,5 +1,5 @@
 import { Commands, Contracts, Identifiers } from "@mainsail/cli";
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 @injectable()
@@ -11,6 +11,7 @@ export class Command extends Commands.Command {
 
 	public description = "Installs a package, and any packages that it depends on.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag("version", "The version of the package.", Joi.string())

@@ -1,34 +1,23 @@
-import { Selectors } from "@mainsail/container";
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
-import { MainEvm, RpcEvm, TransactionPoolEvm, ValidatorEvm } from "./instances/index.js";
+import { EvmInstance } from "./instances/index.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
-		this.app
-			.bind(Identifiers.Evm.Instance)
-			.to(MainEvm)
-			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("instance", "evm"));
+		this.app.bind(Identifiers.Evm.Instance).to(EvmInstance).inSingletonScope().whenTagged("instance", "evm");
+
+		this.app.bind(Identifiers.Evm.Instance).to(EvmInstance).inRequestScope().whenTagged("instance", "validator");
 
 		this.app
 			.bind(Identifiers.Evm.Instance)
-			.to(ValidatorEvm)
-			.inRequestScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("instance", "validator"));
-
-		this.app
-			.bind(Identifiers.Evm.Instance)
-			.to(TransactionPoolEvm)
+			.to(EvmInstance)
 			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("instance", "transaction-pool"));
+			.whenTagged("instance", "transaction-pool");
 
-		this.app
-			.bind(Identifiers.Evm.Instance)
-			.to(RpcEvm)
-			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("instance", "rpc"));
+		this.app.bind(Identifiers.Evm.Instance).to(EvmInstance).inSingletonScope().whenTagged("instance", "rpc");
 	}
 
 	public async boot(): Promise<void> {}

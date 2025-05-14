@@ -1,4 +1,4 @@
-import { inject } from "@mainsail/container";
+import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Ipc, Providers } from "@mainsail/kernel";
 import Joi from "joi";
@@ -6,15 +6,18 @@ import { Worker } from "worker_threads";
 
 import { Worker as WorkerInstance } from "./worker.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	@inject(Identifiers.Config.Flags)
 	private readonly flags!: Contracts.Types.KeyValuePair;
 
 	public async register(): Promise<void> {
-		this.app.bind(Identifiers.TransactionPool.WorkerSubprocess.Factory).toFactory(() => () => {
-			const subprocess = new Worker(`${new URL(".", import.meta.url).pathname}/worker-script.js`, {});
-			return new Ipc.Subprocess(subprocess);
-		});
+		this.app
+			.bind<() => Ipc.Subprocess<any>>(Identifiers.TransactionPool.WorkerSubprocess.Factory)
+			.toFactory(() => () => {
+				const subprocess = new Worker(`${new URL(".", import.meta.url).pathname}/worker-script.js`, {});
+				return new Ipc.Subprocess(subprocess);
+			});
 
 		this.app.bind(Identifiers.TransactionPool.Worker).toConstantValue(this.app.resolve(WorkerInstance));
 	}
