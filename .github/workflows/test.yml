@@ -120,8 +120,8 @@ jobs:
             #   run: cd packages/blockchain-utils && pnpm run test:coverage
             # - name: Test bootstrap
             #   run: cd packages/bootstrap && pnpm run test:coverage
-            # - name: Test cli
-            #   run: cd packages/cli && pnpm run test:coverage
+            - name: Test cli
+              run: cd packages/cli && pnpm run test:coverage
             # - name: Test configuration-generator
             #   run: cd packages/configuration-generator && pnpm run test:coverage
             - name: Test consensus
