@@ -65,6 +65,9 @@ importers:
       husky:
         specifier: 9.1.7
         version: 9.1.7
+      lcov-result-merger:
+        specifier: 5.0.1
+        version: 5.0.1
       lerna:
         specifier: 6.6.2
         version: 6.6.2(encoding@0.1.13)
@@ -6143,10 +6146,6 @@ packages:
     resolution: {integrity: sha512-rYGMRwip6lUMvYD3BTScMwT1HtAs2d71SMv66Vrxs0IekGZEjhM0pcMfjQPnknBt2zeCwQMEupiN02ZP4DiT1Q==}
     engines: {node: '>=8'}
 
-  fast-glob@3.3.2:
-    resolution: {integrity: sha512-oX2ruAFQwf/Orj8m737Y5adxDQO0LAB7/S5MnxCdTNDd4p6BsyIVsv9JQsATbTSq8KHRpLwIHbVlUNatxd+1Ow==}
-    engines: {node: '>=8.6.0'}
-
   fast-glob@3.3.3:
     resolution: {integrity: sha512-7MptL8U0cqcFdzIzwOTHoilX9x5BrNqye7Z/LuC7kCMRio1EMSyqRK3BEAUD7sXRq4iT4AzTVuZdhgQ2TCvYLg==}
     engines: {node: '>=8.6.0'}
@@ -7331,6 +7330,11 @@ packages:
   lazy@1.0.11:
     resolution: {integrity: sha512-Y+CjUfLmIpoUCCRl0ub4smrYtGGr5AOa2AKOaWelGHOGz33X/Y/KizefGqbkwfz44+cnq/+9habclf8vOmu2LA==}
     engines: {node: '>=0.2.0'}
+
+  lcov-result-merger@5.0.1:
+    resolution: {integrity: sha512-i53RjTYfqbHgerqGtuJjDfARDU340zNxXrJudQZU3o8ak9rrx8FDQUKf38Cjm6MtbqonqiDFmoKuUe++uZbvOg==}
+    engines: {node: '>=14'}
+    hasBin: true
 
   lerna@6.6.2:
     resolution: {integrity: sha512-W4qrGhcdutkRdHEaDf9eqp7u4JvI+1TwFy5woX6OI8WPe4PYBdxuILAsvhp614fUG41rKSGDKlOh+AWzdSidTg==}
@@ -12061,7 +12065,7 @@ snapshots:
   awilix@12.0.4:
     dependencies:
       camel-case: 4.1.2
-      fast-glob: 3.3.2
+      fast-glob: 3.3.3
 
   axios@1.7.8:
     dependencies:
@@ -13674,14 +13678,6 @@ snapshots:
       merge2: 1.4.1
       micromatch: 4.0.8
 
-  fast-glob@3.3.2:
-    dependencies:
-      '@nodelib/fs.stat': 2.0.5
-      '@nodelib/fs.walk': 1.2.8
-      glob-parent: 5.1.2
-      merge2: 1.4.1
-      micromatch: 4.0.8
-
   fast-glob@3.3.3:
     dependencies:
       '@nodelib/fs.stat': 2.0.5
@@ -14117,7 +14113,7 @@ snapshots:
     dependencies:
       array-union: 2.1.0
       dir-glob: 3.0.1
-      fast-glob: 3.3.2
+      fast-glob: 3.3.3
       ignore: 5.3.2
       merge2: 1.4.1
       slash: 3.0.0
@@ -14887,6 +14883,11 @@ snapshots:
       package-json: 10.0.1
 
   lazy@1.0.11: {}
+
+  lcov-result-merger@5.0.1:
+    dependencies:
+      fast-glob: 3.3.3
+      yargs: 16.2.0
 
   lerna@6.6.2(encoding@0.1.13):
     dependencies:
