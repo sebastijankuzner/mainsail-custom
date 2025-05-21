@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { Container } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { ServiceProvider as CoreCryptoAddressBase58 } from "@mainsail/crypto-address-base58";
@@ -20,6 +22,7 @@ import { Application, Providers } from "@mainsail/kernel";
 import { ServiceProvider as CoreSerializer } from "@mainsail/serializer";
 import { ServiceProvider as CoreSnapshotLegacyImporter } from "@mainsail/snapshot-legacy-importer";
 import { ServiceProvider as CoreValidation } from "@mainsail/validation";
+import { readJSONSync } from "fs-extra/esm";
 import { dirSync, setGracefulCleanup } from "tmp";
 
 import { ConfigurationGenerator } from "./configuration-generator.js";
@@ -50,10 +53,10 @@ export const makeApplication = async (configurationPath: string, options: Record
 		warning: (message: string) => console.log(message),
 	});
 	// Used for evm instance
-	const fsExtra = await import("fs-extra/esm");
 	app.bind(Identifiers.Services.Filesystem.Service).toConstantValue({
 		existsSync: () => true,
-		readJSONSync: (file: string, options?: Record<string, any>) => fsExtra.readJSONSync(file, options),
+		get: (path: string) => readFileSync(path),
+		readJSONSync: (file: string, options?: Record<string, any>) => readJSONSync(file, options),
 	});
 	setGracefulCleanup();
 	app.rebind("path.data").toConstantValue(dirSync().name);

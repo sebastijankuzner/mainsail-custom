@@ -8,7 +8,7 @@ import { Identifiers as EvmConsensusIdentifiers } from "@mainsail/evm-consensus"
 import { ConsensusAbi, UsernamesAbi } from "@mainsail/evm-contracts";
 import { Providers } from "@mainsail/kernel";
 import { Interfaces } from "@mainsail/snapshot-legacy-exporter";
-import { assert, BigNumber } from "@mainsail/utils";
+import { assert, BigNumber, chunk } from "@mainsail/utils";
 import { entropyToMnemonic } from "bip39";
 import { ethers, sha256 } from "ethers";
 import path from "path";
@@ -23,9 +23,6 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
-
-	@inject(Identifiers.Cryptography.Identity.Address.Factory)
-	private readonly addressFactory!: Contracts.Crypto.AddressFactory;
 
 	@inject(Identifiers.Cryptography.Identity.KeyPair.Factory)
 	@tagged("type", "consensus")
@@ -155,6 +152,17 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 		let totalSupply = 0n;
 
+		const publicKeyLookup: Record<string, Contracts.Snapshot.ImportedLegacyWallet> = snapshot.wallets.reduce(
+			(accumulator, current) => {
+				if (current.publicKey) {
+					accumulator[current.publicKey] = current;
+				}
+
+				return accumulator;
+			},
+			{},
+		);
+
 		for (const wallet of snapshot.wallets) {
 			hash.update(JSON.stringify(wallet));
 
@@ -163,7 +171,9 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 			if (balance < 0) {
 				// skip OG genesis wallet
-				this.logger.debug(`>> skipping wallet ${wallet.address} with negative balance ${balance.toString()}`);
+				this.logger.debug(
+					`>> skipping wallet ${wallet.arkAddress} with negative balance ${balance.toString()}`,
+				);
 				continue;
 			}
 
@@ -173,11 +183,12 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 			let ethAddress: string | undefined;
 			if (wallet.publicKey) {
-				ethAddress = await this.addressFactory.fromPublicKey(wallet.publicKey);
+				assert.defined(wallet.ethAddress);
+				ethAddress = wallet.ethAddress;
 			}
 
 			wallets.push({
-				arkAddress: wallet.address,
+				arkAddress: wallet.arkAddress,
 				balance,
 				ethAddress,
 				legacyAttributes: {
@@ -192,13 +203,15 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 			if (wallet.attributes?.["vote"]) {
 				assert.string(wallet.publicKey);
 
-				const vote = await this.addressFactory.fromPublicKey(wallet.attributes?.["vote"]);
+				const votedWallet = publicKeyLookup[wallet.attributes?.["vote"]];
+				assert.defined(votedWallet);
+				assert.defined(votedWallet.ethAddress);
 
 				voters.push({
-					arkAddress: wallet.address,
+					arkAddress: wallet.arkAddress,
 					ethAddress,
 					publicKey: wallet.publicKey,
-					vote,
+					vote: votedWallet.ethAddress,
 				});
 			}
 
@@ -208,7 +221,7 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 				}
 
 				validators.push({
-					arkAddress: wallet.address,
+					arkAddress: wallet.arkAddress,
 					blsPublicKey: wallet.attributes?.["delegate"]["blsPublicKey"],
 					ethAddress,
 					isResigned: wallet.attributes?.["delegate"]["isResigned"] ?? false,
@@ -302,16 +315,19 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 		this.logger.info(`seeding ${this.#data.wallets.length} wallets`);
 
+		const wallets: Contracts.Evm.AccountInfoExtended[] = [];
+		const coldWallets: Contracts.Evm.ImportLegacyColdWallet[] = [];
+
 		for (const wallet of this.#data.wallets) {
 			if (wallet.ethAddress) {
-				await this.evm.importAccountInfo({
+				wallets.push({
 					address: wallet.ethAddress,
 					balance: wallet.balance,
 					legacyAttributes: wallet.legacyAttributes,
 					nonce: 0n,
 				});
 			} else {
-				await this.evm.importLegacyColdWallet({
+				coldWallets.push({
 					address: wallet.arkAddress,
 					balance: wallet.balance,
 					legacyAttributes: wallet.legacyAttributes,
@@ -319,6 +335,14 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 			}
 
 			totalSupply += wallet.balance;
+		}
+
+		for (const batch of chunk(wallets, 1000)) {
+			await this.evm.importAccountInfos(batch);
+		}
+
+		for (const batch of chunk(coldWallets, 1000)) {
+			await this.evm.importLegacyColdWallets(batch);
 		}
 
 		return totalSupply;
@@ -390,15 +414,25 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 
 		this.logger.info(`seeding ${this.#data.voters.length} voters`);
 
-		for (const voter of this.#data.voters) {
-			assert.defined(voter.ethAddress);
+		for (const voters of chunk(this.#data.voters, 1000)) {
+			const voterAddresses: string[] = [];
+			const validatorAddresses: string[] = [];
 
-			if (!validatorLookup[voter.vote]) {
-				this.logger.warning(`!!! skipping voter ${voter.arkAddress} for non-existent validator: ${voter.vote}`);
-				continue;
+			for (const voter of voters) {
+				assert.defined(voter.ethAddress);
+
+				if (!validatorLookup[voter.vote]) {
+					this.logger.warning(
+						`!!! skipping voter ${voter.arkAddress} for non-existent validator: ${voter.vote}`,
+					);
+					continue;
+				}
+
+				voterAddresses.push(voter.ethAddress);
+				validatorAddresses.push(voter.vote);
 			}
 
-			const data = iface.encodeFunctionData("addVote", [voter.ethAddress, voter.vote]).slice(2);
+			const data = iface.encodeFunctionData("addVotes", [voterAddresses, validatorAddresses]).slice(2);
 
 			const result = await this.evm.process(
 				this.#getTransactionContext({
@@ -409,7 +443,8 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 			);
 
 			if (!result.receipt.status) {
-				throw new Error("failed to add vote");
+				console.log(result.receipt);
+				throw new Error("failed to add votes");
 			}
 		}
 	}
@@ -452,13 +487,13 @@ export class Importer implements Contracts.Snapshot.LegacyImporter {
 		return {
 			blockContext: {
 				commitKey: options.commitKey,
-				gasLimit: BigInt(10_000_000),
+				gasLimit: BigInt(250_000_000),
 				timestamp: BigInt(options.timestamp),
 				validatorAddress: this.deployerAddress,
 			},
 			data: Buffer.from(options.data, "hex"),
 			from: this.deployerAddress,
-			gasLimit: BigInt(10_000_000),
+			gasLimit: BigInt(200_000_000),
 			gasPrice: BigInt(0),
 			nonce,
 			specId: evmSpec,
