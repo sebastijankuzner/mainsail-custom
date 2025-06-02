@@ -1,8 +1,9 @@
 import got from "got";
 import express from "express";
 
-import { makeEvmCall } from "./tx.mjs";
-import { getApiHttp, postTransaction } from "./client.mjs";
+import { ConsensusAbi } from "/mainsail/packages/evm-contracts/distribution/index.js";
+import { makeEvmCall, makeEvmDeploy } from "./tx.mjs";
+import { getApiHttp, postTransactions } from "./client.mjs";
 import { config } from "./config.mjs";
 
 const app = express();
@@ -19,7 +20,8 @@ let broadcastedTransactions = [];
 
 // Results
 let allPeersReachedTargetBlockNumber = false;
-let allTransactionsReportedByApi = true;
+let allTransactionsReportedByApi = false;
+let allTransactionsSuccessful = false;
 
 const peerBlockNumberMap = new Map();
 
@@ -38,37 +40,54 @@ const peerBlockNumberMap = new Map();
 async function waitForResults() {
 	do {
 		await sleep(1000);
-		console.log("waiting for results...", { allPeersReachedTargetBlockNumber, allTransactionsReportedByApi });
+		console.log("waiting for results...", { allPeersReachedTargetBlockNumber, allTransactionsReportedByApi, allTransactionsSuccessful });
 
 		if (!allTransactionsReportedByApi) {
 			try { 
 			   let allFound = true;
+			   let allSuccessful = true;
 			   for (const hash of broadcastedTransactions) {
 				   const transaction = await getApiHttp(config.peer, `/transactions/${hash}`);
 				   if (!transaction) {
-					   allFound = false;
-					   break;
+						allFound = false;
+						break;
+				   }
+
+				   if (transaction.receipt.status !== 1) {
+						console.log("transaction failed!!", transaction);
+						allSuccessful = false;
 				   }
 			   }
    
 			   if (allFound) {
 				   allTransactionsReportedByApi = true;
 			   }
-		   } catch {}
+
+			   if (allSuccessful) {
+				   allTransactionsSuccessful = true;
+			   }
+		   } catch (ex) {
+				console.log(ex);
+		   }
 		}
 
 	} while (!allPeersReachedTargetBlockNumber || !allTransactionsReportedByApi);
 
 	console.log(`checks successful. exiting`);
 
-	process.exit(0);
+	process.exit(allTransactionsSuccessful ? 0 : 1);
 }
 
 async function broadcastTransactions() {
 	const tx = await makeEvmCall(`${config.to}`, "100000000");
-	const response = await postTransaction(config.peer, tx.serialized.toString("hex"));
-	console.log("broadcastTransactions", { hash: tx.hash, response: JSON.stringify(response) });
-	broadcastedTransactions.push(tx.hash);
+	const txDeploy = await makeEvmDeploy(ConsensusAbi, 1);
+	const response = await postTransactions(config.peer, [
+		tx.serialized.toString("hex"),
+		txDeploy.serialized.toString("hex"),
+	]);
+
+	console.log("broadcastTransactions", { txs: [tx.hash, txDeploy.hash], response: JSON.stringify(response) });
+	broadcastedTransactions.push(tx.hash, txDeploy.hash);
 }
 
 async function discoverPeers() {
