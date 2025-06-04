@@ -89,7 +89,7 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 			this.#verifyConsumedAllGas(block, processResult);
 			this.#verifyTotalFee(block);
 			await this.#updateRewardsAndVotes(unit);
-			await this.#calculateActiveValidators(unit);
+			await this.#calculateRoundValidators(unit);
 			await this.#verifyStateHash(block);
 			await this.#verifyLogsBloom(block);
 
@@ -260,22 +260,22 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		});
 	}
 
-	async #calculateActiveValidators(unit: Contracts.Processor.ProcessableUnit) {
+	async #calculateRoundValidators(unit: Contracts.Processor.ProcessableUnit) {
 		if (!this.roundCalculator.isNewRound(unit.blockNumber + 1)) {
 			return;
 		}
 
-		const { activeValidators, evmSpec } = this.configuration.getMilestone(unit.blockNumber + 1);
+		const { roundValidators, evmSpec } = this.configuration.getMilestone(unit.blockNumber + 1);
 
 		const block = unit.getBlock();
 
-		await this.evm.calculateActiveValidators({
-			activeValidators: BigNumber.make(activeValidators).toBigInt(),
+		await this.evm.calculateRoundValidators({
 			commitKey: {
 				blockHash: block.header.hash,
 				blockNumber: BigInt(block.header.number),
 				round: BigInt(block.header.round),
 			},
+			roundValidators: BigNumber.make(roundValidators).toBigInt(),
 			specId: evmSpec,
 			timestamp: BigInt(block.header.timestamp),
 			validatorAddress: block.header.proposer,

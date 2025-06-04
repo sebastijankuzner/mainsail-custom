@@ -27,11 +27,11 @@ export class Throttle {
 
 	public async initialize(): Promise<Throttle> {
 		this.#outgoingRateLimiter = buildRateLimiter({
-			activeValidators: this.cryptoConfiguration.getMaxActiveValidators(),
-
 			rateLimit: this.configuration.getRequired<number>("rateLimit"),
 
 			remoteAccess: [],
+
+			roundValidators: this.cryptoConfiguration.getRoundValidators(),
 			// White listing anybody here means we would not throttle ourselves when sending
 			// them requests, ie we could spam them.
 			whitelist: [],

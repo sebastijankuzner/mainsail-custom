@@ -151,11 +151,11 @@ export interface BlockContext {
 	readonly validatorAddress: string;
 }
 
-export interface CalculateActiveValidatorsContext {
+export interface CalculateRoundValidatorsContext {
 	readonly commitKey: CommitKey;
 	readonly timestamp: bigint;
 	readonly validatorAddress: string;
-	readonly activeValidators: bigint;
+	readonly roundValidators: bigint;
 	readonly specId: SpecId;
 }
 export interface UpdateRewardsAndVotesContext {

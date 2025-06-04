@@ -20,13 +20,13 @@ export class ConsensusContractService implements Contracts.Evm.ConsensusContract
 	@tagged("instance", "evm")
 	private readonly evm!: Contracts.Evm.Instance;
 
-	async getActiveValidators(): Promise<Contracts.State.ValidatorWallet[]> {
+	async getRoundValidators(): Promise<Contracts.State.ValidatorWallet[]> {
 		const consensusContractAddress = this.app.get<string>(EvmConsensusIdentifiers.Contracts.Addresses.Consensus);
 		const deployerAddress = this.app.get<string>(EvmConsensusIdentifiers.Internal.Addresses.Deployer);
 		const { evmSpec } = this.configuration.getMilestone();
 
 		const iface = new ethers.Interface(ConsensusAbi.abi);
-		const data = iface.encodeFunctionData("getActiveValidators").slice(2);
+		const data = iface.encodeFunctionData("getRoundValidators").slice(2);
 
 		const result = await this.evm.view({
 			data: Buffer.from(data, "hex"),
@@ -36,10 +36,10 @@ export class ConsensusContractService implements Contracts.Evm.ConsensusContract
 		});
 
 		if (!result.success) {
-			await this.app.terminate("getActiveValidators failed");
+			await this.app.terminate("getRoundValidators failed");
 		}
 
-		const [validators] = iface.decodeFunctionResult("getActiveValidators", result.output!);
+		const [validators] = iface.decodeFunctionResult("getRoundValidators", result.output!);
 
 		const validatorWallets: Contracts.State.ValidatorWallet[] = [];
 		for (const [, validator] of validators.entries()) {

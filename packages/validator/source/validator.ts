@@ -238,11 +238,11 @@ export class Validator implements Contracts.Validator.Validator {
 			});
 
 			if (this.roundCalculator.isNewRound(previousBlock.header.number + 2)) {
-				const { activeValidators } = this.cryptoConfiguration.getMilestone(previousBlock.header.number + 2);
+				const { roundValidators } = this.cryptoConfiguration.getMilestone(previousBlock.header.number + 2);
 
-				await evm.calculateActiveValidators({
-					activeValidators: BigNumber.make(activeValidators).toBigInt(),
+				await evm.calculateRoundValidators({
 					commitKey,
+					roundValidators: BigNumber.make(roundValidators).toBigInt(),
 					specId: milestone.evmSpec,
 					timestamp: BigInt(timestamp),
 					validatorAddress: generatorAddress,

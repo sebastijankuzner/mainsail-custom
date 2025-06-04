@@ -35,7 +35,7 @@ export class ValidatorRepository implements Contracts.Validator.ValidatorReposit
 		const notRegistered: string[] = [];
 
 		const allValidators = this.validatorSet.getAllValidators();
-		const activeValidators = this.validatorSet.getActiveValidators();
+		const roundValidators = this.validatorSet.getRoundValidators();
 
 		for (const consensusPublicKey of this.#validators.keys()) {
 			const validator = allValidators.find((validator) => validator.blsPublicKey === consensusPublicKey);
@@ -43,7 +43,7 @@ export class ValidatorRepository implements Contracts.Validator.ValidatorReposit
 				if (validator.isResigned) {
 					resigned.push(validator.address);
 				}
-				if (activeValidators.some((activeValidator) => activeValidator.blsPublicKey === consensusPublicKey)) {
+				if (roundValidators.some((activeValidator) => activeValidator.blsPublicKey === consensusPublicKey)) {
 					active.push(validator.address);
 				} else {
 					standBy.push(validator.address);
@@ -53,7 +53,7 @@ export class ValidatorRepository implements Contracts.Validator.ValidatorReposit
 			}
 		}
 
-		this.logger.info(`Active validators (${active.length}): [${active}]`);
+		this.logger.info(`Round validators (${active.length}): [${active}]`);
 		this.logger.info(`Stand by validators (${standBy.length}): [${standBy}]`);
 		this.logger.info(`Resigned validators (${resigned.length}): [${resigned}]`);
 		this.logger.info(`Undefined validators (${notRegistered.length}): [${notRegistered}]`);
