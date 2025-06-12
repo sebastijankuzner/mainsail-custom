@@ -50,7 +50,6 @@ describe<{
 					tolerance: 100,
 				},
 				validatorRegistrationFee: "250000000000000000000",
-				vendorFieldLength: 255,
 			},
 			{
 				roundValidators: 53,
@@ -69,7 +68,6 @@ describe<{
 					tolerance: 100,
 				},
 				validatorRegistrationFee: "250000000000000000000",
-				vendorFieldLength: 255,
 			},
 			{
 				roundValidators: 53,
@@ -88,7 +86,6 @@ describe<{
 					tolerance: 100,
 				},
 				validatorRegistrationFee: "250000000000000000000",
-				vendorFieldLength: 255,
 			},
 		]);
 	});
@@ -128,7 +125,7 @@ describe<{
 	it("getNextMilestoneByKey - should throw an error if no milestones are set", ({ configManager }) => {
 		configManager.setConfig({ ...cryptoJson, milestones: [] });
 		assert.throws(
-			() => configManager.getNextMilestoneWithNewKey(1, "vendorFieldLength"),
+			() => configManager.getNextMilestoneWithNewKey(1, "evmSpec"),
 			`Attempted to get next milestone but none were set`,
 		);
 	});
@@ -195,7 +192,7 @@ describe<{
 			found: false,
 			height: 1_750_000,
 		};
-		assert.equal(configManager.getNextMilestoneWithNewKey(1_750_000, "vendorFieldLength"), expected);
+		assert.equal(configManager.getNextMilestoneWithNewKey(1_750_000, "evmSpec"), expected);
 	});
 
 	it("getNextMilestoneByKey - should get all milestones", ({ configManager }) => {
