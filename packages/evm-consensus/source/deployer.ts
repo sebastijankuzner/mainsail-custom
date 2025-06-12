@@ -8,7 +8,7 @@ import { Identifiers as EvmConsensusIdentifiers } from "./identifiers.js";
 
 export interface GenesisBlockInfo {
 	readonly timestamp: number;
-	readonly totalAmount: string;
+	readonly initialSupply: string;
 	readonly generatorAddress: string;
 	readonly initialBlockNumber: number;
 }
@@ -73,7 +73,7 @@ export class Deployer {
 			account: this.#genesisBlockInfo.generatorAddress,
 			deployerAccount: this.deployerAddress,
 			initialBlockNumber: BigNumber.make(this.#genesisBlockInfo.initialBlockNumber).toBigInt(),
-			initialSupply: BigNumber.make(this.#genesisBlockInfo.totalAmount).toBigInt(),
+			initialSupply: BigNumber.make(this.#genesisBlockInfo.initialSupply).toBigInt(),
 
 			usernameContract: ethers.getCreateAddress({ from: this.deployerAddress, nonce: 3 }), // PROXY Uses nonce 3
 			validatorContract: ethers.getCreateAddress({ from: this.deployerAddress, nonce: 1 }), // PROXY Uses nonce 1
@@ -130,10 +130,14 @@ export class Deployer {
 	}
 
 	async #deployConsensusProxy(consensusContractAddress: string): Promise<void> {
+		const milestone = this.configuration.getMilestone();
+
 		// Logic contract initializer function ABI
 		const logicInterface = new ethers.Interface(ConsensusAbi.abi);
 		// Encode the initializer call
-		const initializerCalldata = logicInterface.encodeFunctionData("initialize");
+		const initializerCalldata = logicInterface.encodeFunctionData("initialize", [
+			milestone.validatorRegistrationFee,
+		]);
 		// Prepare the constructor arguments for the proxy contract
 		const proxyConstructorArguments = new ethers.AbiCoder()
 			.encode(["address", "bytes"], [consensusContractAddress, initializerCalldata])
