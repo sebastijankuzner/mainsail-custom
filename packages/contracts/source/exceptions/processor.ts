@@ -35,9 +35,37 @@ export class InvalidBlockVersion extends ValidatorException {
 	}
 }
 
-export class InvalidBlockTransactionLength extends ValidatorException {
+export class MaxTransactionsExceeded extends ValidatorException {
 	public constructor(block: Block) {
 		super(`Block ${block.data.hash} has exceeded max transactions limit.`);
+	}
+}
+
+export class InvalidTransactionsLength extends ValidatorException {
+	public constructor(block: Block) {
+		super(
+			`Block ${block.data.hash} has invalid transactions length. Expected ${block.data.transactionsCount}, but got ${block.transactions.length}.`,
+		);
+	}
+}
+
+export class InvalidTransactionsRoot extends ValidatorException {
+	public constructor(block: Block, actualTransactionRoot: string) {
+		super(
+			`Block ${block.data.hash} has invalid transactions root. Expected ${block.data.transactionsRoot}, but got ${actualTransactionRoot}.`,
+		);
+	}
+}
+
+export class DuplicatedTransaction extends ValidatorException {
+	public constructor(block: Block, hash: string) {
+		super(`Block ${block.data.hash} has duplicated transaction ${hash}.`);
+	}
+}
+
+export class InvalidAmount extends ValidatorException {
+	public constructor(block: Block, actualAmount: string) {
+		super(`Block ${block.data.hash} has invalid amount. Expected ${block.data.amount}, but got ${actualAmount}.`);
 	}
 }
 
@@ -70,5 +98,19 @@ export class IncompatibleTransactions extends ValidatorException {
 export class InvalidNonce extends ValidatorException {
 	public constructor(block: Block, sender: string) {
 		super(`Block ${block.data.hash} contains invalid nonce for sender ${sender}.`);
+	}
+}
+
+export class MaxPayloadExceeded extends ValidatorException {
+	public constructor(block: Block, totalSize: number, maxPayload: number) {
+		super(`Block ${block.data.hash} payload is too large ${totalSize} > ${maxPayload}.`);
+	}
+}
+
+export class InvalidPayloadSize extends ValidatorException {
+	public constructor(block: Block, expectedSize: number, actualSize: number) {
+		super(
+			`Block ${block.data.hash} payload is invalid. Expected size is ${expectedSize}, but actual size is  ${actualSize}.`,
+		);
 	}
 }
