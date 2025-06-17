@@ -157,10 +157,12 @@ export class Sync implements Contracts.ApiSync.Service {
 			}
 		}
 
-		const dirtyValidators = this.validatorSet.getDirtyValidators().reduce((accumulator, current) => {
-			accumulator[current.address] = current;
-			return accumulator;
-		}, {});
+		const dirtyValidators: Record<string, Contracts.State.ValidatorWallet> = this.validatorSet
+			.getDirtyValidators()
+			.reduce((accumulator, current) => {
+				accumulator[current.address] = current;
+				return accumulator;
+			}, {});
 
 		const accountUpdates: Record<string, Contracts.Evm.AccountUpdate> = unit
 			.getAccountUpdates()
@@ -176,6 +178,7 @@ export class Sync implements Contracts.ApiSync.Service {
 			return {
 				...(dirtyValidator
 					? {
+							validatorFee: dirtyValidator.fee,
 							validatorPublicKey: dirtyValidator.blsPublicKey,
 							validatorResigned: dirtyValidator.isResigned,
 							validatorVoteBalance: dirtyValidator.voteBalance,
@@ -486,6 +489,8 @@ export class Sync implements Contracts.ApiSync.Service {
 			COALESCE((EXCLUDED.attributes->>'validatorVoteBalance')::text, ("Wallet".attributes->>'validatorVoteBalance')::text),
 			'validatorVotersCount',
 			COALESCE(EXCLUDED.attributes->'validatorVotersCount', "Wallet".attributes->'validatorVotersCount'),
+			'validatorFee',
+			COALESCE((EXCLUDED.attributes->>'validatorFee')::text, ("Wallet".attributes->>'validatorFee')::text),			
 			'validatorLastBlock',
 			COALESCE((EXCLUDED.attributes->>'validatorLastBlock')::jsonb, ("Wallet".attributes->>'validatorLastBlock')::jsonb),
 			'validatorForgedFees',
