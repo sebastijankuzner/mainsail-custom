@@ -1,10 +1,13 @@
 import { Commands, Contracts, Identifiers, Services } from "@mainsail/cli";
 import { inject, injectable, postConstruct } from "@mainsail/container";
 import { http } from "@mainsail/utils";
-import { existsSync, writeFileSync } from "fs";
+import { createWriteStream, existsSync, writeFileSync } from "fs";
 import { ensureDirSync, removeSync } from "fs-extra/esm";
+import got from "got";
 import Joi from "joi";
 import { join } from "path";
+import stream from "stream";
+import { promisify } from "util";
 
 const ENV = `MAINSAIL_LOG_LEVEL=info
 MAINSAIL_LOG_LEVEL_FILE=debug`;
@@ -37,6 +40,7 @@ export class Command extends Commands.Command {
 			.setFlag("app", "The link to the app.json file.", Joi.string().uri())
 			.setFlag("peers", "The link to the peers.json file.", Joi.string().uri())
 			.setFlag("crypto", "The link to the app.json file.", Joi.string().uri())
+			.setFlag("snapshot", "The link to the <snapshot>.compressed file.", Joi.string().uri())
 			.setFlag("reset", "Using the --reset flag will remove existing configuration.", Joi.boolean())
 			.setFlag("overwrite", "Using the --overwrite will overwrite existing configuration.", Joi.boolean());
 	}
@@ -143,12 +147,73 @@ export class Command extends Commands.Command {
 				},
 				title: "Publish crypto (crypto.json)",
 			},
+			{
+				skip: () => {
+					if (!flags.snapshot) {
+						return true;
+					}
+
+					if (
+						existsSync(`${configDestination}/snapshot/${this.#getFileName(flags.snapshot)}`) &&
+						!flags.overwrite
+					) {
+						return true;
+					}
+
+					return false;
+				},
+				task: async () => {
+					const snapshotDirectory = join(configDestination, "snapshot");
+					ensureDirSync(snapshotDirectory);
+
+					await this.#downloadFile(
+						flags.snapshot,
+						join(snapshotDirectory, this.#verifyFileName(this.#getFileName(flags.snapshot))),
+					);
+				},
+				title: "Publish snapshot (<hash>.compressed)",
+			},
 		]);
 	}
 
 	async #getFile(url: string): Promise<string> {
-		const { data } = await http.get(url);
+		try {
+			const { data } = await http.get(url);
+			return data;
+		} catch (error) {
+			console.error(`Error fetching file from ${url}:`, error);
 
-		return data;
+			throw new Error(
+				`Failed to fetch file from ${url}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+
+	#getFileName(url: string): string {
+		const parts = url.split("/");
+		const fileName = parts.at(-1);
+
+		if (!fileName) {
+			throw new Error("Invalid URL provided, cannot extract file name.");
+		}
+
+		return fileName;
+	}
+
+	#verifyFileName(fileName: string): string {
+		const validFileName = Joi.string()
+			.regex(/^[a-z0-9]+\.(compressed)$/)
+			.required();
+		const { error } = validFileName.validate(fileName);
+
+		if (error) {
+			throw new Error(`Invalid file name: ${fileName}. Expected format: <hash>.compressed.`);
+		}
+
+		return fileName;
+	}
+
+	async #downloadFile(source: string, destination: string): Promise<void> {
+		await promisify(stream.pipeline)(got.stream(source), createWriteStream(destination));
 	}
 }
