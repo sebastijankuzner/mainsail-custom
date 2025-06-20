@@ -1,14 +1,14 @@
 {
-    "address": "0xffe3f74c1Eeb84405f3b7276f10a1D08179C7f63",
+    "address": "0x2D6dD0E5ee115EC9EA0d45b1190fb62356708335",
     "consensusKeys": {
         "compressed": true,
-        "privateKey": "23ef30da36b1158e8f561e052edb9d725d1df557baa9d8531a48bc0c60ca5510",
-        "publicKey": "8442f629aea4df38c15a289995fae539e27fce1b1899896845ade91d5f734dbb6106ee34ed5c641cf872bb60df96458e"
+        "privateKey": "0d0d3acc899f6c975e4a3a262098e534111f16066796ffcb9d22950423f3aaa0",
+        "publicKey": "b8ece8b85bef5839b045eaf8fd9410836d691dc82a6f2e55a4fd8478e53c622746fcf72d33ecf81d6b689f74c8bb3a40"
     },
     "keys": {
         "compressed": true,
-        "privateKey": "22cf70c506b84fbfedd127abd05eade62272d3b63a03247b40eeea5485bd41dd",
-        "publicKey": "02d24f9cd6d2b428dc72c0be4ba08fec8190b0882bd7d346c71941e8ad77d40103"
+        "privateKey": "cf1befc8316cf807e1687dd80553d7e2ef62c1d89d519128bbe6491b103ad13f",
+        "publicKey": "027389b5bed9023d6b86ba7291aebfc08ca2e3a67aba272972f03566cadedbb56c"
     },
-    "passphrase": "lady culture level switch december sign iron budget warfare dolphin web diagram shock unfair club limb detect angry elevator license window finger what immense"
+    "passphrase": "merit live awesome dash meat calm cool drink deliver midnight carbon crystal scissors globe love cover shoulder ahead chest castle produce truck ketchup wine"
 }
