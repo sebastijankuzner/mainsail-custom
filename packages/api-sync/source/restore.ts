@@ -27,11 +27,12 @@ interface RestoreContext {
 	// lookups
 	readonly addressToPublicKey: Record<string, string>;
 	readonly publicKeyToAddress: Record<string, string>;
+	readonly legacyAddresses: Set<string>;
 
 	// metrics
 	mostRecentCommit: Contracts.Crypto.Commit;
 
-	lastHeight: number;
+	lastBlockNumber: number;
 	totalSupply: BigNumber;
 
 	validatorAttributes: Record<string, ValidatorAttributes>;
@@ -133,13 +134,20 @@ export class Restore {
 	private readonly snapshotImporter?: Contracts.Snapshot.LegacyImporter;
 
 	public async restore(): Promise<void> {
+		if (this.snapshotImporter) {
+			await this.snapshotImporter.prepareRestore();
+		}
+
 		const isEmpty = await this.databaseService.isEmpty();
 		const mostRecentCommit = await (isEmpty
 			? this.stateStore.getGenesisCommit()
 			: this.databaseService.getLastCommit());
 
+		const genesisBlockNumber = this.configuration.getGenesisHeight();
+		const blocksToRestore = mostRecentCommit.block.header.number - genesisBlockNumber + 1;
+
 		this.logger.info(
-			`Performing database restore of ${(mostRecentCommit.block.header.number + 1).toLocaleString()} blocks. this might take a while.`,
+			`Performing database restore of ${blocksToRestore.toLocaleString()} blocks. this might take a while.`,
 		);
 
 		const t0 = performance.now();
@@ -152,14 +160,15 @@ export class Restore {
 				configurationRepository: this.configurationRepositoryFactory(entityManager),
 				contractRepository: this.contractRepositoryFactory(entityManager),
 				entityManager,
-				lastHeight: this.configuration.getGenesisHeight(),
+				lastBlockNumber: this.configuration.getGenesisHeight(),
+				legacyAddresses: new Set(),
 				legacyColdWalletRepository: this.legacyColdWalletRepositoryFactory(entityManager),
 				mostRecentCommit,
 				publicKeyToAddress: {},
+
 				receiptRepository: this.receiptRepositoryFactory(entityManager),
 
 				stateRepository: this.stateRepositoryFactory(entityManager),
-
 				totalSupply: BigNumber.ZERO,
 				transactionRepository: this.transactionRepositoryFactory(entityManager),
 				transactionTypeRepository: this.transactionTypeRepositoryFactory(entityManager),
@@ -210,11 +219,13 @@ export class Restore {
 			// 11) Update validator ranks
 			await this.#updateValidatorRanks(context);
 
-			restoredHeight = context.lastHeight;
+			restoredHeight = context.lastBlockNumber;
 		});
 
 		const t1 = performance.now();
-		this.logger.info(`Finished restore of ${(restoredHeight + 1).toLocaleString()} blocks in ${t1 - t0}ms`);
+		this.logger.info(
+			`Finished restore of ${(restoredHeight - genesisBlockNumber + 1).toLocaleString()} blocks in ${t1 - t0}ms`,
+		);
 	}
 
 	async #ingestBlocksAndTransactions(context: RestoreContext): Promise<void> {
@@ -223,12 +234,13 @@ export class Restore {
 		const BATCH_SIZE = 1000;
 		const t0 = performance.now();
 
-		let currentHeight = this.configuration.getGenesisHeight();
+		const genesisBlockNumber = this.configuration.getGenesisHeight();
+		let currentBlockNumber = genesisBlockNumber;
 
 		do {
 			const commits = this.databaseService.readCommits(
-				Math.min(currentHeight, mostRecentCommit.block.header.number),
-				Math.min(currentHeight + BATCH_SIZE, mostRecentCommit.block.header.number),
+				Math.min(currentBlockNumber, mostRecentCommit.block.header.number),
+				Math.min(currentBlockNumber + BATCH_SIZE, mostRecentCommit.block.header.number),
 			);
 
 			const blocks: Models.Block[] = [];
@@ -299,7 +311,7 @@ export class Restore {
 					});
 				}
 
-				context.lastHeight = block.header.number;
+				context.lastBlockNumber = block.header.number;
 			}
 
 			// too large queries are not good for postgres
@@ -312,14 +324,20 @@ export class Restore {
 				await transactionRepository.createQueryBuilder().insert().orIgnore().values(batch).execute();
 			}
 
-			if (currentHeight % 10_000 === 0 || currentHeight + BATCH_SIZE > mostRecentCommit.block.header.number) {
+			if (
+				currentBlockNumber % 10_000 === 0 ||
+				currentBlockNumber + BATCH_SIZE > mostRecentCommit.block.header.number
+			) {
 				const t1 = performance.now();
-				this.logger.info(`Restored blocks: ${(context.lastHeight + 1).toLocaleString()} elapsed: ${t1 - t0}ms`);
+
+				this.logger.info(
+					`Restored blocks: ${(context.lastBlockNumber - genesisBlockNumber + 1).toLocaleString()} elapsed: ${t1 - t0}ms`,
+				);
 				await new Promise<void>((resolve) => setImmediate(resolve)); // Log might stuck if this line is removed
 			}
 
-			currentHeight += BATCH_SIZE;
-		} while (currentHeight <= mostRecentCommit.block.header.number);
+			currentBlockNumber += BATCH_SIZE;
+		} while (currentBlockNumber <= mostRecentCommit.block.header.number);
 	}
 
 	async #ingestConsensusData(context: RestoreContext): Promise<void> {
@@ -364,6 +382,7 @@ export class Restore {
 			for (const wallet of this.snapshotImporter.wallets) {
 				// add any imported address to the mapping
 				if (wallet.ethAddress && wallet.publicKey) {
+					context.legacyAddresses.add(wallet.ethAddress);
 					context.addressToPublicKey[wallet.ethAddress] = wallet.publicKey;
 				}
 			}
@@ -415,12 +434,20 @@ export class Restore {
 							? {
 									...(userAttributes.vote ? { vote: userAttributes.vote } : {}),
 									...(username ? { username } : {}),
-									...(userAttributes.legacyMerge ? { legacyMerge: userAttributes.legacyMerge } : {}),
+									...(userAttributes.legacyMerge
+										? // merged legacy cold wallets
+											{ isLegacy: true, legacyMerge: userAttributes.legacyMerge }
+										: {}),
+								}
+							: {}),
+						...(context.legacyAddresses.has(account.address)
+							? {
+									// all legacy non-cold wallets
+									isLegacy: true,
 								}
 							: {}),
 						...(legacyAttributes && Object.keys(legacyAttributes).length > 0
 							? {
-									isLegacy: true,
 									...(legacyAttributes.secondPublicKey
 										? { secondPublicKey: legacyAttributes.secondPublicKey }
 										: {}),
@@ -621,7 +648,7 @@ export class Restore {
 			.createQueryBuilder()
 			.insert()
 			.values({
-				activeMilestones: this.configuration.getMilestone(context.lastHeight) as Record<string, any>,
+				activeMilestones: this.configuration.getMilestone(context.lastBlockNumber) as Record<string, any>,
 				cryptoConfiguration: (this.configuration.all() ?? {}) as Record<string, any>,
 				id: 1,
 				version: this.app.version(),
@@ -636,7 +663,7 @@ export class Restore {
 			.insert()
 			.orIgnore()
 			.values({
-				blockNumber: context.lastHeight.toFixed(),
+				blockNumber: context.lastBlockNumber.toFixed(),
 				id: 1,
 				supply: context.totalSupply.toFixed(),
 			})
