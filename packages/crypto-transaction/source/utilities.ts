@@ -19,17 +19,13 @@ export class Utils implements Contracts.Crypto.TransactionUtilities {
 		transaction: Contracts.Crypto.TransactionData,
 		options?: Contracts.Crypto.SerializeOptions,
 	): Promise<Buffer> {
-		// based on EIP1559 encoding
 		const fields = [
-			toBeArray(transaction.network),
 			toBeArray(transaction.nonce.toBigInt()),
-			toBeArray(0), // maxPriorityFeePerGas
-			toBeArray(transaction.gasPrice), // maxFeePerGas
-			toBeArray(transaction.gas),
+			toBeArray(transaction.gasPrice),
+			toBeArray(transaction.gasLimit),
 			transaction.to || "0x",
 			toBeArray(transaction.value.toBigInt()),
 			transaction.data.startsWith("0x") ? transaction.data : `0x${transaction.data}`,
-			[], // accessList is unused
 		];
 
 		if (options && !options.excludeSignature) {
@@ -37,13 +33,17 @@ export class Utils implements Contracts.Crypto.TransactionUtilities {
 			assert.string(transaction.r);
 			assert.string(transaction.s);
 
-			fields.push(toBeArray(transaction.v), `0x${transaction.r}`, `0x${transaction.s}`);
+			fields.push(
+				toBeArray(transaction.v + transaction.network * 2 + 35),
+				`0x${transaction.r}`,
+				`0x${transaction.s}`,
+			);
+		} else {
+			fields.push(toBeArray(transaction.network), toBeArray(0), toBeArray(0));
 		}
 
-		const eip1559Prefix = "02"; // marker for Type 2 (EIP1559) transaction which is the standard nowadays
 		const encoded = encodeRlp(fields).slice(2); // remove 0x prefix
-
-		return Buffer.from(keccak256(Buffer.from(`${eip1559Prefix}${encoded}`, "hex")).slice(2), "hex");
+		return Buffer.from(keccak256(Buffer.from(`${encoded}`, "hex")).slice(2), "hex");
 	}
 
 	public async getHash(transaction: Contracts.Crypto.Transaction): Promise<string> {
