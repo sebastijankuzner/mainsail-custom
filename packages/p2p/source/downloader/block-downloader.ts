@@ -206,7 +206,7 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 		);
 		this.peerDisposer.banPeer(job.peer.ip, error);
 
-		this.#replyJob(job);
+		this.#replayJob(job);
 	}
 
 	#handleMissingBlocks(job: DownloadJob): void {
@@ -223,10 +223,10 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 			);
 		}
 
-		this.#replyJob(job);
+		this.#replayJob(job);
 	}
 
-	#replyJob(job: DownloadJob) {
+	#replayJob(job: DownloadJob) {
 		const index = this.#downloadJobs.indexOf(job);
 		if (index === -1) {
 			return; // Job was already removed
@@ -234,16 +234,6 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 
 		const isFirstJob = index === 0;
 		const blockNumberFrom = isFirstJob ? this.stateStore.getBlockNumber() + 1 : job.blockNumberFrom;
-
-		// Skip if next job is higher than current block number
-		if (
-			isFirstJob &&
-			this.#downloadJobs.length > 1 &&
-			this.#downloadJobs[1].blockNumberFrom > this.stateStore.getBlockNumber()
-		) {
-			this.#downloadJobs.shift();
-			return;
-		}
 
 		const peers = this.repository
 			.getPeers()
