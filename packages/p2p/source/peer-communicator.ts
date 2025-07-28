@@ -1,6 +1,7 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Providers, Utils } from "@mainsail/kernel";
+import { Providers } from "@mainsail/kernel";
+import { assert, http } from "@mainsail/utils";
 
 import { constants } from "./constants.js";
 import { Routes, SocketErrors } from "./enums.js";
@@ -68,7 +69,7 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 			Object.entries(peer.plugins).map(async ([name, plugin]) => {
 				peer.ports[name] = -1;
 				try {
-					const { statusCode } = await Utils.http.head(`http://${peer.ip}:${plugin.port}/`);
+					const { statusCode } = await http.head(`http://${peer.ip}:${plugin.port}/`);
 
 					if (statusCode === 200) {
 						peer.ports[name] = plugin.port;
@@ -105,14 +106,14 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 
 	public async getBlocks(
 		peer: Contracts.P2P.Peer,
-		{ fromHeight, limit = constants.MAX_DOWNLOAD_BLOCKS }: { fromHeight: number; limit?: number },
+		{ fromBlockNumber, limit = constants.MAX_DOWNLOAD_BLOCKS }: { fromBlockNumber: number; limit?: number },
 		options: Partial<Contracts.P2P.EmitOptions> = {},
 	): Promise<Contracts.P2P.GetBlocksResponse> {
 		const result = await this.emit<Contracts.P2P.GetBlocksResponse>(
 			peer,
 			Routes.GetBlocks,
 			{
-				fromHeight,
+				fromBlockNumber,
 				limit,
 			},
 			{
@@ -122,7 +123,9 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 		);
 
 		if (result.blocks.length === 0) {
-			this.logger.debug(`Peer ${peer.ip} did not return any blocks via height ${fromHeight.toLocaleString()}.`);
+			this.logger.debug(
+				`Peer ${peer.ip} did not return any blocks via block number ${fromBlockNumber.toLocaleString()}.`,
+			);
 		}
 
 		return result;
@@ -181,13 +184,13 @@ export class PeerCommunicator implements Contracts.P2P.PeerCommunicator {
 
 		if (!this.validateReply(peer, parsedResponsePayload, event)) {
 			const validationError = new Error(
-				`Response validation failed from peer ${peer.ip} : ${JSON.stringify(parsedResponsePayload)}`,
+				`Response validation failed for ${event} from peer ${peer.ip}: ${JSON.stringify(parsedResponsePayload)}`,
 			);
 			validationError.name = SocketErrors.Validation;
 			throw validationError;
 		}
 
-		Utils.assert.defined(parsedResponsePayload.headers);
+		assert.defined(parsedResponsePayload.headers);
 		void this.headerService.handle(peer, parsedResponsePayload.headers);
 
 		return parsedResponsePayload;

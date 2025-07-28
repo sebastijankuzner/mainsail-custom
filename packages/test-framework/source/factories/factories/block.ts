@@ -1,12 +1,12 @@
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
-import { BigNumber } from "@mainsail/utils";
+import { assert, BigNumber } from "@mainsail/utils";
 import dayjs from "dayjs";
 
-import secrets from "../../internal/passphrases.json";
+import secrets from "../../internal/passphrases.json" with { type: "json" };
 import { Signer } from "../../internal/signer.js";
 import { FactoryBuilder } from "../factory-builder.js";
 import { generateApp } from "./generate-app.js";
+import { GAS_PRICE } from "./transaction.js";
 
 export const registerBlockFactory = async (
 	factory: FactoryBuilder,
@@ -23,7 +23,7 @@ export const registerBlockFactory = async (
 
 		const { reward } = app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
-			.getMilestone(previousBlock.height);
+			.getMilestone(previousBlock.number);
 
 		const transactions: Contracts.Crypto.Transaction[] = options.transactions || [];
 		if (options.transactionsCount) {
@@ -33,14 +33,14 @@ export const registerBlockFactory = async (
 			);
 
 			const genesisAddresses = (previousBlock.transactions ?? [])
-				.map((transaction) => transaction.recipientId)
+				.map((transaction) => transaction.to)
 				.filter((address: string | undefined) => !!address);
 
 			for (let index = 0; index < options.transactionsCount; index++) {
 				transactions.push(
 					await signer.makeTransfer({
 						amount: ((options.amount || 2) + index).toString(),
-						fee: (options.fee || 1).toString(),
+						gasPrice: options.fee || GAS_PRICE,
 						passphrase: secrets[0],
 						recipientId: genesisAddresses[Math.floor(Math.random() * genesisAddresses.length)],
 					}),
@@ -48,23 +48,25 @@ export const registerBlockFactory = async (
 			}
 		}
 
-		const totals: { amount: BigNumber; fee: BigNumber } = {
-			amount: BigNumber.ZERO,
-			fee: BigNumber.ZERO,
+		const totals: { gasPrice: BigNumber; gasUsed: number } = {
+			gasPrice: BigNumber.ZERO,
+			gasUsed: 0,
 		};
 		const payloadBuffers: Buffer[] = [];
 		const transactionData: Contracts.Crypto.TransactionData[] = [];
-		let payloadLength = transactions.length * 4;
+		let payloadSize = transactions.length * 4;
 
-		for (const { data, serialized } of transactions) {
-			Utils.assert.defined<string>(data.id);
+		for (const transaction of transactions) {
+			const { data, serialized } = transaction;
+			assert.string(data.hash);
 
-			totals.amount = totals.amount.plus(data.amount);
-			totals.fee = totals.fee.plus(data.fee);
+			totals.gasPrice = totals.gasPrice.plus(data.gasPrice);
+			// TODO: calculate actual gas used
+			totals.gasUsed += data.gasLimit;
 
-			payloadBuffers.push(Buffer.from(data.id, "hex"));
+			payloadBuffers.push(Buffer.from(data.hash, "hex"));
 			transactionData.push(data);
-			payloadLength += serialized.length;
+			payloadSize += serialized.length;
 		}
 
 		const passphrase = options.passphrase || secrets[0];
@@ -72,28 +74,30 @@ export const registerBlockFactory = async (
 		const commit = {
 			block: await app.get<Contracts.Crypto.BlockFactory>(Identifiers.Cryptography.Block.Factory).make(
 				{
-					generatorPublicKey: await app
-						.getTagged<Contracts.Crypto.PublicKeyFactory>(
-							Identifiers.Cryptography.Identity.PublicKey.Factory,
+					fee: BigNumber.make(totals.gasPrice),
+					gasUsed: totals.gasUsed,
+					logsBloom: "0".repeat(512),
+					number: previousBlock.number + 1,
+					parentHash: previousBlock.hash,
+					payloadSize,
+					proposer: await app
+						.getTagged<Contracts.Crypto.AddressFactory>(
+							Identifiers.Cryptography.Identity.Address.Factory,
 							"type",
 							"wallet",
 						)
 						.fromMnemonic(passphrase),
-					height: previousBlock.height + 1,
-					numberOfTransactions: transactions.length,
-					payloadHash: (
+					reward: BigNumber.make(options.reward || reward),
+					round: 0,
+					stateRoot: "0".repeat(64),
+					timestamp: options.timestamp || dayjs().valueOf(),
+					transactions: transactionData,
+					transactionsCount: transactions.length,
+					transactionsRoot: (
 						await app
 							.get<Contracts.Crypto.HashFactory>(Identifiers.Cryptography.Hash.Factory)
 							.sha256(payloadBuffers)
 					).toString("hex"),
-					payloadLength,
-					previousBlock: previousBlock.id,
-					reward: BigNumber.make(options.reward || reward),
-					round: 0,
-					timestamp: options.timestamp || dayjs().valueOf(),
-					totalAmount: BigNumber.make(totals.amount),
-					totalFee: BigNumber.make(totals.fee),
-					transactions: transactionData,
 					version: 1,
 				},
 				transactions,

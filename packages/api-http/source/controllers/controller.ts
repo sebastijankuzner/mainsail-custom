@@ -7,7 +7,8 @@ import {
 } from "@mainsail/api-database";
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Providers, Utils } from "@mainsail/kernel";
+import { Providers } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 
 import { EnrichedBlock, EnrichedTransaction } from "../resources/index.js";
 
@@ -23,6 +24,9 @@ export class Controller extends AbstractController {
 	@inject(ApiDatabaseIdentifiers.ConfigurationRepositoryFactory)
 	private readonly configurationRepositoryFactory!: ApiDatabaseContracts.ConfigurationRepositoryFactory;
 
+	@inject(ApiDatabaseIdentifiers.ReceiptRepositoryFactory)
+	protected readonly receiptRepositoryFactory!: ApiDatabaseContracts.ReceiptRepositoryFactory;
+
 	@inject(ApiDatabaseIdentifiers.WalletRepositoryFactory)
 	protected readonly walletRepositoryFactory!: ApiDatabaseContracts.WalletRepositoryFactory;
 
@@ -37,7 +41,7 @@ export class Controller extends AbstractController {
 	protected async getState(): Promise<Models.State> {
 		const stateRepository = this.stateRepositoryFactory();
 		const state = await stateRepository.createQueryBuilder().getOne();
-		return state ?? ({ height: "0", supply: "0" } as Models.State);
+		return state ?? ({ blockNumber: "0", supply: "0" } as Models.State);
 	}
 
 	protected async getConfiguration(): Promise<Models.Configuration> {
@@ -45,6 +49,21 @@ export class Controller extends AbstractController {
 		const configuration = await configurationRepository.createQueryBuilder().getOne();
 
 		return configuration ?? ({} as Models.Configuration);
+	}
+
+	protected async getReceipts(hashes: string[], full = false): Promise<Record<string, Models.Receipt>> {
+		const receiptRepository = this.receiptRepositoryFactory();
+
+		const receipts = await receiptRepository
+			.createQueryBuilder("receipt")
+			.select(this.getReceiptColumns(full))
+			.whereInIds(hashes)
+			.getMany();
+
+		return receipts.reduce((accumulator, current) => {
+			accumulator[current.transactionHash] = current;
+			return accumulator;
+		}, {});
 	}
 
 	protected async enrichBlockResult(
@@ -55,7 +74,7 @@ export class Controller extends AbstractController {
 
 		const enriched: Promise<EnrichedBlock | null>[] = [];
 		for (const block of resultPage.results) {
-			enriched.push(this.enrichBlock(block, state, generators[block.generatorPublicKey]));
+			enriched.push(this.enrichBlock(block, state, generators[block.proposer]));
 		}
 
 		// @ts-ignore
@@ -84,11 +103,18 @@ export class Controller extends AbstractController {
 		if (!generator) {
 			promises.push(
 				(async () => {
-					generator = await this.walletRepositoryFactory()
+					generator = (await this.walletRepositoryFactory()
 						.createQueryBuilder()
 						.select()
-						.where("public_key = :publicKey", { publicKey: block.generatorPublicKey })
-						.getOneOrFail();
+						.where("address = :address", { address: block.proposer })
+						.getOne()) ?? {
+						address: block.proposer,
+						attributes: {},
+						balance: "0",
+						nonce: "0",
+						publicKey: "",
+						updated_at: "0",
+					};
 				})(),
 			);
 		}
@@ -97,27 +123,66 @@ export class Controller extends AbstractController {
 			await Promise.all(promises);
 		}
 
-		Utils.assert.defined<Models.Wallet>(generator);
-		Utils.assert.defined<Models.Wallet>(state);
+		assert.defined(generator);
+		assert.defined(state);
 
 		return { ...block, generator, state };
 	}
 
 	protected async enrichTransactionResult(
 		resultPage: Search.ResultsPage<Models.Transaction>,
-		context?: { state?: Models.State },
+		context?: { state?: Models.State; fullReceipt?: boolean },
 	): Promise<Search.ResultsPage<EnrichedTransaction>> {
-		const state = context?.state ?? (await this.getState());
+		const [state, receipts] = await Promise.all([
+			context?.state ?? this.getState(),
+			this.getReceipts(
+				resultPage.results.map((tx) => tx.hash),
+				context?.fullReceipt ?? false,
+			),
+		]);
+
 		return {
 			...resultPage,
-			results: await Promise.all(resultPage.results.map((tx) => this.enrichTransaction(tx, state))),
+			results: await Promise.all(
+				resultPage.results.map((tx) =>
+					this.enrichTransaction(tx, state, receipts[tx.hash] ?? null, context?.fullReceipt),
+				),
+			),
 		};
 	}
 
 	protected async enrichTransaction(
 		transaction: Models.Transaction,
 		state?: Models.State,
+		receipt?: Models.Receipt | null,
+		fullReceipt?: boolean,
 	): Promise<EnrichedTransaction> {
-		return { ...transaction, state: state ? state : await this.getState() };
+		const [_state, receipts] = await Promise.all([
+			state ? state : this.getState(),
+			receipt !== undefined ? receipt : this.getReceipts([transaction.hash], fullReceipt),
+		]);
+
+		return { ...transaction, receipt: receipt ?? receipts?.[transaction.hash] ?? undefined, state: _state };
+	}
+
+	protected getBlockCriteriaByIdOrHeight(idOrHeight: string): Search.Criteria.OrBlockCriteria {
+		const asHeight = Number(idOrHeight);
+		// NOTE: This assumes all block ids are sha256 and never a valid number below this threshold.
+		return !isNaN(asHeight) && asHeight <= Number.MAX_SAFE_INTEGER ? { number: asHeight } : { hash: idOrHeight };
+	}
+
+	protected getReceiptColumns(fullReceipt?: boolean): string[] {
+		let columns = [
+			"receipt.transactionHash",
+			"receipt.status",
+			"receipt.gasUsed",
+			"receipt.gasRefunded",
+			"receipt.contractAddress",
+		];
+		if (fullReceipt) {
+			columns = [...columns, "receipt.output", "receipt.logs"];
+		}
+
+		return columns;
 	}
 }

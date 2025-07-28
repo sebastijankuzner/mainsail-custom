@@ -1,8 +1,8 @@
 import Hapi from "@hapi/hapi";
 import { inject, injectable } from "@mainsail/container";
-import { Contracts, Identifiers } from "@mainsail/contracts";
+import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
 
-import { getRcpId, prepareRcpError } from "./utils.js";
+import { getRcpId, prepareRcpError } from "./utilities.js";
 
 @injectable()
 export class Processor implements Contracts.Api.RPC.Processor {
@@ -16,29 +16,47 @@ export class Processor implements Contracts.Api.RPC.Processor {
 		this.validator.addSchema(action.schema);
 	}
 
-	async process(request: Hapi.Request): Promise<Contracts.Api.RPC.Response | Contracts.Api.RPC.Error> {
+	async process(
+		request: Hapi.Request,
+	): Promise<
+		Contracts.Api.RPC.Response | Contracts.Api.RPC.Error | (Contracts.Api.RPC.Response | Contracts.Api.RPC.Error)[]
+	> {
 		if (!this.#validatePayload(request)) {
 			return prepareRcpError(getRcpId(request), Contracts.Api.RPC.ErrorCode.InvalidRequest);
 		}
 
 		const payload = request.payload as Contracts.Api.RPC.Request<any>;
-		const action = this.#actions.get(payload.method);
+		if (Array.isArray(payload)) {
+			return Promise.all(payload.map(async (rcpRequest) => await this.#processSingle(rcpRequest)));
+		} else {
+			return this.#processSingle(payload);
+		}
+	}
+
+	async #processSingle(
+		rcpRequest: Contracts.Api.RPC.Request<any>,
+	): Promise<Contracts.Api.RPC.Response | Contracts.Api.RPC.Error> {
+		const action = this.#actions.get(rcpRequest.method);
 		if (!action) {
-			return prepareRcpError(getRcpId(request), Contracts.Api.RPC.ErrorCode.MethodNotFound);
+			return prepareRcpError(rcpRequest.id, Contracts.Api.RPC.ErrorCode.MethodNotFound);
 		}
 
-		if (!this.#validateParams(payload.params, action)) {
-			return prepareRcpError(getRcpId(request), Contracts.Api.RPC.ErrorCode.InvalidParameters);
+		if (!this.#validateParams(rcpRequest.params, action)) {
+			return prepareRcpError(rcpRequest.id, Contracts.Api.RPC.ErrorCode.InvalidParameters);
 		}
 
 		try {
 			return {
-				id: getRcpId(request),
+				id: rcpRequest.id,
 				jsonrpc: "2.0",
-				result: await action.handle(payload.params),
+				result: await action.handle(rcpRequest.params),
 			};
-		} catch {
-			return prepareRcpError(getRcpId(request), Contracts.Api.RPC.ErrorCode.InternalError);
+		} catch (error) {
+			if (error instanceof Exceptions.RpcError) {
+				return prepareRcpError(rcpRequest.id, error.code, error.message);
+			}
+
+			return prepareRcpError(rcpRequest.id, Contracts.Api.RPC.ErrorCode.InternalError);
 		}
 	}
 
@@ -55,7 +73,7 @@ export class Processor implements Contracts.Api.RPC.Processor {
 			return true;
 		}
 
-		const { error } = this.validator.validate(action.schema.$id, parameters);
+		const { error } = this.validator.validate(action.schema.$id, parameters ?? []);
 
 		return !error;
 	}

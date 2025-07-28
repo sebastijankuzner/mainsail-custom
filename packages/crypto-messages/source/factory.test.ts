@@ -1,6 +1,6 @@
 import { Contracts, Identifiers } from "@mainsail/contracts";
 
-import crypto from "../../core/bin/config/testnet/core/crypto.json";
+import crypto from "../../core/bin/config/devnet/core/crypto.json";
 import { describe, Factories, Sandbox } from "../../test-framework/source";
 import { Types } from "../../test-framework/source/factories";
 import {
@@ -34,7 +34,7 @@ describe<{
 
 		const wallet = {};
 		const validatorSet = {
-			getActiveValidators: () => [wallet],
+			getRoundValidators: () => [wallet],
 		};
 
 		const workerPool = {
@@ -50,7 +50,6 @@ describe<{
 		};
 
 		context.sandbox.app.bind(Identifiers.ValidatorSet.Service).toConstantValue(validatorSet);
-		context.sandbox.app.bind(Identifiers.State.Service).toConstantValue({});
 		context.sandbox.app.bind(Identifiers.CryptoWorker.WorkerPool).toConstantValue(workerPool);
 
 		context.factory = context.sandbox.app.resolve(MessageFactory);
@@ -71,22 +70,20 @@ describe<{
 	});
 
 	it("#makeProposal - should correctly make signed proposal", async ({ blockFactory, factory, identity }) => {
-		const data: Contracts.Crypto.ProposedData = {
-			block: await blockFactory.fromData(blockData),
-			serialized: serializedBlock,
-		};
-
 		const proposal = await factory.makeProposal(
 			{
-				data,
+				data: {
+					serialized: serializedBlock,
+				},
 				round: 1,
 				validatorIndex: 0,
 			},
 			identity.keys,
 		);
+
 		assert.equal(
 			proposal.signature,
-			"b25fd16693a2246d3e9dff3d7ae3da1473c1b24f6ef8b33c69e38e21e32c9ca307ae5f7d4573e2679ec48ecc2f1ff89d16115d8e7f6ffcba72cc9a746bcc40cdd0f9120d87c20addb55baceea2cb8cdb75faaf036e6a4221d28dc8f6558d8cc1",
+			"b7010f03f72afb5437da8f7ee039a7fee75d6e9c7b02e1b9cbd4ce844cdc0e81233fd312cdd493e4ef2c2a6ac3c9fc8a1967f06a1a205c3daf369ac77f0a895717c520af5e341a3925d23b126d847a6fd1e194a010b89082039e1e5b44352616",
 		);
 	});
 
@@ -112,7 +109,7 @@ describe<{
 
 		assert.equal(
 			proposal.signature,
-			"88276dd41eb9fc2b5cde4320b1c6dfc12bf5d71de1d82b79b8d6d00e78d2abfe6f242a823502edfe34ada370e38be22d093f974a720e01cbe21e867f1fd93d0fbb234f75a5d4a42a54516d616917fed46d2d5c2088665d3207b352360c167b34",
+			"892af5249f657e320738dc71719b542a1b8f662e134b47dab751144688d78b5d7f5cb33e97de3643f3534fb0ca3c5c6407b2322406127dbd9067e2d19837a2ff1f1ecb4d745f3f891b5c40f1659b8047d311a93eaf159cd614b2fb634d067d19",
 		);
 	});
 
@@ -125,8 +122,8 @@ describe<{
 	it("#makePrecommit - should correctly make signed precommit no block", async ({ factory, identity }) => {
 		const precommit = await factory.makePrecommit(
 			{
-				blockId: undefined,
-				height: 1,
+				blockHash: undefined,
+				blockNumber: 1,
 				round: 1,
 				type: Contracts.Crypto.MessageType.Precommit,
 				validatorIndex: 0,
@@ -149,8 +146,8 @@ describe<{
 	it("#makePrevote - should correctly make signed prevote no block", async ({ factory, identity }) => {
 		const prevote = await factory.makePrevote(
 			{
-				blockId: undefined,
-				height: 1,
+				blockHash: undefined,
+				blockNumber: 1,
 				round: 1,
 				type: Contracts.Crypto.MessageType.Prevote,
 				validatorIndex: 0,

@@ -1,4 +1,4 @@
-import cryptoJson from "../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../core/bin/config/devnet/core/crypto.json";
 import { describe } from "../../test-framework/source";
 import { Configuration } from "./configuration";
 
@@ -34,15 +34,14 @@ describe<{
 	it("should build milestones", ({ configManager }) => {
 		assert.equal(configManager.getMilestones(), [
 			{
-				activeValidators: 0,
-				address: { bech32m: "ark" },
-				block: { maxPayload: 2_097_152, maxTransactions: 150, version: 1 },
+				roundValidators: 0,
+				block: { maxPayload: 2_097_152, maxGasLimit: 10_000_000, version: 1 },
+				gas: cryptoJson.milestones[0].gas,
 				epoch: cryptoJson.milestones[0].epoch,
-				fees: cryptoJson.milestones[0].fees,
+				evmSpec: cryptoJson.milestones[0].evmSpec,
 				height: 0,
-				multiPaymentLimit: 256,
 				reward: "0",
-				satoshi: { decimals: 8, denomination: 100_000_000 },
+				satoshi: { decimals: 18, denomination: 1e18 },
 				timeouts: {
 					blockPrepareTime: 4000,
 					blockTime: 8000,
@@ -50,18 +49,17 @@ describe<{
 					stageTimeoutIncrease: 2000,
 					tolerance: 100,
 				},
-				vendorFieldLength: 255,
+				validatorRegistrationFee: "250000000000000000000",
 			},
 			{
-				activeValidators: 53,
-				address: { bech32m: "ark" },
-				block: { maxPayload: 2_097_152, maxTransactions: 150, version: 1 },
+				roundValidators: 53,
+				block: { maxPayload: 2_097_152, maxGasLimit: 10_000_000, version: 1 },
+				gas: cryptoJson.milestones[0].gas,
 				epoch: cryptoJson.milestones[0].epoch,
-				fees: cryptoJson.milestones[0].fees,
+				evmSpec: cryptoJson.milestones[0].evmSpec,
 				height: 1,
-				multiPaymentLimit: 256,
 				reward: "0",
-				satoshi: { decimals: 8, denomination: 100_000_000 },
+				satoshi: { decimals: 18, denomination: 1e18 },
 				timeouts: {
 					blockPrepareTime: 4000,
 					blockTime: 8000,
@@ -69,18 +67,17 @@ describe<{
 					stageTimeoutIncrease: 2000,
 					tolerance: 100,
 				},
-				vendorFieldLength: 255,
+				validatorRegistrationFee: "250000000000000000000",
 			},
 			{
-				activeValidators: 53,
-				address: { bech32m: "ark" },
-				block: { maxPayload: 2_097_152, maxTransactions: 150, version: 1 },
+				roundValidators: 53,
+				block: { maxPayload: 2_097_152, maxGasLimit: 10_000_000, version: 1 },
+				gas: cryptoJson.milestones[0].gas,
 				epoch: cryptoJson.milestones[0].epoch,
-				fees: cryptoJson.milestones[0].fees,
+				evmSpec: cryptoJson.milestones[0].evmSpec,
 				height: 75_600,
-				multiPaymentLimit: 256,
-				reward: "200000000",
-				satoshi: { decimals: 8, denomination: 100_000_000 },
+				reward: "2000000000000000000",
+				satoshi: { decimals: 18, denomination: 1e18 },
 				timeouts: {
 					blockPrepareTime: 4000,
 					blockTime: 8000,
@@ -88,7 +85,7 @@ describe<{
 					stageTimeoutIncrease: 2000,
 					tolerance: 100,
 				},
-				vendorFieldLength: 255,
+				validatorRegistrationFee: "250000000000000000000",
 			},
 		]);
 	});
@@ -128,18 +125,18 @@ describe<{
 	it("getNextMilestoneByKey - should throw an error if no milestones are set", ({ configManager }) => {
 		configManager.setConfig({ ...cryptoJson, milestones: [] });
 		assert.throws(
-			() => configManager.getNextMilestoneWithNewKey(1, "vendorFieldLength"),
+			() => configManager.getNextMilestoneWithNewKey(1, "evmSpec"),
 			`Attempted to get next milestone but none were set`,
 		);
 	});
 
-	it("getNextMilestoneByKey - should throw an error if activeValidators is 0", ({ configManager }) => {
+	it("getNextMilestoneByKey - should throw an error if roundValidators is 0", ({ configManager }) => {
 		assert.not.throws(() =>
 			configManager.setConfig({
 				...cryptoJson,
 				milestones: [
 					{
-						activeValidators: 0,
+						roundValidators: 0,
 						height: 0,
 					},
 				],
@@ -152,7 +149,7 @@ describe<{
 					...cryptoJson,
 					milestones: [
 						{
-							activeValidators: 0,
+							roundValidators: 0,
 							height: 1,
 						},
 					],
@@ -166,11 +163,11 @@ describe<{
 					...cryptoJson,
 					milestones: [
 						{
-							activeValidators: 1,
+							roundValidators: 1,
 							height: 0,
 						},
 						{
-							activeValidators: 0,
+							roundValidators: 0,
 							height: 15,
 						},
 					],
@@ -182,7 +179,7 @@ describe<{
 	it("getNextMilestoneByKey - should get the next milestone with a given key", ({ configManager }) => {
 		// configManager.setConfig(devnet);
 		const expected = {
-			data: "200000000",
+			data: "2000000000000000000",
 			found: true,
 			height: 75_600,
 		};
@@ -195,7 +192,7 @@ describe<{
 			found: false,
 			height: 1_750_000,
 		};
-		assert.equal(configManager.getNextMilestoneWithNewKey(1_750_000, "vendorFieldLength"), expected);
+		assert.equal(configManager.getNextMilestoneWithNewKey(1_750_000, "evmSpec"), expected);
 	});
 
 	it("getNextMilestoneByKey - should get all milestones", ({ configManager }) => {
@@ -234,52 +231,52 @@ describe<{
 		assert.equal(configManager.getNextMilestoneWithNewKey(8, "reward"), emptyMilestone);
 	});
 
-	it("getMaxActiveValidators - should return maximum active validators from all milestones", ({ configManager }) => {
+	it("getRoundValidators - should return maximum round validators from all milestones", ({ configManager }) => {
 		configManager.setConfig({
 			...cryptoJson,
-			milestones: [{ activeValidators: 1, height: 1 }],
+			milestones: [{ roundValidators: 1, height: 1 }],
 		});
 
-		assert.equal(configManager.getMaxActiveValidators(), 1);
-
-		configManager.setConfig({
-			...cryptoJson,
-			milestones: [
-				{ activeValidators: 1, height: 1 },
-				{ activeValidators: 5, height: 3 },
-				{ activeValidators: 2, height: 8 },
-			],
-		});
-
-		assert.equal(configManager.getMaxActiveValidators(), 5);
+		assert.equal(configManager.getRoundValidators(), 1);
 
 		configManager.setConfig({
 			...cryptoJson,
 			milestones: [
-				{ activeValidators: 5, height: 1 },
-				{ activeValidators: 1, height: 6 },
-				{ activeValidators: 10, height: 7 },
+				{ roundValidators: 1, height: 1 },
+				{ roundValidators: 5, height: 3 },
+				{ roundValidators: 2, height: 8 },
 			],
 		});
 
-		assert.equal(configManager.getMaxActiveValidators(), 10);
+		assert.equal(configManager.getRoundValidators(), 5);
 
 		configManager.setConfig({
 			...cryptoJson,
 			milestones: [
-				{ activeValidators: 5, height: 1 },
-				{ activeValidators: 1, height: 6 },
-				{ activeValidators: 1, height: 7 },
+				{ roundValidators: 5, height: 1 },
+				{ roundValidators: 1, height: 6 },
+				{ roundValidators: 10, height: 7 },
 			],
 		});
 
-		assert.equal(configManager.getMaxActiveValidators(), 5);
+		assert.equal(configManager.getRoundValidators(), 10);
 
 		configManager.setConfig({
 			...cryptoJson,
-			milestones: [{ activeValidators: 1, height: 7 }],
+			milestones: [
+				{ roundValidators: 5, height: 1 },
+				{ roundValidators: 1, height: 6 },
+				{ roundValidators: 1, height: 7 },
+			],
 		});
 
-		assert.equal(configManager.getMaxActiveValidators(), 1);
+		assert.equal(configManager.getRoundValidators(), 5);
+
+		configManager.setConfig({
+			...cryptoJson,
+			milestones: [{ roundValidators: 1, height: 7 }],
+		});
+
+		assert.equal(configManager.getRoundValidators(), 1);
 	});
 });

@@ -1,5 +1,5 @@
 import { Commands } from "@mainsail/cli";
-import { injectable } from "@mainsail/container";
+import { injectable, postConstruct } from "@mainsail/container";
 import Joi from "joi";
 
 import { describe } from "../index";
@@ -35,6 +35,7 @@ describe("Console", ({ beforeEach, it, assert, spyFn }) => {
 		 * @returns {void}
 		 * @memberof Command
 		 */
+		@postConstruct()
 		public configure(): void {
 			this.definition.setFlag("flagName", "The test message.", Joi.string().default("flagValue"));
 
@@ -68,7 +69,7 @@ describe("Console", ({ beforeEach, it, assert, spyFn }) => {
 		await assert.resolves(() => console.execute(Command));
 		spyOnGetFlag.calledWith("flagValue");
 		spyOnGetFlagToken.calledWith("ark");
-		spyOnGetFlagNetwork.calledWith("testnet");
+		spyOnGetFlagNetwork.calledWith("devnet");
 		spyOnGetArgument.calledWith("argumentValue");
 	});
 
@@ -78,7 +79,7 @@ describe("Console", ({ beforeEach, it, assert, spyFn }) => {
 		await assert.resolves(() => console.withFlags({ flagName: "flag_test" }).execute(Command));
 		spyOnGetFlag.calledWith("flag_test");
 		spyOnGetFlagToken.calledWith("ark");
-		spyOnGetFlagNetwork.calledWith("testnet");
+		spyOnGetFlagNetwork.calledWith("devnet");
 		spyOnGetArgument.calledWith("argumentValue");
 	});
 
@@ -88,7 +89,7 @@ describe("Console", ({ beforeEach, it, assert, spyFn }) => {
 		await assert.resolves(() => console.withArgs(["test_arg"]).execute(Command));
 		spyOnGetFlag.calledWith("flagValue");
 		spyOnGetFlagToken.calledWith("ark");
-		spyOnGetFlagNetwork.calledWith("testnet");
+		spyOnGetFlagNetwork.calledWith("devnet");
 		spyOnGetArgument.calledWith("test_arg");
 	});
 

@@ -1,6 +1,6 @@
 import { ByteBuffer } from "@mainsail/utils";
 
-import type { MultiSignatureAsset } from "./transactions.js";
+import type { MultiSignatureAsset } from "./legacy.js";
 
 export interface KeyPair {
 	publicKey: string;
@@ -70,6 +70,12 @@ export interface PublicKeySerializer {
 	deserialize(buffer: ByteBuffer): Buffer;
 }
 
+export interface EcdsaSignature {
+	r: string;
+	s: string;
+	v: number;
+}
+
 export interface Signature {
 	sign(message: Buffer, privateKey: Buffer): Promise<string>;
 
@@ -80,4 +86,10 @@ export interface Signature {
 	deserialize(buffer: ByteBuffer): Buffer;
 
 	aggregate(signatures: Buffer[]): Promise<string>;
+
+	signRecoverable(message: Buffer, privateKey: Buffer): Promise<EcdsaSignature>;
+
+	verifyRecoverable(signature: EcdsaSignature, message: Buffer, publicKey: Buffer): Promise<boolean>;
+
+	recoverPublicKey(message: Buffer, signature: EcdsaSignature): string;
 }

@@ -1,9 +1,8 @@
 import { injectable } from "@mainsail/container";
 import { Contracts } from "@mainsail/contracts";
-import { get, has, set, unset } from "@mainsail/utils";
+import { assert, get, has, set, unset } from "@mainsail/utils";
 
 import { KeyValuePair } from "../../types/index.js";
-import { assert } from "../../utils/assert.js";
 
 @injectable()
 export class ConfigRepository implements Contracts.Kernel.Repository {
@@ -16,7 +15,7 @@ export class ConfigRepository implements Contracts.Kernel.Repository {
 	public get<T>(key: string, defaultValue?: T): T {
 		const value: T | undefined = get(this.#items, key, defaultValue);
 
-		assert.defined<string>(value);
+		assert.defined(value);
 
 		return value;
 	}

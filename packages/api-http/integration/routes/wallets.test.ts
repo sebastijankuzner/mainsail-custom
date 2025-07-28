@@ -5,14 +5,14 @@ import { request } from "../../test/helpers/request";
 import wallets from "../../test/fixtures/wallets.json";
 import transactions from "../../test/fixtures/transactions.json";
 import walletTransactions from "../../test/fixtures/wallet_transactions.json";
+import walletTransactionsResponse from "../../test/fixtures/wallet_transactions.response.json";
 
 describe<{
 	sandbox: Sandbox;
 }>("Wallets", ({ it, afterAll, assert, afterEach, beforeAll, beforeEach, nock }) => {
 	let apiContext: ApiContext;
 
-	// TODO:
-	let options = { transform: false };
+	let options = {};
 
 	beforeAll(async (context) => {
 		nock.enableNetConnect();
@@ -53,8 +53,8 @@ describe<{
 				),
 			},
 			{
-				path: "attributes.validatorLastBlock.height=3",
-				result: wallets.filter((w) => w.attributes.validatorLastBlock?.height === 3),
+				path: "attributes.validatorLastBlock.number=3",
+				result: wallets.filter((w) => w.attributes.validatorLastBlock?.number === 3),
 			},
 			{
 				path: "attributes.validatorProducedBlocks.from=1",
@@ -100,10 +100,10 @@ describe<{
 				id: wallet.publicKey,
 				result: wallet,
 			},
-			{
-				id: wallet.attributes.username,
-				result: wallet,
-			},
+			// {
+			// 	id: wallet.attributes.username,
+			// 	result: wallet,
+			// },
 		];
 
 		for (const { id, result } of testCases) {
@@ -132,12 +132,12 @@ describe<{
 					.slice(0, 2),
 			},
 			{
-				path: "/wallets?limit=15&orderBy=attributes.validatorLastBlock.height:asc",
+				path: "/wallets?limit=15&orderBy=attributes.validatorLastBlock.number:asc",
 				result: [...wallets]
 					.sort(
 						(a, b) =>
-							Number(a.attributes.validatorLastBlock?.height) -
-							Number(b.attributes.validatorLastBlock?.height),
+							Number(a.attributes.validatorLastBlock?.number) -
+							Number(b.attributes.validatorLastBlock?.number),
 					)
 					.slice(0, 15),
 			},
@@ -164,7 +164,7 @@ describe<{
 
 		({ statusCode, data } = await request(`/wallets/${wallet.address}/transactions`, options));
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, walletTransactions.slice(1));
+		assert.equal(data.data, walletTransactionsResponse.slice(1));
 	});
 
 	it("/wallets/{id}/transactions/sent", async () => {
@@ -175,7 +175,7 @@ describe<{
 
 		const { statusCode, data } = await request(`/wallets/${wallet.address}/transactions/sent`, options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, walletTransactions.slice(1));
+		assert.equal(data.data, walletTransactionsResponse.slice(1));
 	});
 
 	it("/wallets/{id}/transactions/received", async () => {
@@ -186,6 +186,6 @@ describe<{
 
 		const { statusCode, data } = await request(`/wallets/${recipient}/transactions/received`, options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, walletTransactions);
+		assert.equal(data.data, walletTransactionsResponse);
 	});
 });

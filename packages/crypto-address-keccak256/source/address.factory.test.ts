@@ -3,15 +3,16 @@ import { Identifiers } from "@mainsail/contracts";
 import { Configuration } from "@mainsail/crypto-config";
 import { ServiceProvider as ECDSA } from "@mainsail/crypto-key-pair-ecdsa";
 import { ServiceProvider as Schnorr } from "@mainsail/crypto-key-pair-schnorr";
-import { ServiceProvider as CoreValidation } from "@mainsail/validation";
-
 import { Application } from "@mainsail/kernel";
+import { ServiceProvider as CoreValidation } from "@mainsail/validation";
 
 import { describe } from "../../test-framework/source";
 import { AddressFactory } from "./address.factory";
 
 const mnemonic =
 	"program fragile industry scare sun visit race erase daughter empty anxiety cereal cycle hunt airport educate giggle picture sunset apart jewel similar pulp moment";
+
+const wif = "SDuW66dyGZ1zPZdN7ncEevbJdjaQTj9pT4LcmKzQ7eLFoyCXEdkx";
 
 describe<{ app: Application }>("AddressFactory", ({ assert, beforeEach, it }) => {
 	beforeEach(async (context) => {
@@ -61,15 +62,32 @@ describe<{ app: Application }>("AddressFactory", ({ assert, beforeEach, it }) =>
 		);
 	});
 
+	it("should derive an address from wif", async (context) => {
+		await context.app.resolve<Schnorr>(Schnorr).register();
+
+		assert.is(await context.app.resolve(AddressFactory).fromWIF(wif), "0x4D9AED240463043cFcf5B5Df16b9ad523930A181");
+	});
+
 	it("should validate addresses", async (context) => {
 		await context.app.resolve<ECDSA>(ECDSA).register();
 
 		assert.true(await context.app.resolve(AddressFactory).validate("0xC7C50f33278bDe272ffe23865fF9fBd0155a5175"));
 		assert.true(await context.app.resolve(AddressFactory).validate("0xC7C50f33278bDe272ffe23865fF9fBd0155a5175"));
+		assert.false(await context.app.resolve(AddressFactory).validate("0xC7C50f33278bde272ffe23865ff9fbd0155a5175"));
 		assert.false(
 			await context.app
 				.resolve(AddressFactory)
 				.validate("m0d1q05ypy7qw2hhqqz28rwetc6dauge6g6g65npy2qht5pjuheqwrse7gxkhwv"),
 		);
+	});
+
+	it("should convert from and to buffer", async (context) => {
+		await context.app.resolve<ECDSA>(ECDSA).register();
+
+		const buffer = await context.app.resolve(AddressFactory).toBuffer("0xC7C50f33278bDe272ffe23865fF9fBd0155a5175");
+		assert.equal(buffer.byteLength, 20);
+
+		const restored = await context.app.resolve(AddressFactory).fromBuffer(buffer);
+		assert.equal(restored, "0xC7C50f33278bDe272ffe23865fF9fBd0155a5175");
 	});
 });

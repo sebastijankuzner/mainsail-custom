@@ -2,7 +2,7 @@ import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Configuration } from "@mainsail/crypto-config";
 import { Validator } from "@mainsail/validation/source/validator";
 
-import cryptoJson from "../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../core/bin/config/devnet/core/crypto.json";
 import { describe, Sandbox } from "../../test-framework/source";
 import { makeKeywords } from "./keywords";
 
@@ -17,33 +17,34 @@ describe<{
 
 		context.sandbox.app.bind(Identifiers.Cryptography.Configuration).to(Configuration).inSingletonScope();
 		context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration).setConfig(cryptoJson);
+		context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration).setHeight(1);
 
 		const keywords = makeKeywords(context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration));
-		context.validator.addKeyword(keywords.limitToActiveValidators);
+		context.validator.addKeyword(keywords.limitToRoundValidators);
 		context.validator.addKeyword(keywords.isValidatorIndex);
 	});
 
-	it("keyword limitToActiveValidators - should be ok", (context) => {
+	it("keyword limitToRoundValidators - should be ok", (context) => {
 		const schema = {
 			$id: "test",
-			limitToActiveValidators: {},
+			limitToRoundValidators: {},
 		};
 		context.validator.addSchema(schema);
 
-		const { activeValidators } = context.sandbox.app
+		const { roundValidators } = context.sandbox.app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
 			.getMilestone(1);
 
-		let matrix = new Array(activeValidators).fill(true);
+		let matrix = new Array(roundValidators).fill(true);
 		assert.undefined(context.validator.validate("test", matrix).error);
 
-		matrix = new Array(activeValidators).fill(false);
+		matrix = new Array(roundValidators).fill(false);
 		assert.undefined(context.validator.validate("test", matrix).error);
 
-		matrix = new Array(activeValidators).fill(1);
+		matrix = new Array(roundValidators).fill(1);
 		assert.undefined(context.validator.validate("test", matrix).error);
 
-		matrix = new Array(activeValidators - 1).fill(false);
+		matrix = new Array(roundValidators - 1).fill(false);
 		assert.defined(context.validator.validate("test", matrix).error);
 
 		assert.defined(context.validator.validate("test", {}).error);
@@ -54,23 +55,23 @@ describe<{
 		assert.defined(context.validator.validate("test", 1).error);
 	});
 
-	it("keyword limitToActiveValidators - should be ok with minimum", (context) => {
+	it("keyword limitToRoundValidators - should be ok with minimum", (context) => {
 		const schema = {
 			$id: "test",
-			limitToActiveValidators: {
+			limitToRoundValidators: {
 				minimum: 0,
 			},
 		};
 		context.validator.addSchema(schema);
 
-		const { activeValidators } = context.sandbox.app
+		const { roundValidators } = context.sandbox.app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
 			.getMilestone(1);
 
-		let matrix = new Array(activeValidators).fill(true);
+		let matrix = new Array(roundValidators).fill(true);
 		assert.undefined(context.validator.validate("test", matrix).error);
 
-		matrix = new Array(activeValidators + 1).fill(true);
+		matrix = new Array(roundValidators + 1).fill(true);
 		assert.defined(context.validator.validate("test", matrix).error);
 
 		assert.undefined(context.validator.validate("test", []).error);
@@ -85,17 +86,17 @@ describe<{
 		};
 		context.validator.addSchema(schema);
 
-		const { activeValidators } = context.sandbox.app
+		const { roundValidators } = context.sandbox.app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
 			.getMilestone(1);
 
-		for (let index = 0; index < activeValidators; index++) {
+		for (let index = 0; index < roundValidators; index++) {
 			assert.undefined(context.validator.validate("test", index).error);
 		}
 
 		assert.defined(context.validator.validate("test", 50.000_01).error);
-		assert.defined(context.validator.validate("test", activeValidators).error);
-		assert.defined(context.validator.validate("test", activeValidators + 1).error);
+		assert.defined(context.validator.validate("test", roundValidators).error);
+		assert.defined(context.validator.validate("test", roundValidators + 1).error);
 		assert.defined(context.validator.validate("test", "a").error);
 		assert.defined(context.validator.validate("test", undefined).error);
 	});
@@ -113,15 +114,15 @@ describe<{
 		};
 		context.validator.addSchema(schema);
 
-		const { activeValidators } = context.sandbox.app
+		const { roundValidators } = context.sandbox.app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
 			.getMilestone(1);
 
-		for (let index = 0; index < activeValidators; index++) {
+		for (let index = 0; index < roundValidators; index++) {
 			assert.undefined(context.validator.validate("test", { height: 1, validatorIndex: index }).error);
 		}
 
-		assert.defined(context.validator.validate("test", { height: 1, validatorIndex: activeValidators }).error);
+		assert.defined(context.validator.validate("test", { height: 1, validatorIndex: roundValidators }).error);
 	});
 
 	it("keyword isValidatorIndex - should be ok for parent block", (context) => {
@@ -129,7 +130,7 @@ describe<{
 			$id: "test",
 			type: "object",
 			properties: {
-				block: {
+				data: {
 					type: "object",
 					properties: {
 						serialized: {
@@ -142,7 +143,7 @@ describe<{
 		};
 		context.validator.addSchema(schema);
 
-		let { activeValidators } = context.sandbox.app
+		let { roundValidators } = context.sandbox.app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
 			.getMilestone(1);
 
@@ -151,11 +152,11 @@ describe<{
 			serialized: "000173452bb48901020000000000000000000000000000000",
 		};
 
-		for (let index = 0; index < activeValidators; index++) {
-			assert.undefined(context.validator.validate("test", { block: block1, validatorIndex: index }).error);
+		for (let index = 0; index < roundValidators; index++) {
+			assert.undefined(context.validator.validate("test", { data: block1, validatorIndex: index }).error);
 		}
 
-		assert.defined(context.validator.validate("test", { block: block1, validatorIndex: activeValidators }).error);
+		assert.defined(context.validator.validate("test", { data: block1, validatorIndex: roundValidators }).error);
 
 		// change milestone to 15 validators at height 15
 		context.sandbox.app
@@ -164,7 +165,7 @@ describe<{
 
 		context.sandbox.app
 			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
-			.getMilestones()[2].activeValidators = 15;
+			.getMilestones()[2].roundValidators = 15;
 
 		const block2 = {
 			// height=15
@@ -172,16 +173,16 @@ describe<{
 		};
 
 		for (let index = 0; index < 15; index++) {
-			assert.undefined(context.validator.validate("test", { block: block2, validatorIndex: index }).error);
+			assert.undefined(context.validator.validate("test", { data: block2, validatorIndex: index }).error);
 		}
 
-		assert.defined(context.validator.validate("test", { block: block2, validatorIndex: 15 }).error);
+		assert.defined(context.validator.validate("test", { data: block2, validatorIndex: 15 }).error);
 
 		// block 1 still accepted
-		for (let index = 0; index < activeValidators; index++) {
-			assert.undefined(context.validator.validate("test", { block: block1, validatorIndex: index }).error);
+		for (let index = 0; index < roundValidators; index++) {
+			assert.undefined(context.validator.validate("test", { data: block1, validatorIndex: index }).error);
 		}
 
-		assert.defined(context.validator.validate("test", { block: block1, validatorIndex: 53 }).error);
+		assert.defined(context.validator.validate("test", { data: block1, validatorIndex: 53 }).error);
 	});
 });

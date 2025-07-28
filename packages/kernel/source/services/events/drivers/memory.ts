@@ -1,8 +1,7 @@
 import { injectable } from "@mainsail/container";
 import { Contracts } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 import mm from "nanomatch";
-
-import { assert } from "../../../utils/assert.js";
 
 class OnceListener implements Contracts.Kernel.EventListener {
 	public constructor(
@@ -61,7 +60,11 @@ export class MemoryEventDispatcher implements Contracts.Kernel.EventDispatcher {
 		events: Contracts.Kernel.EventName[] | Array<[Contracts.Kernel.EventName, Contracts.Kernel.EventListener]>,
 	): void {
 		for (const event of events) {
-			Array.isArray(event) ? this.forget(event[0], event[1]) : this.forget(event);
+			if (Array.isArray(event)) {
+				this.forget(event[0], event[1]);
+			} else {
+				this.forget(event);
+			}
 		}
 	}
 
@@ -141,7 +144,7 @@ export class MemoryEventDispatcher implements Contracts.Kernel.EventDispatcher {
 
 		const listener: Set<Contracts.Kernel.EventListener> | undefined = this.#listeners.get(name);
 
-		assert.defined<Set<Contracts.Kernel.EventListener>>(listener);
+		assert.defined(listener);
 
 		return listener;
 	}

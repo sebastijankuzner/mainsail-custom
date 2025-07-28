@@ -1,15 +1,15 @@
 import { Utils } from "@mainsail/cli";
-import { Utils as AppUtils } from "@mainsail/kernel";
-import { Console, describe } from "../../../test-framework/source";
+import { sleep } from "@mainsail/utils";
 import { dirSync, setGracefulCleanup } from "tmp";
 
+import { Console, describe } from "../../../test-framework/source";
 import { Command } from "./api-run";
 
 describe<{
 	cli: Console;
 }>("ApiRunCommand", ({ beforeEach, afterAll, it, stub, assert }) => {
 	beforeEach((context) => {
-		process.env.CORE_PATH_CONFIG = dirSync().name;
+		process.env.MAINSAIL_PATH_CONFIG = dirSync().name;
 
 		context.cli = new Console();
 	});
@@ -21,7 +21,7 @@ describe<{
 
 		cli.execute(Command);
 
-		await AppUtils.sleep(200);
+		await sleep(200);
 
 		spyBuildApplication.calledOnce();
 	});

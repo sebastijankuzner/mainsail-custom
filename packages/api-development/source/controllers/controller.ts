@@ -15,12 +15,8 @@ export class Controller {
 	@tagged("plugin", "api-development")
 	protected readonly apiConfiguration!: Providers.PluginConfiguration;
 
-	@inject(Identifiers.State.Service)
-	protected readonly stateService!: Contracts.State.Service;
-
-	protected getWalletRepository(): Contracts.State.WalletRepository {
-		return this.stateService.getStore().walletRepository;
-	}
+	@inject(Identifiers.State.Store)
+	protected readonly stateStore!: Contracts.State.Store;
 
 	protected getQueryPagination(query: Hapi.RequestQuery): Contracts.Api.Pagination {
 		return {
@@ -66,50 +62,41 @@ export class Controller {
 		}));
 	}
 
-	protected async respondWithResource(data, transformer, transform = true): Promise<any> {
+	protected async respondWithResource(data, transformer): Promise<any> {
 		if (!data) {
 			return Boom.notFound();
 		}
 
-		return { data: await this.toResource(data, transformer, transform) };
+		return { data: await this.toResource(data, transformer) };
 	}
 
-	protected async respondWithCollection(data, transformer, transform = true): Promise<object> {
+	protected async respondWithCollection(data, transformer): Promise<object> {
 		return {
-			data: await this.toCollection(data, transformer, transform),
+			data: await this.toCollection(data, transformer),
 		};
 	}
 
 	protected async toResource<T, R extends Contracts.Api.Resource>(
 		item: T,
 		transformer: new () => R,
-		transform = true,
-	): Promise<ReturnType<R["raw"]> | ReturnType<R["transform"]>> {
+	): Promise<ReturnType<R["transform"]>> {
 		const resource = this.app.resolve<R>(transformer);
 
-		if (transform) {
-			return resource.transform(item) as ReturnType<R["transform"]>;
-		} else {
-			return resource.raw(item) as ReturnType<R["raw"]>;
-		}
+		return resource.transform(item) as ReturnType<R["transform"]>;
 	}
 
 	protected async toCollection<T, R extends Contracts.Api.Resource>(
 		items: T[],
 		transformer: new () => R,
-		transform = true,
-	): Promise<ReturnType<R["raw"]>[] | ReturnType<R["transform"]>[]> {
-		return Promise.all(items.map(async (item) => await this.toResource(item, transformer, transform)));
+	): Promise<ReturnType<R["transform"]>[]> {
+		return Promise.all(items.map(async (item) => await this.toResource(item, transformer)));
 	}
 
 	protected async toPagination<T, R extends Contracts.Api.Resource>(
 		resultsPage: Contracts.Api.ResultsPage<T>,
 		transformer: new () => R,
-		transform = true,
-	): Promise<
-		Contracts.Api.ResultsPage<ReturnType<R["raw"]>> | Contracts.Api.ResultsPage<ReturnType<R["transform"]>>
-	> {
-		const items = await this.toCollection(resultsPage.results, transformer, transform);
+	): Promise<Contracts.Api.ResultsPage<ReturnType<R["transform"]>>> {
+		const items = await this.toCollection(resultsPage.results, transformer);
 
 		return { ...resultsPage, results: items };
 	}

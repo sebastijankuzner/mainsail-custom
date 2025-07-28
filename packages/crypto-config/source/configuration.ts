@@ -1,10 +1,11 @@
 import { injectable } from "@mainsail/container";
 import { Contracts, Exceptions } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 import deepmerge from "deepmerge";
 import clone from "lodash.clone";
 import get from "lodash.get";
 import set from "lodash.set";
+
 @injectable()
 export class Configuration implements Contracts.Crypto.Configuration {
 	#config: Contracts.Crypto.NetworkConfig | undefined;
@@ -12,7 +13,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 	#milestones: Contracts.Crypto.Milestone[] | undefined;
 	#originalMilestones: Contracts.Crypto.MilestonePartial[] | undefined;
 	#height = 0;
-	#maxActiveValidators = 0;
+	#roundValidators = 0;
 
 	public setConfig(config: Contracts.Crypto.NetworkConfigPartial): void {
 		this.#config = {
@@ -20,6 +21,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 			milestones: clone(config.milestones) as Contracts.Crypto.Milestone[],
 			network: clone(config.network),
 		};
+		this.#height = this.#config.genesisBlock.block.number;
 
 		this.#validateMilestones();
 		this.#buildConstants();
@@ -43,7 +45,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 			};
 		}
 
-		Utils.assert.defined<Contracts.Crypto.NetworkConfig>(this.#config);
+		assert.defined(this.#config);
 		set(this.#config, key, clone(value));
 
 		try {
@@ -69,6 +71,11 @@ export class Configuration implements Contracts.Crypto.Configuration {
 		return this.#height;
 	}
 
+	public getGenesisHeight(): number {
+		assert.defined(this.#config);
+		return this.#config.genesisBlock.block.number;
+	}
+
 	public isNewMilestone(height?: number): boolean {
 		if (height === undefined) {
 			height = this.#height;
@@ -83,7 +90,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 
 	public getMilestone(height?: number): Contracts.Crypto.Milestone {
 		if (!this.#milestone || !this.#milestones) {
-			throw new Error();
+			throw new Error(`Milestones are not initialized`);
 		}
 
 		if (height === undefined) {
@@ -165,9 +172,8 @@ export class Configuration implements Contracts.Crypto.Configuration {
 		return this.#milestones;
 	}
 
-	public getMaxActiveValidators(): number {
-		Utils.assert.defined<number>(this.#maxActiveValidators);
-		return this.#maxActiveValidators;
+	public getRoundValidators(): number {
+		return this.#roundValidators;
 	}
 
 	#buildConstants(): void {
@@ -185,7 +191,7 @@ export class Configuration implements Contracts.Crypto.Configuration {
 
 		const overwriteMerge = (destination, source, options) => source;
 
-		this.#maxActiveValidators = this.#milestone.data?.activeValidators ?? 0;
+		this.#roundValidators = this.#milestone.data?.roundValidators ?? 0;
 
 		while (lastMerged < this.#milestones.length - 1) {
 			this.#milestones[lastMerged + 1] = deepmerge(
@@ -196,10 +202,10 @@ export class Configuration implements Contracts.Crypto.Configuration {
 				},
 			);
 
-			this.#maxActiveValidators = Math.max(
-				this.#maxActiveValidators ?? 0,
-				this.#milestones[lastMerged].activeValidators,
-				this.#milestones[lastMerged + 1].activeValidators,
+			this.#roundValidators = Math.max(
+				this.#roundValidators ?? 0,
+				this.#milestones[lastMerged].roundValidators,
+				this.#milestones[lastMerged + 1].roundValidators,
 			);
 
 			lastMerged++;
@@ -211,14 +217,16 @@ export class Configuration implements Contracts.Crypto.Configuration {
 			throw new Error();
 		}
 
+		const initialHeight = this.#config.genesisBlock.block.number;
+
 		const validatorMilestones = this.#config.milestones
 			.sort((a, b) => a.height - b.height)
-			.filter((milestone) => milestone.activeValidators !== undefined);
+			.filter((milestone) => milestone.roundValidators !== undefined);
 
 		for (let index = 0; index < validatorMilestones.length; index++) {
 			const current = validatorMilestones[index];
-			if (current.height > 0 && current.activeValidators === 0) {
-				throw new Exceptions.InvalidNumberOfActiveValidatorsError(
+			if (current.height > initialHeight && current.roundValidators === 0) {
+				throw new Exceptions.InvalidNumberOfRoundValidatorsError(
 					`Bad milestone at height: ${current.height}. The number of validators must be greater than 0.`,
 				);
 			}
@@ -229,15 +237,15 @@ export class Configuration implements Contracts.Crypto.Configuration {
 
 			const previous = validatorMilestones[index - 1];
 
-			if (previous.activeValidators === current.activeValidators) {
+			if (previous.roundValidators === current.roundValidators) {
 				continue;
 			}
 
-			if (previous.height === 0 && previous.activeValidators === 0) {
+			if (previous.height === initialHeight && previous.roundValidators === 0) {
 				continue;
 			}
 
-			if ((current.height - Math.max(previous.height, 1)) % previous.activeValidators !== 0) {
+			if ((current.height - Math.max(previous.height, 1)) % previous.roundValidators !== 0) {
 				throw new Exceptions.InvalidMilestoneConfigurationError(
 					`Bad milestone at height: ${current.height}. The number of validators can only be changed at the beginning of a new round.`,
 				);

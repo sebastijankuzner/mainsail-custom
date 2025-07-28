@@ -26,14 +26,14 @@ export class NodeController extends Controller {
 
 	public async status(request: Hapi.Request) {
 		const state = await this.getState();
-		const medianPeerHeight = await this.peerRepositoryFactory().getMedianPeerHeight();
-		const ownHeight = Number(state?.height ?? 0);
+		const medianPeerBlockNumber = await this.peerRepositoryFactory().getMedianPeerBlockNumber();
+		const ownBlockNumber = Number(state?.blockNumber ?? 0);
 
 		return {
 			data: {
-				blocksCount: state ? medianPeerHeight - ownHeight : 0,
-				now: ownHeight,
-				synced: ownHeight >= medianPeerHeight,
+				blocksCount: state ? medianPeerBlockNumber - ownBlockNumber : 0,
+				now: ownBlockNumber,
+				synced: ownBlockNumber >= medianPeerBlockNumber,
 				timestamp: dayjs().unix(),
 			},
 		};
@@ -41,15 +41,15 @@ export class NodeController extends Controller {
 
 	public async syncing(request: Hapi.Request) {
 		const state = await this.getState();
-		const medianPeerHeight = await this.peerRepositoryFactory().getMedianPeerHeight();
-		const ownHeight = Number(state?.height ?? 0);
+		const medianPeerBlockNumber = await this.peerRepositoryFactory().getMedianPeerBlockNumber();
+		const ownBlockNumber = Number(state?.blockNumber ?? 0);
 
 		return {
 			data: {
-				blocks: state ? medianPeerHeight - ownHeight : 0,
-				height: ownHeight,
+				blockNumber: ownBlockNumber,
+				blocks: state ? medianPeerBlockNumber - ownBlockNumber : 0,
 				id: state?.id ?? 0,
-				syncing: ownHeight < medianPeerHeight,
+				syncing: ownBlockNumber < medianPeerBlockNumber,
 			},
 		};
 	}
@@ -62,26 +62,15 @@ export class NodeController extends Controller {
 		const transactionTypes = await this.transactionTypeRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.addOrderBy("type", "ASC")
-			.addOrderBy("type_group", "ASC")
+			.addOrderBy("key", "ASC")
 			.getMany();
 
-		const results = await this.transactionRepositoryFactory().getFeeStatistics(
-			genesisTimestamp,
-			request.query.days,
-		);
+		const result = await this.transactionRepositoryFactory().getFeeStatistics(genesisTimestamp, request.query.days);
 
-		const groupedByTypeGroup = {};
+		const grouped = {};
+
 		for (const transactionType of transactionTypes) {
-			if (!groupedByTypeGroup[transactionType.typeGroup]) {
-				groupedByTypeGroup[transactionType.typeGroup] = {};
-			}
-
-			const result = results.find(
-				({ type, typeGroup }) => type === transactionType.type && typeGroup === transactionType.typeGroup,
-			);
-
-			groupedByTypeGroup[transactionType.typeGroup][transactionType.key] = {
+			grouped[transactionType.key] = {
 				avg: result?.avg ?? "0",
 				max: result?.max ?? "0",
 				min: result?.min ?? "0",
@@ -89,13 +78,12 @@ export class NodeController extends Controller {
 			};
 		}
 
-		return { data: groupedByTypeGroup, meta: { days: request.query.days } };
+		return { data: grouped, meta: { days: request.query.days } };
 	}
 
 	public async configuration(request: Hapi.Request) {
 		const configuration = await this.getConfiguration();
 		const plugins = await this.getPlugins();
-		const transactionPoolConfiguration = plugins["@mainsail/transaction-pool"]?.configuration ?? {};
 
 		const cryptoConfiguration = configuration.cryptoConfiguration as Contracts.Crypto.NetworkConfig;
 		const network = cryptoConfiguration.network;
@@ -112,16 +100,6 @@ export class NodeController extends Controller {
 				slip44: network.slip44,
 				symbol: network.client.symbol,
 				token: network.client.token,
-				transactionPool: {
-					dynamicFees: transactionPoolConfiguration.dynamicFees?.enabled
-						? transactionPoolConfiguration.dynamicFees
-						: { enabled: false },
-					maxTransactionAge: transactionPoolConfiguration.maxTransactionAge,
-					maxTransactionBytes: transactionPoolConfiguration.maxTransactionBytes,
-					maxTransactionsInPool: transactionPoolConfiguration.maxTransactionsInPool,
-					maxTransactionsPerRequest: transactionPoolConfiguration.maxTransactionsPerRequest,
-					maxTransactionsPerSender: transactionPoolConfiguration.maxTransactionsPerSender,
-				},
 				version: network.pubKeyHash,
 				wif: network.wif,
 			},

@@ -1,9 +1,9 @@
 import { isObject } from "@mainsail/utils";
 
 import { Wallet } from "../../models/index.js";
-import { EqualCriteria, OrWalletCriteria, WalletCriteria } from "../criteria.js";
-import { Expression, JsonFieldCastType, OrExpression } from "../expressions.js";
 import { handleAndCriteria, handleComparisonCriteria, handleOrCriteria, optimizeExpression } from "../search.js";
+import { EqualCriteria, OrWalletCriteria, WalletCriteria } from "../types/criteria.js";
+import { Expression, JsonFieldCastType, OrExpression } from "../types/expressions.js";
 
 export class WalletFilter {
 	public static async getExpression(...criteria: OrWalletCriteria[]): Promise<Expression<Wallet>> {
@@ -116,22 +116,26 @@ export class WalletFilter {
 
 		if (
 			[
-				"balance",
 				"nonce",
 				"validatorRank",
-				"validatorVoteBalance",
-				"validatorForgedFees",
-				"validatorForgedRewards",
-				"validatorForgedTotal",
 				"validatorProducedBlocks",
-				"validatorLastBlock.height",
+				"validatorLastBlock.number",
 				"validatorLastBlock.timestamp",
 			].includes(attribute)
 		) {
 			return "bigint";
 		}
 
-		if (["validatorApproval"].includes(attribute)) {
+		if (
+			[
+				"balance",
+				"validatorApproval",
+				"validatorVoteBalance",
+				"validatorForgedFees",
+				"validatorForgedRewards",
+				"validatorForgedTotal",
+			].includes(attribute)
+		) {
 			return "numeric";
 		}
 

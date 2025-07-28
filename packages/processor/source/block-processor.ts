@@ -1,11 +1,11 @@
-import { inject, injectable, multiInject, optional } from "@mainsail/container";
+import { inject, injectable, optional, tagged } from "@mainsail/container";
 import { Contracts, Events, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { assert, BigNumber, sleep } from "@mainsail/utils";
 
 @injectable()
 export class BlockProcessor implements Contracts.Processor.BlockProcessor {
-	@inject(Identifiers.State.Service)
-	private readonly stateService!: Contracts.State.Service;
+	@inject(Identifiers.State.Store)
+	private readonly stateStore!: Contracts.State.Store;
 
 	@inject(Identifiers.State.State)
 	private readonly state!: Contracts.State.State;
@@ -13,17 +13,21 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
+
 	@inject(Identifiers.Database.Service)
 	private readonly databaseService!: Contracts.Database.DatabaseService;
+
+	@inject(Identifiers.Evm.Instance)
+	@tagged("instance", "evm")
+	private readonly evm!: Contracts.Evm.Instance;
 
 	@inject(Identifiers.Processor.TransactionProcessor)
 	private readonly transactionProcessor!: Contracts.Processor.TransactionProcessor;
 
 	@inject(Identifiers.Transaction.Handler.Registry)
 	private handlerRegistry!: Contracts.Transactions.TransactionHandlerRegistry;
-
-	@inject(Identifiers.Proposer.Selector)
-	private readonly proposerSelector!: Contracts.Proposer.Selector;
 
 	@inject(Identifiers.Services.EventDispatcher.Service)
 	private readonly events!: Contracts.Kernel.EventDispatcher;
@@ -37,62 +41,82 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 	@inject(Identifiers.Processor.BlockVerifier)
 	private readonly verifier!: Contracts.Processor.Verifier;
 
-	@multiInject(Identifiers.State.ValidatorMutator)
-	private readonly validatorMutators!: Contracts.State.ValidatorMutator[];
-
 	@inject(Identifiers.TransactionPool.Worker)
 	private readonly txPoolWorker!: Contracts.TransactionPool.Worker;
+
+	@inject(Identifiers.Evm.Worker)
+	private readonly evmWorker!: Contracts.Evm.Worker;
 
 	@inject(Identifiers.ApiSync.Service)
 	@optional()
 	private readonly apiSync?: Contracts.ApiSync.Service;
 
-	public async process(unit: Contracts.Processor.ProcessableUnit): Promise<boolean> {
+	@inject(Identifiers.Snapshot.Legacy.Importer)
+	@optional()
+	private readonly snapshotImporter?: Contracts.Snapshot.LegacyImporter;
+
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	protected readonly feeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
+
+	public async process(unit: Contracts.Processor.ProcessableUnit): Promise<Contracts.Processor.BlockProcessorResult> {
+		const processResult = { gasUsed: 0, receipts: new Map(), success: false };
+
 		try {
 			await this.verifier.verify(unit);
 
-			for (const [index, transaction] of unit.getBlock().transactions.entries()) {
+			const block = unit.getBlock();
+
+			await this.evm.prepareNextCommit({
+				commitKey: {
+					blockHash: block.header.hash,
+					blockNumber: BigInt(block.header.number),
+					round: BigInt(block.header.round),
+				},
+			});
+
+			for (const [index, transaction] of block.transactions.entries()) {
 				if (index % 20 === 0) {
-					await Utils.sleep(0);
+					await sleep(0);
 				}
 
-				await this.transactionProcessor.process(unit.store.walletRepository, transaction);
+				const receipt = await this.transactionProcessor.process(unit, transaction);
+				processResult.receipts.set(transaction.hash, receipt);
+
+				transaction.data.gasUsed = Number(receipt.gasUsed);
+				this.#consumeGas(block, processResult, Number(receipt.gasUsed));
 			}
 
-			await this.#applyBlockToForger(unit);
+			this.#verifyConsumedAllGas(block, processResult);
+			this.#verifyTotalFee(block);
+			await this.#updateRewardsAndVotes(unit);
+			await this.#calculateRoundValidators(unit);
+			await this.#verifyStateRoot(block);
+			await this.#verifyLogsBloom(block);
 
-			return true;
+			processResult.success = true;
 		} catch (error) {
 			void this.#emit(Events.BlockEvent.Invalid, { block: unit.getBlock().data, error });
 			this.logger.error(`Cannot process block because: ${error.message}`);
 		}
 
-		return false;
+		return processResult;
 	}
 
 	public async commit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
-		if (this.apiSync) {
+		if (this.apiSync && unit.blockNumber > this.configuration.getGenesisHeight()) {
 			await this.apiSync.beforeCommit();
 		}
 
 		const commit = await unit.getCommit();
 
-		if (!this.state.isBootstrap()) {
-			this.databaseService.addCommit(commit);
-
-			if (unit.persist) {
-				await this.databaseService.persist();
-			}
-		}
-
-		this.#setConfigurationHeight(unit);
-		await unit.store.onCommit(unit);
+		await this.evm.onCommit(unit);
+		await this.stateStore.onCommit(unit);
+		await this.databaseService.onCommit(unit);
 		await this.validatorSet.onCommit(unit);
-		await this.proposerSelector.onCommit(unit);
-		await this.stateService.onCommit(unit);
 		await this.txPoolWorker.onCommit(unit);
+		await this.evmWorker.onCommit(unit);
 
-		if (this.apiSync) {
+		if (this.apiSync && unit.blockNumber > this.configuration.getGenesisHeight()) {
 			await this.apiSync.onCommit(unit);
 		}
 
@@ -108,33 +132,104 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 
 	#logBlockCommitted(unit: Contracts.Processor.ProcessableUnit): void {
 		if (!this.state.isBootstrap()) {
+			const block = unit.getBlock();
 			this.logger.info(
-				`Block ${unit.height.toLocaleString()}/${unit.round.toLocaleString()} with ${unit.getBlock().data.numberOfTransactions.toLocaleString()} tx(s) committed`,
+				`Block ${unit.blockNumber.toLocaleString()}/${unit.round.toLocaleString()} with ${block.data.transactionsCount.toLocaleString()} tx(s) committed (gasUsed=${block.data.gasUsed.toLocaleString()})`,
 			);
 		}
 	}
 
 	#logNewRound(unit: Contracts.Processor.ProcessableUnit): void {
-		const height = unit.getBlock().data.height;
-		if (Utils.roundCalculator.isNewRound(height + 1, this.configuration)) {
-			const roundInfo = Utils.roundCalculator.calculateRound(height + 1, this.configuration);
+		const blockNumber = unit.getBlock().data.number;
+		if (this.roundCalculator.isNewRound(blockNumber + 1)) {
+			const roundInfo = this.roundCalculator.calculateRound(blockNumber + 1);
 
 			if (!this.state.isBootstrap()) {
 				this.logger.debug(
-					`Starting validator round ${roundInfo.round} at height ${roundInfo.roundHeight} with ${roundInfo.maxValidators} validators`,
+					`Starting validator round ${roundInfo.round} at block number ${roundInfo.roundHeight} with ${roundInfo.maxValidators} validators`,
 				);
 			}
 		}
 	}
 
-	#setConfigurationHeight(unit: Contracts.Processor.ProcessableUnit): void {
-		// NOTE: The configuration is always set to the next height. To height which is going to be proposed.
-		this.configuration.setHeight(unit.height + 1);
+	#consumeGas(
+		block: Contracts.Crypto.Block,
+		processorResult: Contracts.Processor.BlockProcessorResult,
+		gasUsed: number,
+	): void {
+		const totalGas = block.header.gasUsed;
 
-		if (this.configuration.isNewMilestone()) {
-			this.logger.notice(`Milestone change: ${JSON.stringify(this.configuration.getMilestoneDiff())}`);
+		if (processorResult.gasUsed + gasUsed > totalGas) {
+			throw new Error("Cannot consume more gas");
+		}
 
-			void this.#emit(Events.CryptoEvent.MilestoneChanged);
+		processorResult.gasUsed += gasUsed;
+	}
+
+	#verifyConsumedAllGas(
+		block: Contracts.Crypto.Block,
+		processorResult: Contracts.Processor.BlockProcessorResult,
+	): void {
+		const totalGas = block.header.gasUsed;
+		if (totalGas !== processorResult.gasUsed) {
+			throw new Error(`Block gas ${totalGas} does not match consumed gas ${processorResult.gasUsed}`);
+		}
+	}
+
+	#verifyTotalFee(block: Contracts.Crypto.Block): void {
+		let totalGas = BigNumber.ZERO;
+		for (const transaction of block.transactions) {
+			assert.defined(transaction.data.gasUsed);
+
+			totalGas = totalGas.plus(
+				this.feeCalculator.calculateConsumed(transaction.data.gasUsed, transaction.data.gasPrice),
+			);
+		}
+
+		if (!totalGas.isEqualTo(block.header.fee)) {
+			throw new Error(`Block fee ${block.header.fee} does not match consumed fee ${totalGas}`);
+		}
+	}
+
+	async #verifyStateRoot(block: Contracts.Crypto.Block): Promise<void> {
+		let previousStateRoot;
+		if (block.header.number === this.configuration.getGenesisHeight()) {
+			// Assume snapshot is present if the previous block points to a non-zero hash
+			if (block.header.parentHash !== "0000000000000000000000000000000000000000000000000000000000000000") {
+				assert.defined(this.snapshotImporter);
+				assert.defined(this.snapshotImporter.result);
+				previousStateRoot = this.snapshotImporter.snapshotHash;
+			} else {
+				previousStateRoot = "0000000000000000000000000000000000000000000000000000000000000000";
+			}
+		} else {
+			const previousBlock = this.stateStore.getLastBlock();
+			previousStateRoot = previousBlock.header.stateRoot;
+		}
+
+		const stateRoot = await this.evm.stateRoot(
+			{
+				blockHash: block.header.hash,
+				blockNumber: BigInt(block.header.number),
+				round: BigInt(block.header.round),
+			},
+			previousStateRoot,
+		);
+
+		if (block.header.stateRoot !== stateRoot) {
+			throw new Error(`State root mismatch! ${block.header.stateRoot} != ${stateRoot}`);
+		}
+	}
+
+	async #verifyLogsBloom(block: Contracts.Crypto.Block): Promise<void> {
+		const logsBloom = await this.evm.logsBloom({
+			blockHash: block.header.hash,
+			blockNumber: BigInt(block.header.number),
+			round: BigInt(block.header.round),
+		});
+
+		if (block.header.logsBloom !== logsBloom) {
+			throw new Error(`Logs bloom mismatch! ${block.header.logsBloom} != ${logsBloom}`);
 		}
 	}
 
@@ -148,15 +243,43 @@ export class BlockProcessor implements Contracts.Processor.BlockProcessor {
 		handler.emitEvents(transaction);
 	}
 
-	async #applyBlockToForger(unit: Contracts.Processor.ProcessableUnit) {
+	async #updateRewardsAndVotes(unit: Contracts.Processor.ProcessableUnit) {
+		const milestone = this.configuration.getMilestone();
 		const block = unit.getBlock();
-		const walletRepository = unit.store.walletRepository;
 
-		const forgerWallet = await walletRepository.findByPublicKey(unit.getBlock().data.generatorPublicKey);
+		await this.evm.updateRewardsAndVotes({
+			blockReward: BigNumber.make(milestone.reward).toBigInt(),
+			commitKey: {
+				blockHash: block.header.hash,
+				blockNumber: BigInt(block.header.number),
+				round: BigInt(block.header.round),
+			},
+			specId: milestone.evmSpec,
+			timestamp: BigInt(block.header.timestamp),
+			validatorAddress: block.header.proposer,
+		});
+	}
 
-		for (const validatorMutator of this.validatorMutators) {
-			await validatorMutator.apply(walletRepository, forgerWallet, block.data);
+	async #calculateRoundValidators(unit: Contracts.Processor.ProcessableUnit) {
+		if (!this.roundCalculator.isNewRound(unit.blockNumber + 1)) {
+			return;
 		}
+
+		const { roundValidators, evmSpec } = this.configuration.getMilestone(unit.blockNumber + 1);
+
+		const block = unit.getBlock();
+
+		await this.evm.calculateRoundValidators({
+			commitKey: {
+				blockHash: block.header.hash,
+				blockNumber: BigInt(block.header.number),
+				round: BigInt(block.header.round),
+			},
+			roundValidators: BigNumber.make(roundValidators).toBigInt(),
+			specId: evmSpec,
+			timestamp: BigInt(block.header.timestamp),
+			validatorAddress: block.header.proposer,
+		});
 	}
 
 	async #emit<T>(event: Contracts.Kernel.EventName, data?: T): Promise<void> {

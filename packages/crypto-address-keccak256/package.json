@@ -1,6 +1,6 @@
 {
 	"name": "@mainsail/crypto-address-keccak256",
-	"version": "0.0.1-alpha.20",
+	"version": "0.0.1-evm.25",
 	"description": "Keccak256 address derivation for the Mainsail blockchain",
 	"license": "GPL-3.0-only",
 	"contributors": [],
@@ -16,7 +16,7 @@
 		"clean": "del distribution",
 		"release": "pnpm publish --access public",
 		"test": "pnpm run uvu source .test.ts",
-		"test:coverage": "c8 pnpm run test",
+		"test:coverage": "c8 -r=text -r=lcov --all pnpm run test",
 		"test:coverage:html": "c8 -r html --all pnpm run test",
 		"test:file": "pnpm run uvu source",
 		"uvu": "tsx --tsconfig ../../tsconfig.test.json ./node_modules/uvu/bin.js"
@@ -26,7 +26,7 @@
 		"@mainsail/contracts": "workspace:*",
 		"@mainsail/kernel": "workspace:*",
 		"@mainsail/utils": "workspace:*",
-		"ethers": "^6.11.1"
+		"ethers": "6.13.5"
 	},
 	"devDependencies": {
 		"@mainsail/crypto-config": "workspace:*",
@@ -35,7 +35,7 @@
 		"@mainsail/crypto-validation": "workspace:*",
 		"@mainsail/validation": "workspace:*",
 		"bip39": "3.1.0",
-		"uvu": "^0.5.6"
+		"uvu": "0.5.6"
 	},
 	"engines": {
 		"node": ">=20.x"

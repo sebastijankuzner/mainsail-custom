@@ -4,7 +4,7 @@ import { Contracts } from "@mainsail/contracts";
 import Joi from "joi";
 
 import { VotesController } from "../controllers/votes.js";
-import { transactionIdSchema, transactionSortingSchema } from "../schemas/index.js";
+import { transactionHashSchema, transactionSortingSchema } from "../schemas/index.js";
 
 export const register = (server: Contracts.Api.ApiServer): void => {
 	const controller = server.app.app.resolve(VotesController);
@@ -22,8 +22,8 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 			validate: {
 				query: Joi.object({
 					...server.app.schemas.transactionCriteriaSchemas,
+					fullReceipt: Joi.bool().default(false),
 					orderBy: server.app.schemas.transactionsOrderBy,
-					transform: Joi.bool().default(true),
 				})
 					.concat(transactionSortingSchema)
 					.concat(Schemas.pagination),
@@ -39,13 +39,13 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 			plugins: {},
 			validate: {
 				params: Joi.object({
-					id: transactionIdSchema,
+					hash: transactionHashSchema,
 				}),
 				query: Joi.object({
-					transform: Joi.bool().default(true),
+					fullReceipt: Joi.bool().default(false),
 				}),
 			},
 		},
-		path: "/votes/{id}",
+		path: "/votes/{hash}",
 	});
 };

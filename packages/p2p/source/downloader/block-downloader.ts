@@ -1,6 +1,5 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
 
 import { constants } from "../constants.js";
 import { getRandomPeer } from "../utils/index.js";
@@ -13,18 +12,15 @@ enum JobStatus {
 
 type DownloadJob = {
 	peer: Contracts.P2P.Peer;
-	peerHeight: number;
-	heightFrom: number;
-	heightTo: number;
+	peerBlockNumber: number;
+	blockNumberFrom: number;
+	blockNumberTo: number;
 	blocks: Buffer[];
 	status: JobStatus;
 };
 
 @injectable()
 export class BlockDownloader implements Contracts.P2P.Downloader {
-	@inject(Identifiers.Database.Service)
-	private readonly database!: Contracts.Database.DatabaseService;
-
 	@inject(Identifiers.P2P.Peer.Communicator)
 	private readonly communicator!: Contracts.P2P.PeerCommunicator;
 
@@ -37,8 +33,11 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
-	@inject(Identifiers.State.Service)
-	private readonly stateService!: Contracts.State.Service;
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
+
+	@inject(Identifiers.State.Store)
+	private readonly stateStore!: Contracts.State.Store;
 
 	@inject(Identifiers.P2P.State)
 	private readonly state!: Contracts.P2P.State;
@@ -58,27 +57,27 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 		let peers = this.repository.getPeers();
 
 		while (
-			(peers = peers.filter((peer) => peer.header.height > this.#getLastRequestedBlockHeight())) &&
+			(peers = peers.filter((peer) => peer.header.blockNumber > this.#getLastRequestedBlockNumber())) &&
 			peers.length > 0
 		) {
-			void this.download(getRandomPeer(peers));
+			this.download(getRandomPeer(peers));
 		}
 	}
 
 	public download(peer: Contracts.P2P.Peer): void {
 		if (
-			peer.header.height - 1 <= this.#getLastRequestedBlockHeight() ||
+			peer.header.blockNumber - 1 <= this.#getLastRequestedBlockNumber() ||
 			this.#downloadJobs.length >= constants.MAX_DOWNLOAD_BLOCKS_JOBS
 		) {
 			return;
 		}
 
 		const downloadJob: DownloadJob = {
+			blockNumberFrom: this.#getLastRequestedBlockNumber() + 1,
+			blockNumberTo: this.#calculateBlockNumberTo(peer),
 			blocks: [],
-			heightFrom: this.#getLastRequestedBlockHeight() + 1,
-			heightTo: this.#calculateHeightTo(peer),
 			peer,
-			peerHeight: peer.header.height - 1,
+			peerBlockNumber: peer.header.blockNumber - 1,
 			status: JobStatus.Downloading,
 		};
 
@@ -91,22 +90,22 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 		return this.#downloadJobs.length > 0;
 	}
 
-	#getLastRequestedBlockHeight(): number {
+	#getLastRequestedBlockNumber(): number {
 		const latestJob = this.#downloadJobs.at(-1);
 		if (latestJob === undefined) {
-			return this.stateService.getStore().getLastHeight();
+			return this.stateStore.getBlockNumber();
 		}
 
-		return latestJob.heightTo;
+		return latestJob.blockNumberTo;
 	}
 
 	async #downloadBlocksFromPeer(job: DownloadJob): Promise<void> {
 		try {
-			this.logger.debug(`Downloading blocks ${job.heightFrom}-${job.heightTo} from ${job.peer.ip}`);
+			this.logger.debug(`Downloading blocks ${job.blockNumberFrom}-${job.blockNumberTo} from ${job.peer.ip}`);
 
 			const result = await this.communicator.getBlocks(job.peer, {
-				fromHeight: job.heightFrom,
-				limit: job.heightTo - job.heightFrom + 1,
+				fromBlockNumber: job.blockNumberFrom,
+				limit: job.blockNumberTo - job.blockNumberFrom + 1,
 			});
 
 			job.blocks = result.blocks;
@@ -123,31 +122,31 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 			return;
 		}
 
-		this.logger.debug(`Processing blocks ${job.heightFrom}-${job.heightTo} from ${job.peer.ip}`);
+		this.logger.debug(`Processing blocks ${job.blockNumberFrom}-${job.blockNumberTo} from ${job.peer.ip}`);
 
-		let height = job.heightFrom;
+		let number = job.blockNumberFrom;
 		job.status = JobStatus.Processing;
 
 		try {
 			const bytesForProcess = [...job.blocks];
 
 			while (bytesForProcess.length > 0) {
-				const roundInfo = Utils.roundCalculator.calculateRound(height, this.configuration);
+				const roundInfo = this.roundCalculator.calculateRound(number);
 
 				// TODO: Check if can use workers
 				// Slice to the end of the round, to ensure validator set is the same
 				const commits = await Promise.all(
 					bytesForProcess
-						.splice(0, roundInfo.roundHeight + roundInfo.maxValidators - height)
+						.splice(0, roundInfo.roundHeight + roundInfo.maxValidators - number)
 						.map(async (buff) => await this.commitFactory.fromBytes(buff)),
 				);
 
-				// Check heights
+				// Check blocks
 				for (const [index, commit] of commits.entries()) {
-					if (commit.block.data.height !== height + index) {
+					if (commit.block.data.number !== number + index) {
 						throw new Error(
-							`Received block height ${commit.block.data.height} does not match expected height ${
-								height + index
+							`Received block number ${commit.block.data.number} does not match expected number ${
+								number + index
 							}`,
 						);
 					}
@@ -167,7 +166,7 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 						throw new Error(`Received block is invalid`);
 					}
 
-					height++;
+					number++;
 				}
 			}
 
@@ -175,11 +174,9 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 		} catch (error) {
 			this.#handleJobError(job, error);
 			return;
-		} finally {
-			await this.database.persist();
 		}
 
-		if (job.heightTo !== height - 1) {
+		if (job.blockNumberTo !== number - 1) {
 			this.#handleMissingBlocks(job);
 			return;
 		}
@@ -203,17 +200,17 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 		}
 
 		this.logger.debug(
-			`Error ${job.status === JobStatus.Downloading ? "downloading" : "processing"} blocks ${job.heightFrom}-${
-				job.heightTo
+			`Error ${job.status === JobStatus.Downloading ? "downloading" : "processing"} blocks ${job.blockNumberFrom}-${
+				job.blockNumberTo
 			} from ${job.peer.ip}. ${error.message}`,
 		);
 		this.peerDisposer.banPeer(job.peer.ip, error);
 
-		this.#replyJob(job);
+		this.#replayJob(job);
 	}
 
 	#handleMissingBlocks(job: DownloadJob): void {
-		const configuration = this.configuration.getMilestone(this.stateService.getStore().getLastHeight() + 1);
+		const configuration = this.configuration.getMilestone(this.stateStore.getBlockNumber() + 1);
 
 		const size = job.blocks.reduce((size, block) => size + block.length, 0);
 
@@ -226,13 +223,21 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 			);
 		}
 
-		this.#replyJob(job);
+		this.#replayJob(job);
 	}
 
-	#replyJob(job: DownloadJob) {
+	#replayJob(job: DownloadJob) {
 		const index = this.#downloadJobs.indexOf(job);
+		if (index === -1) {
+			return; // Job was already removed
+		}
 
-		const peers = this.repository.getPeers().filter((peer) => peer.header.height >= job.heightTo);
+		const isFirstJob = index === 0;
+		const blockNumberFrom = isFirstJob ? this.stateStore.getBlockNumber() + 1 : job.blockNumberFrom;
+
+		const peers = this.repository
+			.getPeers()
+			.filter((peer) => peer.header.blockNumber > Math.max(blockNumberFrom, job.blockNumberTo));
 
 		if (peers.length === 0) {
 			// Remove higher jobs, because peer is no longer available
@@ -242,12 +247,20 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 
 		const peer = getRandomPeer(peers);
 
+		const blockNumberTo = this.#downloadJobs.length === 1 ? this.#calculateBlockNumberTo(peer) : job.blockNumberTo;
+
+		// Skip if blockNumberFrom is higher than blockNumberTo
+		if (isFirstJob && blockNumberFrom > blockNumberTo) {
+			this.#downloadJobs.shift();
+			return;
+		}
+
 		const newJob: DownloadJob = {
+			blockNumberFrom,
+			blockNumberTo,
 			blocks: [],
-			heightFrom: index === 0 ? this.stateService.getStore().getLastHeight() + 1 : job.heightFrom,
-			heightTo: this.#downloadJobs.length === 1 ? this.#calculateHeightTo(peer) : job.heightTo,
 			peer,
-			peerHeight: peer.header.height - 1,
+			peerBlockNumber: peer.header.blockNumber - 1,
 			status: JobStatus.Downloading,
 		};
 
@@ -256,10 +269,10 @@ export class BlockDownloader implements Contracts.P2P.Downloader {
 		void this.#downloadBlocksFromPeer(newJob);
 	}
 
-	#calculateHeightTo(peer: Contracts.P2P.Peer): number {
+	#calculateBlockNumberTo(peer: Contracts.P2P.Peer): number {
 		// Check that we don't exceed maxDownloadBlocks
-		return peer.header.height - this.#getLastRequestedBlockHeight() > constants.MAX_DOWNLOAD_BLOCKS
-			? this.#getLastRequestedBlockHeight() + constants.MAX_DOWNLOAD_BLOCKS
-			: peer.header.height - 1; // Stored block height is always 1 less than the consensus height
+		return peer.header.blockNumber - this.#getLastRequestedBlockNumber() > constants.MAX_DOWNLOAD_BLOCKS
+			? this.#getLastRequestedBlockNumber() + constants.MAX_DOWNLOAD_BLOCKS
+			: peer.header.blockNumber - 1; // Stored block number is always 1 less than the consensus block number
 	}
 }

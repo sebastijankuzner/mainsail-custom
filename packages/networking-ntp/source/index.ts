@@ -1,8 +1,10 @@
+import { injectable } from "@mainsail/container";
 import { Providers } from "@mainsail/kernel";
 import Joi from "joi";
 
 import { Checker } from "./checker.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		//

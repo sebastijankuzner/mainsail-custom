@@ -7,79 +7,19 @@ export class Verifier implements Contracts.Crypto.TransactionVerifier {
 	@tagged("type", "wallet")
 	private readonly signatureFactory!: Contracts.Crypto.Signature;
 
-	@inject(Identifiers.Cryptography.Signature.Size)
-	@tagged("type", "wallet")
-	private readonly signatureSize!: number;
-
 	@inject(Identifiers.Cryptography.Validator)
 	private readonly validator!: Contracts.Crypto.Validator;
 
 	@inject(Identifiers.Cryptography.Transaction.Utils)
-	private readonly utils!: Contracts.Crypto.TransactionUtils;
+	private readonly utils!: Contracts.Crypto.TransactionUtilities;
 
 	@inject(Identifiers.Cryptography.Transaction.TypeFactory)
 	private readonly transactionTypeFactory!: Contracts.Transactions.TransactionTypeFactory;
 
-	public async verifySignatures(
-		transaction: Contracts.Crypto.TransactionData,
-		multiSignature: Contracts.Crypto.MultiSignatureAsset,
-	): Promise<boolean> {
-		if (!multiSignature) {
-			throw new Exceptions.InvalidMultiSignatureAssetError();
-		}
-
-		const { publicKeys, min }: Contracts.Crypto.MultiSignatureAsset = multiSignature;
-		const { signatures }: Contracts.Crypto.TransactionData = transaction;
-
-		const hash: Buffer = await this.utils.toHash(transaction, {
-			excludeMultiSignature: true,
-			excludeSignature: true,
-		});
-
-		const publicKeyIndexes: { [index: number]: boolean } = {};
-		let verified = false;
-		let verifiedSignatures = 0;
-
-		if (signatures) {
-			for (let index = 0; index < signatures.length; index++) {
-				const signature: string = signatures[index];
-				const publicKeyIndex: number = Number.parseInt(signature.slice(0, 2), 16);
-
-				if (!publicKeyIndexes[publicKeyIndex]) {
-					publicKeyIndexes[publicKeyIndex] = true;
-				} else {
-					throw new Exceptions.DuplicateParticipantInMultiSignatureError();
-				}
-
-				const partialSignature: string = signature.slice(2, this.signatureSize * 2 + 2);
-				const publicKey: string = publicKeys[publicKeyIndex];
-
-				if (
-					await this.signatureFactory.verify(
-						Buffer.from(partialSignature, "hex"),
-						hash,
-						Buffer.from(publicKey, "hex"),
-					)
-				) {
-					verifiedSignatures++;
-				}
-
-				if (verifiedSignatures === min) {
-					verified = true;
-					break;
-				} else if (signatures.length - (index + 1 - verifiedSignatures) < min) {
-					break;
-				}
-			}
-		}
-
-		return verified;
-	}
-
 	public async verifyHash(data: Contracts.Crypto.TransactionData): Promise<boolean> {
-		const { signature, senderPublicKey } = data;
+		const { v, r, s, senderPublicKey } = data;
 
-		if (!signature || !senderPublicKey) {
+		if (v === undefined || !r || !s || !senderPublicKey) {
 			return false;
 		}
 
@@ -87,14 +27,14 @@ export class Verifier implements Contracts.Crypto.TransactionVerifier {
 			excludeSignature: true,
 		});
 
-		return this.signatureFactory.verify(Buffer.from(signature, "hex"), hash, Buffer.from(senderPublicKey, "hex"));
+		return this.signatureFactory.verifyRecoverable({ r, s, v }, hash, Buffer.from(senderPublicKey, "hex"));
 	}
 
 	public async verifySchema(
 		data: Contracts.Crypto.TransactionData,
 		strict: boolean,
 	): Promise<Contracts.Crypto.SchemaValidationResult> {
-		const transactionType = this.transactionTypeFactory.get(data.type, data.typeGroup, data.version);
+		const transactionType = this.transactionTypeFactory.get(0, 0, 0);
 
 		if (!transactionType) {
 			throw new Error("Unknown transaction type");
@@ -103,5 +43,36 @@ export class Verifier implements Contracts.Crypto.TransactionVerifier {
 		const { $id } = transactionType.getSchema();
 
 		return this.validator.validate(strict ? `${$id}Strict` : `${$id}`, data);
+	}
+
+	public async verifyLegacySecondSignature(
+		data: Contracts.Crypto.TransactionData,
+		legacySecondPublicKey: string,
+	): Promise<boolean> {
+		const { legacySecondSignature } = data;
+
+		if (!legacySecondSignature) {
+			throw new Exceptions.MissingLegacySecondSignatureError();
+		}
+
+		const r = legacySecondSignature.slice(0, 64);
+		const s = legacySecondSignature.slice(64, 128);
+		const v = Number.parseInt(legacySecondSignature.slice(128, 130), 16);
+
+		const hash: Buffer = await this.utils.toHash(data, {
+			excludeSignature: true,
+		});
+
+		const verified = await this.signatureFactory.verifyRecoverable(
+			{ r, s, v },
+			hash,
+			Buffer.from(legacySecondPublicKey, "hex"),
+		);
+
+		if (!verified) {
+			throw new Exceptions.InvalidLegacySecondSignatureError();
+		}
+
+		return true;
 	}
 }

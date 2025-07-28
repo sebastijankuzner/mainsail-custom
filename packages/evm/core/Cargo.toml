@@ -1,0 +1,33 @@
+[package]
+name = "mainsail_evm_core"
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+version.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+ethers-contract = { workspace = true }
+ethers-core = { workspace = true }
+ethers-providers = { workspace = true }
+revm = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy-primitives = { workspace = true }
+alloy-provider = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+#heed = { version = "0.20.0", features = [] }
+#heed = { path = "../../../../heed/heed", features = [] }
+heed = { git = "https://github.com/ArkEcosystem/heed.git", rev = "9f45f3b406ef197f05326abcfcb7e1867c6f7e18", features = [
+] }
+rayon = "1.10.0"
+derive_more = { version = "2" }
+bytes = { version = "1.0" }
+bs58 = { version = "0.5.1" }
+sha2 = { version = "0.10.8" }
+
+[dev-dependencies]
+tempfile = "3"

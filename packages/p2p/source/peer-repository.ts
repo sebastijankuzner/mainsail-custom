@@ -1,6 +1,7 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Providers, Utils } from "@mainsail/kernel";
+import { Providers } from "@mainsail/kernel";
+import { assert, IpAddress } from "@mainsail/utils";
 import ip from "ip";
 
 // @TODO review the implementation
@@ -24,7 +25,7 @@ export class PeerRepository implements Contracts.P2P.PeerRepository {
 	public getPeer(ip: string): Contracts.P2P.Peer {
 		const peer: Contracts.P2P.Peer | undefined = this.#peers.get(ip);
 
-		Utils.assert.defined<Contracts.P2P.Peer>(peer);
+		assert.defined(peer);
 
 		return peer;
 	}
@@ -50,9 +51,9 @@ export class PeerRepository implements Contracts.P2P.PeerRepository {
 	}
 
 	public getPendingPeer(ip: string): Contracts.P2P.Peer {
-		const peer: Contracts.P2P.Peer | undefined = this.#peersPending.get(ip);
+		const peer = this.#peersPending.get(ip);
 
-		Utils.assert.defined<Contracts.P2P.Peer>(peer);
+		assert.defined(peer);
 
 		return peer;
 	}
@@ -79,7 +80,7 @@ export class PeerRepository implements Contracts.P2P.PeerRepository {
 
 	public getSameSubnetPeers(peerIp: string): Contracts.P2P.Peer[] {
 		return this.getPeers().filter((peer) => {
-			if (!Utils.IpAddress.isIPv6Address(peer.ip) && !Utils.IpAddress.isIPv6Address(peerIp)) {
+			if (!IpAddress.isIPv6Address(peer.ip) && !IpAddress.isIPv6Address(peerIp)) {
 				return ip.cidr(`${peer.ip}/24`) === ip.cidr(`${peerIp}/24`);
 			}
 

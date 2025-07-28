@@ -2,12 +2,12 @@ import Boom, { badData } from "@hapi/boom";
 import { Server as HapiServer, ServerInjectOptions, ServerInjectResponse } from "@hapi/hapi";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { cloneDeep } from "@mainsail/utils";
 import { randomBytes } from "crypto";
 
 import { whitelist } from "./plugins/whitelist.js";
 import { destroy, show, store, update } from "./schema.js";
-import { respondWithResource } from "./utils.js";
+import { respondWithResource } from "./utilities.js";
 
 export type WebhookAppState = { database: Contracts.Webhooks.Database };
 export type WebhookServer = HapiServer<WebhookAppState>;
@@ -165,7 +165,7 @@ export class Server {
 					return Boom.notFound();
 				}
 
-				const webhook: Contracts.Webhooks.Webhook | undefined = Utils.cloneDeep(
+				const webhook: Contracts.Webhooks.Webhook | undefined = cloneDeep(
 					// @ts-ignore TODO: check typings
 					request.server.app.database.findById(request.params.id),
 				);

@@ -1,14 +1,12 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
-import { open, RootDatabase } from "lmdb";
-import { join } from "path";
 
 import { DatabaseService } from "./database-service.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
-		this.#registerStorage();
-
 		this.app.bind(Identifiers.Database.Service).to(DatabaseService).inSingletonScope();
 	}
 
@@ -16,19 +14,9 @@ export class ServiceProvider extends Providers.ServiceProvider {
 		return true;
 	}
 
-	public async dispose(): Promise<void> {
-		await this.app.get<Contracts.Database.DatabaseService>(Identifiers.Database.Service).persist();
-
-		await this.app.get<RootDatabase>(Identifiers.Database.Root).close();
+	public async boot(): Promise<void> {
+		await this.app.get<Contracts.Database.DatabaseService>(Identifiers.Database.Service).initialize();
 	}
 
-	#registerStorage() {
-		const rootStorage = open({
-			compression: true,
-			name: "core",
-			path: join(this.app.dataPath(), "ledger.mdb"),
-		});
-		this.app.bind(Identifiers.Database.Root).toConstantValue(rootStorage);
-		this.app.bind(Identifiers.Database.Storage.Block).toConstantValue(rootStorage.openDB({ name: "blocks" }));
-	}
+	public async dispose(): Promise<void> {}
 }

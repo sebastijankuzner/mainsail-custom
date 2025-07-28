@@ -1,5 +1,5 @@
-import { inject, injectable, tagged } from "@mainsail/container";
-import { Contracts, Identifiers } from "@mainsail/contracts";
+import { inject, injectable } from "@mainsail/container";
+import { Contracts, Events, Identifiers } from "@mainsail/contracts";
 
 @injectable()
 export class Mempool implements Contracts.TransactionPool.Mempool {
@@ -9,23 +9,24 @@ export class Mempool implements Contracts.TransactionPool.Mempool {
 	@inject(Identifiers.TransactionPool.SenderMempool.Factory)
 	private readonly createSenderMempool!: Contracts.TransactionPool.SenderMempoolFactory;
 
-	@inject(Identifiers.Cryptography.Identity.Address.Factory)
-	@tagged("type", "wallet")
-	private readonly addressFactory!: Contracts.Crypto.AddressFactory;
+	@inject(Identifiers.Services.EventDispatcher.Service)
+	private readonly events!: Contracts.Kernel.EventDispatcher;
+
+	@inject(Identifiers.TransactionPool.Storage)
+	private readonly storage!: Contracts.TransactionPool.Storage;
 
 	readonly #senderMempools = new Map<string, Contracts.TransactionPool.SenderMempool>();
-	readonly #brokenSenders = new Set<string>();
 
 	public getSize(): number {
 		return [...this.#senderMempools.values()].reduce((sum, p) => sum + p.getSize(), 0);
 	}
 
-	public hasSenderMempool(senderPublicKey: string): boolean {
-		return this.#senderMempools.has(senderPublicKey);
+	public hasSenderMempool(address: string): boolean {
+		return this.#senderMempools.has(address);
 	}
 
-	public getSenderMempool(senderPublicKey: string): Contracts.TransactionPool.SenderMempool {
-		const senderMempool = this.#senderMempools.get(senderPublicKey);
+	public getSenderMempool(address: string): Contracts.TransactionPool.SenderMempool {
+		const senderMempool = this.#senderMempools.get(address);
 		if (!senderMempool) {
 			throw new Error("Unknown sender");
 		}
@@ -36,97 +37,84 @@ export class Mempool implements Contracts.TransactionPool.Mempool {
 		return this.#senderMempools.values();
 	}
 
-	public async fixInvalidStates(): Promise<Contracts.Crypto.Transaction[]> {
-		const removedTransactions: Contracts.Crypto.Transaction[] = [];
-
-		for (const senderPublicKey of this.#brokenSenders) {
-			const transactionsForReadd = [...this.getSenderMempool(senderPublicKey).getFromEarliest()];
-
-			const newSenderMempool = await this.createSenderMempool.call(this, senderPublicKey);
-
-			for (let index = 0; index < transactionsForReadd.length; index++) {
-				const transaction = transactionsForReadd[index];
-
-				try {
-					await newSenderMempool.addTransaction(transaction);
-				} catch {
-					transactionsForReadd.slice(index).map((tx) => {
-						removedTransactions.push(tx);
-					});
-					break;
-				}
-			}
-
-			this.#senderMempools.delete(senderPublicKey);
-			if (newSenderMempool.getSize()) {
-				this.#senderMempools.set(senderPublicKey, newSenderMempool);
-			}
-		}
-
-		this.#brokenSenders.clear();
-		return removedTransactions;
-	}
-
 	public async addTransaction(transaction: Contracts.Crypto.Transaction): Promise<void> {
-		let senderMempool = this.#senderMempools.get(transaction.data.senderPublicKey);
+		const { from, senderLegacyAddress } = transaction.data;
+
+		let senderMempool = this.#senderMempools.get(from);
 		if (!senderMempool) {
-			senderMempool = await this.createSenderMempool.call(this, transaction.data.senderPublicKey);
-			this.#senderMempools.set(transaction.data.senderPublicKey, senderMempool);
-			this.logger.debug(
-				`${await this.addressFactory.fromPublicKey(transaction.data.senderPublicKey)} state created`,
-			);
+			senderMempool = await this.createSenderMempool.call(this, from, senderLegacyAddress);
+			this.#senderMempools.set(from, senderMempool);
+			this.logger.debug(`${from} state created`);
 		}
 
 		try {
-			await senderMempool.addTransaction(transaction);
+			// When receiving a nonce less than or equal to the current nonce try to replace it.
+			if (transaction.data.nonce.isLessThanEqual(senderMempool.getNonce())) {
+				await this.#tryReplaceTransaction(transaction, senderMempool);
+			} else {
+				await senderMempool.addTransaction(transaction);
+			}
 		} finally {
-			await this.#removeDisposableMempool(transaction.data.senderPublicKey);
+			this.#removeDisposableMempool(from);
 		}
 	}
 
-	public async removeTransaction(senderPublicKey: string, id: string): Promise<Contracts.Crypto.Transaction[]> {
-		const senderMempool = this.#senderMempools.get(senderPublicKey);
+	public async removeTransaction(address: string, hash: string): Promise<Contracts.Crypto.Transaction[]> {
+		const senderMempool = this.#senderMempools.get(address);
 		if (!senderMempool) {
 			return [];
 		}
 
-		const transactions = senderMempool.removeTransaction(id);
-
-		if (transactions.length > 0 && !(await this.#removeDisposableMempool(senderPublicKey))) {
-			this.#brokenSenders.add(senderPublicKey);
-		}
+		const transactions = senderMempool.removeTransaction(hash);
+		this.#removeDisposableMempool(address);
 
 		return transactions;
 	}
 
-	public async removeForgedTransaction(senderPublicKey: string, id: string): Promise<Contracts.Crypto.Transaction[]> {
-		const senderMempool = this.#senderMempools.get(senderPublicKey);
-		if (!senderMempool) {
-			return [];
+	public async reAddTransactions(addresses: string[]): Promise<Contracts.Crypto.Transaction[]> {
+		const removedTransactions: Contracts.Crypto.Transaction[] = [];
+
+		for (const address of addresses) {
+			const senderMempool = this.#senderMempools.get(address);
+			if (!senderMempool) {
+				continue;
+			}
+
+			removedTransactions.push(...(await senderMempool.reAddTransactions()));
 		}
 
-		const transaction = senderMempool.removeForgedTransaction(id);
+		return removedTransactions;
+	}
 
-		if (!transaction) {
-			this.#brokenSenders.add(senderPublicKey);
-			return [];
+	async #tryReplaceTransaction(
+		transaction: Contracts.Crypto.Transaction,
+		senderMempool: Contracts.TransactionPool.SenderMempool,
+	): Promise<void> {
+		const removedTransactions = await senderMempool.replaceTransaction(transaction);
+
+		// If no replacement happened, handle the transaction as usual to get a consistent behavior instead
+		// of failing silently.
+		if (removedTransactions.length === 0) {
+			return senderMempool.addTransaction(transaction);
 		}
 
-		await this.#removeDisposableMempool(senderPublicKey);
-
-		return [transaction];
+		for (const removed of removedTransactions) {
+			this.storage.removeTransaction(removed.hash);
+			this.logger.debug(`Removed overwritten tx ${removed.hash}`);
+			void this.events.dispatch(Events.TransactionEvent.RemovedFromPool, removed.data);
+		}
 	}
 
 	public flush(): void {
 		this.#senderMempools.clear();
 	}
 
-	async #removeDisposableMempool(senderPublicKey: string): Promise<boolean> {
-		const senderMempool = this.#senderMempools.get(senderPublicKey);
+	#removeDisposableMempool(address: string): boolean {
+		const senderMempool = this.#senderMempools.get(address);
 
 		if (senderMempool && senderMempool.isDisposable()) {
-			this.#senderMempools.delete(senderPublicKey);
-			this.logger.debug(`${await this.addressFactory.fromPublicKey(senderPublicKey)} state disposed`);
+			this.#senderMempools.delete(address);
+			this.logger.debug(`${address} state disposed`);
 
 			return true;
 		}

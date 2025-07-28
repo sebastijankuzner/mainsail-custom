@@ -1,14 +1,9 @@
 import { BigNumber } from "@mainsail/utils";
 
-import { Mutable } from "../../utils.js";
+import { Mutable } from "../../utilities.js";
 import { Transaction, TransactionData, TransactionJson } from "./transactions.js";
 
-export interface BlockVerification {
-	readonly verified: boolean;
-	readonly errors: string[];
-	readonly containsMultiSignatures: boolean;
-}
-
+export type BlockTag = "latest" | "finalized" | "safe";
 export type BlockHeader = Exclude<BlockData, "transactions">;
 
 export interface Block {
@@ -19,47 +14,51 @@ export interface Block {
 }
 
 export interface BlockData {
-	readonly id: string;
+	readonly hash: string;
 
 	readonly timestamp: number;
 	readonly version: number;
-	readonly height: number;
+	readonly number: number;
 	readonly round: number;
-	readonly previousBlock: string;
-	readonly numberOfTransactions: number;
-	readonly totalAmount: BigNumber;
-	readonly totalFee: BigNumber;
+	readonly parentHash: string;
+	readonly stateRoot: string;
+	readonly logsBloom: string;
+	readonly transactionsCount: number;
+	readonly gasUsed: number;
+	readonly fee: BigNumber;
 	readonly reward: BigNumber;
-	readonly payloadLength: number;
-	readonly payloadHash: string;
-	readonly generatorPublicKey: string;
+	readonly payloadSize: number;
+	readonly transactionsRoot: string;
+	readonly proposer: string;
 
 	// TODO: transactions field is missing when retrieved from storage
-	// and numberOfTransactions = 0
+	// and transactionsCount = 0
 	readonly transactions: TransactionData[];
 }
 
 export interface BlockJson {
-	readonly id: string;
+	readonly hash: string;
 
 	readonly timestamp: number;
 	readonly version: number;
-	readonly height: number;
+	readonly number: number;
 	readonly round: number;
-	readonly previousBlock: string;
-	readonly numberOfTransactions: number;
-	readonly totalAmount: string;
-	readonly totalFee: string;
+	readonly parentHash: string;
+	readonly stateRoot: string;
+	readonly logsBloom: string;
+	readonly transactionsCount: number;
+	readonly gasUsed: number;
+	readonly fee: string;
 	readonly reward: string;
-	readonly payloadLength: number;
-	readonly payloadHash: string;
-	readonly generatorPublicKey: string;
+	readonly payloadSize: number;
+	readonly transactionsRoot: string;
+	readonly proposer: string;
 
 	readonly serialized?: string;
 	readonly transactions: TransactionJson[];
 }
 
-export type BlockDataSerializable = Omit<BlockData, "id">;
+export type BlockDataSerializable = Omit<BlockData, "hash">;
 
 export interface BlockFactory {
 	make(data: Mutable<BlockDataSerializable>, transactions: Transaction[]): Promise<Block>;
@@ -71,8 +70,6 @@ export interface BlockFactory {
 }
 
 export interface BlockSerializer {
-	headerSize(): number;
-
 	totalSize(block: BlockDataSerializable): number;
 
 	serializeHeader(block: BlockDataSerializable): Promise<Buffer>;
@@ -89,8 +86,4 @@ export interface BlockDeserializer {
 	deserializeHeader(serialized: Buffer): Promise<BlockHeader>;
 
 	deserializeWithTransactions(serialized: Buffer): Promise<BlockWithTransactions>;
-}
-
-export interface BlockVerifier {
-	verify(block: Block): Promise<BlockVerification>;
 }

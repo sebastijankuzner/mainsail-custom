@@ -7,7 +7,7 @@ import {
 	Search,
 } from "@mainsail/api-database";
 import { inject, injectable } from "@mainsail/container";
-import { Utils } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 
 import { BlockResource, TransactionResource } from "../resources/index.js";
 import { Controller } from "./controller.js";
@@ -28,26 +28,25 @@ export class BlocksController extends Controller {
 
 		const blocks = await this.blockRepositoryFactory().findManyByCriteria(criteria, sorting, pagination, options);
 		if (blocks.results.length === 0) {
-			return this.toPagination(blocks, BlockResource, request.query.transform);
+			return this.toPagination(blocks, BlockResource);
 		}
 
-		const generatorPublicKeys = blocks.results.map(({ generatorPublicKey }) => generatorPublicKey);
+		const generatorAddresses = blocks.results.map(({ proposer }) => proposer);
 		const generators = await this.walletRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.where("public_key IN (:...publicKeys)", { publicKeys: generatorPublicKeys })
+			.where("address IN (:...addresses)", { addresses: generatorAddresses })
 			.getMany();
 
 		return this.toPagination(
 			await this.enrichBlockResult(blocks, {
 				generators: generators.reduce((accumulator, current) => {
-					Utils.assert.defined<string>(current.publicKey);
-					accumulator[current.publicKey] = current;
+					assert.string(current.address);
+					accumulator[current.address] = current;
 					return accumulator;
 				}, {}),
 			}),
 			BlockResource,
-			request.query.transform,
 		);
 	}
 
@@ -55,7 +54,7 @@ export class BlocksController extends Controller {
 		const block = await this.blockRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.where("height = :height", { height: 0 })
+			.where("number = :number", { number: 0 })
 			.getOne();
 
 		return this.respondEnrichedBlock(block, request);
@@ -65,7 +64,7 @@ export class BlocksController extends Controller {
 		const block = await this.blockRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.orderBy("height", "DESC")
+			.orderBy("number", "DESC")
 			.limit(1)
 			.getOne();
 
@@ -94,9 +93,9 @@ export class BlocksController extends Controller {
 		const options = this.getListingOptions();
 
 		const walletRepository = this.walletRepositoryFactory();
-		const criteria: Search.Criteria.TransactionCriteria = { ...request.query, blockId: block.id };
+		const criteria: Search.Criteria.TransactionCriteria = { ...request.query, blockHash: block.hash };
 
-		const transactions = await this.transactionRepositoryFactory().findManyByCritera(
+		const transactions = await this.transactionRepositoryFactory().findManyByCriteria(
 			walletRepository,
 			criteria,
 			sorting,
@@ -105,19 +104,12 @@ export class BlocksController extends Controller {
 		);
 
 		return this.toPagination(
-			await this.enrichTransactionResult(transactions),
+			await this.enrichTransactionResult(transactions, { fullReceipt: request.query.fullReceipt }),
 			TransactionResource,
-			request.query.transform,
 		);
 	}
 
-	private getBlockCriteriaByIdOrHeight(idOrHeight: string): Search.Criteria.OrBlockCriteria {
-		const asHeight = Number(idOrHeight);
-		// NOTE: This assumes all block ids are sha256 and never a valid nubmer below this threshold.
-		return asHeight && asHeight <= Number.MAX_SAFE_INTEGER ? { height: asHeight } : { id: idOrHeight };
-	}
-
 	private async respondEnrichedBlock(block: Models.Block | null, request: Hapi.Request) {
-		return this.respondWithResource(await this.enrichBlock(block), BlockResource, request.query.transform);
+		return this.respondWithResource(await this.enrichBlock(block), BlockResource);
 	}
 }

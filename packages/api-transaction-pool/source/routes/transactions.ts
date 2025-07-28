@@ -60,9 +60,7 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 				},
 			},
 			validate: {
-				query: Joi.object({
-					transform: Joi.bool().default(true),
-				}).concat(pagination),
+				query: Joi.object({}).concat(pagination),
 			},
 		},
 		path: "/transactions/unconfirmed",
@@ -79,17 +77,5 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 			},
 		},
 		path: "/transactions/unconfirmed/{id}",
-	});
-
-	server.route({
-		handler: (request: Hapi.Request) => controller.types(request),
-		method: "GET",
-		path: "/transactions/types",
-	});
-
-	server.route({
-		handler: (request: Hapi.Request) => controller.schemas(request),
-		method: "GET",
-		path: "/transactions/schemas",
 	});
 };

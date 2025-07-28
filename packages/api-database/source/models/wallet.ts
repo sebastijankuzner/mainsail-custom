@@ -1,21 +1,19 @@
-import { Column, Entity, Unique } from "typeorm";
+import { Column, Entity } from "typeorm";
 
 @Entity({
 	name: "wallets",
 })
-@Unique("unique_wallet_public_key", ["publicKey"])
 export class Wallet {
 	@Column({
 		primary: true,
-		type: "varchar",
+		type: "citext",
 	})
 	public address!: string;
 
 	@Column({
 		default: undefined,
 		nullable: true,
-		type: "varchar",
-		unique: true,
+		type: "citext",
 	})
 	public publicKey!: string | undefined;
 
@@ -31,7 +29,6 @@ export class Wallet {
 	})
 	public nonce!: string;
 
-	// TODO: separate tables for 1:n attributes
 	@Column({
 		default: undefined,
 		nullable: true,

@@ -1,5 +1,4 @@
 import "reflect-metadata";
 
-export * from "./decorator.js";
 export * as Selectors from "./selectors.js";
-export * from "inversify";
+export { Container, inject, multiInject, optional, postConstruct, preDestroy, tagged } from "inversify";

@@ -1,20 +1,21 @@
 import { describe, Sandbox } from "../../../test-framework/source";
-import { prepareSandbox, ApiContext } from "../../test/helpers/prepare-sandbox";
-import { request } from "../../test/helpers/request";
-
-import cryptoJson from "../../../core/bin/config/testnet/core/crypto.json";
+import receipts from "../../test/fixtures/receipts.json";
+import receiptTransactions from "../../test/fixtures/receipt_transactions.json";
+import receiptTransactionsResponse from "../../test/fixtures/receipt_transactions.response.json";
 import transactions from "../../test/fixtures/transactions.json";
-import transactionTypes from "../../test/fixtures/transactions_types.json";
+import transactionsResponse from "../../test/fixtures/transactions.response.json";
 import transactionSchemas from "../../test/fixtures/transactions_schemas.json";
-import transactionFees from "../../test/fixtures/transactions_fees.json";
+import transactionTypes from "../../test/fixtures/transactions_types.json";
+import wallets from "../../test/fixtures/wallets.json";
+import { ApiContext, prepareSandbox } from "../../test/helpers/prepare-sandbox";
+import { request } from "../../test/helpers/request";
 
 describe<{
 	sandbox: Sandbox;
 }>("Transactions", ({ it, afterAll, assert, afterEach, beforeAll, beforeEach, nock }) => {
 	let apiContext: ApiContext;
 
-	// TODO:
-	let options = { transform: false };
+	const options = {};
 
 	beforeAll(async (context) => {
 		nock.enableNetConnect();
@@ -39,28 +40,25 @@ describe<{
 
 		const { statusCode, data } = await request("/transactions", options);
 		assert.equal(statusCode, 200);
-		assert.equal(
-			data.data,
-			[...transactions].sort((a, b) => Number(b.blockHeight) - Number(a.blockHeight)),
-		);
+		assert.equal(data.data, transactionsResponse);
 	});
 
-	it("/transactions?type", async () => {
+	it("/transactions?data", async () => {
 		await apiContext.transactionRepository.save(transactions);
 
 		const testCases = [
 			{
-				path: "/transactions?type=0",
-				result: [...transactions]
-					.filter((tx) => tx.type === 0)
-					.sort((a, b) => Number(b.blockHeight) - Number(a.blockHeight)),
+				path: "/transactions?data=0x",
+				result: [...transactionsResponse].filter((tx) => tx.data === ""),
 			},
-			{ path: "/transactions?type=1", result: [] },
 			{
-				path: "/transactions?type=4",
-				result: [...transactions]
-					.filter((tx) => tx.type === 4)
-					.sort((a, b) => Number(b.blockHeight) - Number(a.blockHeight)),
+				path: "/transactions?data=",
+				result: [...transactionsResponse].filter((tx) => tx.data === ""),
+			},
+			{ path: "/transactions?data=88888888", result: [] },
+			{
+				path: "/transactions?data=6dd7d8ea",
+				result: [...transactionsResponse].filter((tx) => tx.data.startsWith("0x6dd7d8ea")),
 			},
 		];
 
@@ -71,32 +69,40 @@ describe<{
 		}
 	});
 
-	it("/transactions/{id}", async () => {
+	it("/transactions?address", async () => {
 		await apiContext.transactionRepository.save(transactions);
+		await apiContext.walletRepository.save(wallets);
 
-		const id = transactions[transactions.length - 1].id;
-		const { statusCode, data } = await request(`/transactions/${id}`, options);
-		assert.equal(statusCode, 200);
-		assert.equal(data.data, transactions[transactions.length - 1]);
+		const transaction = transactions[transactions.length - 1];
+		const testCases = [
+			{
+				path: `/transactions?from=${transaction.from}`,
+				result: [...transactionsResponse].filter((tx) => tx.from === transaction.from),
+			},
+			{
+				path: `/transactions?senderId=${transaction.from}`,
+				result: [...transactionsResponse].filter((tx) => tx.from === transaction.from),
+			},
+			{
+				path: `/transactions?address=${transaction.to}`,
+				result: [...transactionsResponse].filter((tx) => tx.to === transaction.to),
+			},
+		];
+
+		for (const { path, result } of testCases) {
+			const { statusCode, data } = await request(path, options);
+			assert.equal(statusCode, 200);
+			assert.equal(data.data, result);
+		}
 	});
 
-	it("/transactions/types", async () => {
-		await apiContext.transactionTypeRepository.save(transactionTypes);
+	it("/transactions/{hash}", async () => {
+		await apiContext.transactionRepository.save(transactions);
 
-		const { statusCode, data } = await request(`/transactions/types`, options);
+		const hash = transactionsResponse.at(-1)?.hash;
+		const { statusCode, data } = await request(`/transactions/${hash}`, options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, {
-			"1": {
-				Transfer: 0,
-				ValidatorRegistration: 2,
-				Vote: 3,
-				MultiSignature: 4,
-				MultiPayment: 6,
-				ValidatorResignation: 7,
-				UsernameRegistration: 8,
-				UsernameResignation: 9,
-			},
-		});
+		assert.equal(data.data, transactionsResponse.at(-1));
 	});
 
 	it("/transactions/schemas", async () => {
@@ -107,17 +113,12 @@ describe<{
 		assert.equal(data.data, transactionSchemas);
 	});
 
-	it("/transactions/fees", async () => {
-		await apiContext.transactionTypeRepository.save(transactionTypes);
-		await apiContext.configurationRepository.save({
-			activeMilestones: cryptoJson.milestones[0],
-			cryptoConfiguration: cryptoJson,
-			id: 1,
-			version: "0.0.1",
-		});
+	it("/transactions with receipt enriched", async () => {
+		await apiContext.transactionRepository.save(receiptTransactions);
+		await apiContext.receiptsRepository.save(receipts);
 
-		const { statusCode, data } = await request(`/transactions/fees`, {});
+		const { statusCode, data } = await request("/transactions", options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, transactionFees);
+		assert.equal(data.data, receiptTransactionsResponse);
 	});
 });

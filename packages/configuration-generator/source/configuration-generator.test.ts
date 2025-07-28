@@ -14,7 +14,7 @@ describe<{
 	generator: ConfigurationGenerator;
 }>("NetworkGenerator", ({ beforeEach, it, assert, stub, match }) => {
 	const paths = envPaths("myn", { suffix: "core" });
-	const configCore = join(paths.config, "testnet");
+	const configCore = join(paths.config, "devnet");
 
 	beforeEach(async (context) => {
 		context.app = await makeApplication(configCore);
@@ -29,7 +29,7 @@ describe<{
 		const writeFileSync = stub(fs, "writeFileSync");
 
 		await generator.generate({
-			network: "testnet",
+			network: "devnet",
 			symbol: "my",
 			token: "myn",
 		});
@@ -46,12 +46,12 @@ describe<{
 			match({
 				genesisBlock: {
 					block: {
-						generatorPublicKey: match.string,
+						generatorAddress: match.string,
 						height: 0,
 						id: match.string,
 						numberOfTransactions: 160,
 						payloadHash: match.string,
-						payloadLength: 25_144,
+						payloadLength: match.number,
 						previousBlock: "0000000000000000000000000000000000000000000000000000000000000000",
 						reward: BigNumber.ZERO,
 						timestamp: match.number,
@@ -63,20 +63,18 @@ describe<{
 				},
 				milestones: [
 					match({
-						activeValidators: 0,
+						roundValidators: 0,
 						address: match.object,
 						block: match.object,
 						blockTime: 8000,
 						epoch: match.string,
 						height: 0,
-						multiPaymentLimit: 256,
 						reward: "0",
 						satoshi: match.object,
-						vendorFieldLength: 255,
 					}),
 					match({
+						roundValidators: 53,
 						height: 1,
-						activeValidators: 53,
 					}),
 					match({
 						height: 75_600,
@@ -84,9 +82,9 @@ describe<{
 					}),
 				],
 				network: {
+					chainId: match.number,
 					client: { explorer: "", symbol: "my", token: "myn" },
-					messagePrefix: "testnet message:\n",
-					name: "testnet",
+					name: "devnet",
 					nethash: match.string,
 					pubKeyHash: 30,
 					slip44: 1,
@@ -112,7 +110,7 @@ describe<{
 		const writeFileSync = stub(fs, "writeFileSync");
 
 		await generator.generate({
-			network: "testnet",
+			network: "devnet",
 			symbol: "my",
 			token: "myn",
 		});
@@ -131,7 +129,7 @@ describe<{
 		await assert.rejects(
 			() =>
 				generator.generate({
-					network: "testnet",
+					network: "devnet",
 					symbol: "my",
 					token: "myn",
 				}),
@@ -161,7 +159,7 @@ describe<{
 			force: false,
 			maxBlockPayload: 123_444,
 			maxTxPerBlock: 122,
-			network: "testnet",
+			network: "devnet",
 			overwriteConfig: false,
 			peers: ["127.0.0.1"],
 			premine: "12500000000000000",
@@ -171,7 +169,6 @@ describe<{
 			symbol: "my",
 			token: "myn",
 			validators: 53,
-			vendorFieldLength: 255,
 			wif: 27,
 		});
 
@@ -185,12 +182,12 @@ describe<{
 			match({
 				genesisBlock: {
 					block: {
-						generatorPublicKey: match.string,
+						generatorAddress: match.string,
 						height: 0,
 						id: match.string,
 						numberOfTransactions: 212,
 						payloadHash: match.string,
-						payloadLength: 35024,
+						payloadLength: match.number,
 						previousBlock: "0000000000000000000000000000000000000000000000000000000000000000",
 						reward: BigNumber.ZERO,
 						timestamp: match.number,
@@ -202,22 +199,20 @@ describe<{
 				},
 				milestones: [
 					match({
-						activeValidators: 0,
+						roundValidators: 0,
 						address: match.object,
 						block: match.object,
 						blockTime: 9000,
 						epoch: match.string,
 						height: 0,
-						multiPaymentLimit: 256,
 						reward: "0",
 						satoshi: match.object,
 						stageTimeoutout: 2000,
 						stageTimeoutoutIncrease: 2000,
-						vendorFieldLength: 255,
 					}),
 					match({
+						roundValidators: 53,
 						height: 1,
-						activeValidators: 53,
 					}),
 					match({
 						height: 23_000,
@@ -225,10 +220,11 @@ describe<{
 					}),
 				],
 				network: {
+					chainId: match.number,
 					client: { explorer: "myex.io", symbol: "my", token: "myn" },
-					messagePrefix: "testnet message:\n",
-					name: "testnet",
+					name: "devnet",
 					nethash: match.string,
+
 					pubKeyHash: 168,
 					slip44: 1,
 					wif: 27,

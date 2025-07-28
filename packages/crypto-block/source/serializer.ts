@@ -1,39 +1,17 @@
 /* eslint-disable sort-keys-fix/sort-keys-fix */
-import { inject, injectable, tagged } from "@mainsail/container";
+import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 
 @injectable()
 export class Serializer implements Contracts.Crypto.BlockSerializer {
 	@inject(Identifiers.Cryptography.Serializer)
-	@tagged("type", "wallet")
 	private readonly serializer!: Contracts.Serializer.Serializer;
 
-	@inject(Identifiers.Cryptography.Hash.Size.SHA256)
-	private readonly hashByteLength!: number;
-
-	@inject(Identifiers.Cryptography.Identity.PublicKey.Size)
-	@tagged("type", "wallet")
-	private readonly generatorPublicKeyByteLength!: number;
-
-	public headerSize(): number {
-		return (
-			1 + // version
-			6 + // timestamp
-			4 + // height
-			4 + // round
-			this.hashByteLength + // previousBlock
-			2 + // numberOfTransactions
-			8 + // totalAmount
-			8 + // totalFee
-			8 + // reward
-			4 + // payloadLength
-			this.hashByteLength + // payloadHash
-			this.generatorPublicKeyByteLength
-		);
-	}
+	@inject(Identifiers.Cryptography.Block.HeaderSize)
+	private readonly headerSize!: () => number;
 
 	public totalSize(block: Contracts.Crypto.BlockDataSerializable): number {
-		return this.headerSize() + block.payloadLength;
+		return this.headerSize() + block.payloadSize;
 	}
 
 	public async serializeHeader(block: Contracts.Crypto.BlockDataSerializable): Promise<Buffer> {
@@ -47,35 +25,41 @@ export class Serializer implements Contracts.Crypto.BlockSerializer {
 				timestamp: {
 					type: "uint48",
 				},
-				height: {
+				number: {
 					type: "uint32",
 				},
 				round: {
 					type: "uint32",
 				},
-				previousBlock: {
+				parentHash: {
 					type: "hash",
 				},
-				numberOfTransactions: {
+				stateRoot: {
+					type: "hash",
+				},
+				logsBloom: {
+					type: "hash",
+				},
+				transactionsCount: {
 					type: "uint16",
 				},
-				totalAmount: {
-					type: "bigint",
-				},
-				totalFee: {
-					type: "bigint",
-				},
-				reward: {
-					type: "bigint",
-				},
-				payloadLength: {
+				gasUsed: {
 					type: "uint32",
 				},
-				payloadHash: {
+				fee: {
+					type: "uint256",
+				},
+				reward: {
+					type: "uint256",
+				},
+				payloadSize: {
+					type: "uint32",
+				},
+				transactionsRoot: {
 					type: "hash",
 				},
-				generatorPublicKey: {
-					type: "publicKey",
+				proposer: {
+					type: "address",
 				},
 			},
 		});
@@ -92,35 +76,41 @@ export class Serializer implements Contracts.Crypto.BlockSerializer {
 				timestamp: {
 					type: "uint48",
 				},
-				height: {
+				number: {
 					type: "uint32",
 				},
 				round: {
 					type: "uint32",
 				},
-				previousBlock: {
+				parentHash: {
 					type: "hash",
 				},
-				numberOfTransactions: {
+				stateRoot: {
+					type: "hash",
+				},
+				logsBloom: {
+					type: "hash",
+				},
+				transactionsCount: {
 					type: "uint16",
 				},
-				totalAmount: {
-					type: "bigint",
-				},
-				totalFee: {
-					type: "bigint",
-				},
-				reward: {
-					type: "bigint",
-				},
-				payloadLength: {
+				gasUsed: {
 					type: "uint32",
 				},
-				payloadHash: {
+				fee: {
+					type: "uint256",
+				},
+				reward: {
+					type: "uint256",
+				},
+				payloadSize: {
+					type: "uint32",
+				},
+				transactionsRoot: {
 					type: "hash",
 				},
-				generatorPublicKey: {
-					type: "publicKey",
+				proposer: {
+					type: "address",
 				},
 				transactions: {
 					type: "transactions",

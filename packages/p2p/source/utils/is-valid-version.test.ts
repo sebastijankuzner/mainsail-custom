@@ -9,7 +9,7 @@ describe<{
 	sandbox: Sandbox;
 }>("isValidVersion", ({ it, assert, each, beforeEach }) => {
 	const configuration = {
-		get: () => "testnet",
+		get: () => "devnet",
 		getMilestone: () => ({
 			p2p: {
 				minimumVersions: ["^2.6.0"],
@@ -23,7 +23,7 @@ describe<{
 		context.sandbox.app
 			.bind(Identifiers.ServiceProvider.Configuration)
 			.toConstantValue(new Providers.PluginConfiguration().from("", defaults))
-			.whenTargetTagged("plugin", "p2p");
+			.whenTagged("plugin", "p2p");
 		context.sandbox.app.bind(Identifiers.Cryptography.Configuration).toConstantValue(configuration);
 	});
 

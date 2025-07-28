@@ -10,7 +10,7 @@ export const response: Contracts.P2P.PeerPingResponse = {
 	config: {
 		network: {
 			explorer: "https://explorer.ark.io",
-			name: "testnet",
+			name: "devnet",
 			nethash: "ac4279c60e87b4b788475bd86f2cc461f4ea2b786cb5f25f8c3c0fc292524982",
 			token: { name: "ARK", symbol: "TѦ" },
 			version: 30,
@@ -27,7 +27,7 @@ export const response: Contracts.P2P.PeerPingResponse = {
 		header: {
 			blockSignature:
 				"1afe7f94fcb7c74447a4cfc972eaa080cb3bafa9f2468af6c6554cc21e30470017af65bfc73d55ad6c5b551e41299e052fde636ecc2940bcddea9ea8f0c23861",
-			generatorPublicKey: "c5bcb4da70e688cb56c32451479c435293d9d54e6be1451621d1d4972ac1ac01",
+			generatorAddress: "c5bcb4da70e688cb56c32451479c435293d9d54e6be1451621d1d4972ac1ac01",
 			height: 3,
 			id: "70e20568d4a346da847dc1a8a7493e70e5a028709b7dfb6ec6da171d0daa03b5",
 			numberOfTransactions: 0,

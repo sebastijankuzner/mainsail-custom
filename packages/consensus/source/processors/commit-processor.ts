@@ -1,6 +1,6 @@
+import { isMajority } from "@mainsail/blockchain-utils";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
 
 import { AbstractProcessor } from "./abstract-processor.js";
 
@@ -8,9 +8,6 @@ import { AbstractProcessor } from "./abstract-processor.js";
 export class CommitProcessor extends AbstractProcessor implements Contracts.Consensus.CommitProcessor {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly configuration!: Contracts.Crypto.Configuration;
-
-	@inject(Identifiers.Processor.BlockProcessor)
-	private readonly processor!: Contracts.Processor.BlockProcessor;
 
 	@inject(Identifiers.ValidatorSet.Service)
 	private readonly validatorSet!: Contracts.ValidatorSet.Service;
@@ -25,32 +22,17 @@ export class CommitProcessor extends AbstractProcessor implements Contracts.Cons
 	private readonly commitStateFactory!: Contracts.Consensus.CommitStateFactory;
 
 	async process(commit: Contracts.Crypto.Commit): Promise<Contracts.Consensus.ProcessorResult> {
-		let promise: Promise<void> | undefined;
+		if (!this.#hasValidBlockNumber(commit)) {
+			return Contracts.Consensus.ProcessorResult.Skipped;
+		}
 
-		const result = await this.commitLock.runNonExclusive(async (): Promise<Contracts.Consensus.ProcessorResult> => {
-			if (!this.#hasValidHeight(commit)) {
-				return Contracts.Consensus.ProcessorResult.Skipped;
-			}
+		const commitState = this.commitStateFactory(commit);
 
-			const commitState = this.commitStateFactory(commit);
+		await this.getConsensus().handleCommitState(commitState);
 
-			const result = await this.processor.process(commitState);
-
-			if (result === false) {
-				return Contracts.Consensus.ProcessorResult.Invalid;
-			}
-
-			commitState.setProcessorResult(result);
-
-			promise = this.getConsensus().handleCommitState(commitState);
-
-			return Contracts.Consensus.ProcessorResult.Accepted;
-		});
-
-		// Execute outside the lock, to avoid deadlocks.
-		// We want to make sure that the block is handled before we return the result to block downloader. This is different from the other processors.
-		await promise;
-		return result;
+		return commitState.getProcessorResult().success
+			? Contracts.Consensus.ProcessorResult.Accepted
+			: Contracts.Consensus.ProcessorResult.Invalid;
 	}
 
 	async hasValidSignature(commit: Contracts.Crypto.Commit): Promise<boolean> {
@@ -62,26 +44,26 @@ export class CommitProcessor extends AbstractProcessor implements Contracts.Cons
 				continue;
 			}
 
-			const validatorPublicKey = this.validatorSet.getValidator(index).getConsensusPublicKey();
+			const validatorPublicKey = this.validatorSet.getValidator(index).blsPublicKey;
 			publicKeys.push(Buffer.from(validatorPublicKey, "hex"));
 		}
 
-		const { activeValidators } = this.configuration.getMilestone(block.header.height);
-		if (!Utils.isMajority(publicKeys.length, activeValidators)) {
+		const { roundValidators } = this.configuration.getMilestone(block.header.number);
+		if (!isMajority(publicKeys.length, roundValidators)) {
 			return false;
 		}
 
 		const precommit = await this.serializer.serializePrecommitForSignature({
-			blockId: block.data.id,
-			height: block.data.height,
+			blockHash: block.data.hash,
+			blockNumber: block.data.number,
 			round: proof.round,
 			type: Contracts.Crypto.MessageType.Precommit,
 		});
 
-		return this.aggregator.verify(proof, precommit, activeValidators);
+		return this.aggregator.verify(proof, precommit, roundValidators);
 	}
 
-	#hasValidHeight(commit: Contracts.Crypto.Commit): boolean {
-		return commit.block.data.height === this.getConsensus().getHeight();
+	#hasValidBlockNumber(commit: Contracts.Crypto.Commit): boolean {
+		return commit.block.data.number === this.getConsensus().getBlockNumber();
 	}
 }

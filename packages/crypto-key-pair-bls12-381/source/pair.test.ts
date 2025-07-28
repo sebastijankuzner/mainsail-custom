@@ -8,14 +8,14 @@ import { KeyPairFactory } from "./pair";
 const mnemonic =
 	"question measure debris increase false feature journey height fun agent coach office only shell nation skill track upset distance behave easy devote floor shy";
 
-describe<{ container: Container.Container }>("KeyPairFactory", ({ assert, beforeEach, it }) => {
+describe<{ container: Container }>("KeyPairFactory", ({ assert, beforeEach, it }) => {
 	beforeEach((context) => {
 		context.container = new Container();
 		context.container.bind(Identifiers.Cryptography.Configuration).to(Configuration).inSingletonScope();
 	});
 
 	it("should derive a key pair from an mnemonic", async (context) => {
-		assert.equal(await context.container.resolve(KeyPairFactory).fromMnemonic(mnemonic), {
+		assert.equal(await context.container.get(KeyPairFactory, { autobind: true }).fromMnemonic(mnemonic), {
 			compressed: true,
 			privateKey: "3e99d30b3816f60077b1fdb4535ce0e9f9c715e42d1647edc3361fc531fb618f",
 			publicKey:
@@ -26,7 +26,7 @@ describe<{ container: Container.Container }>("KeyPairFactory", ({ assert, before
 	it("should derive a key pair from an mnemonic", async (context) => {
 		assert.equal(
 			await context.container
-				.resolve(KeyPairFactory)
+				.get(KeyPairFactory, { autobind: true })
 				.fromPrivateKey(Buffer.from("3e99d30b3816f60077b1fdb4535ce0e9f9c715e42d1647edc3361fc531fb618f", "hex")),
 			{
 				compressed: true,
@@ -40,7 +40,7 @@ describe<{ container: Container.Container }>("KeyPairFactory", ({ assert, before
 	it("should derive from a WIF", async (context) => {
 		assert.equal(
 			await context.container
-				.resolve(KeyPairFactory)
+				.get(KeyPairFactory, { autobind: true })
 				.fromWIF("KwDiBf89QgGbjEhKnhXJuH7LrciVrZi3qYjgd9M7rFU73sVHnoWn", 128),
 			{
 				compressed: true,

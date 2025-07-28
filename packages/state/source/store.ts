@@ -1,124 +1,68 @@
 import { inject, injectable } from "@mainsail/container";
-import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { Contracts, Events, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 
 @injectable()
 export class Store implements Contracts.State.Store {
-	@inject(Identifiers.State.AttributeRepository)
-	private readonly attributeRepository!: Contracts.State.AttributeRepository;
+	@inject(Identifiers.Cryptography.Configuration)
+	private readonly configuration!: Contracts.Crypto.Configuration;
 
-	@inject(Identifiers.State.WalletRepository.Base.Factory)
-	private readonly walletRepositoryFactory!: Contracts.State.WalletRepositoryFactory;
+	@inject(Identifiers.Services.EventDispatcher.Service)
+	private readonly events!: Contracts.Kernel.EventDispatcher;
 
-	@inject(Identifiers.State.StateRepository.Factory)
-	protected readonly createStateRepository!: Contracts.State.StateRepositoryFactory;
+	@inject(Identifiers.Services.Log.Service)
+	private readonly logger!: Contracts.Kernel.Logger;
 
-	#genesisBlock?: Contracts.Crypto.Commit;
+	#genesisCommit?: Contracts.Crypto.Commit;
 	#lastBlock?: Contracts.Crypto.Block;
-	#originalStore?: Store;
+	#blockNumber = 0;
+	#totalRound = 0;
 
-	#repository!: Contracts.State.StateRepository;
-	#walletRepository!: Contracts.State.WalletRepository;
-
-	configure(store?: Store): Store {
-		if (store) {
-			this.#originalStore = store;
-			this.#genesisBlock = store.#genesisBlock;
-			this.#lastBlock = store.#lastBlock;
-
-			this.#repository = this.createStateRepository(this.attributeRepository, store.#repository);
-			this.#walletRepository = this.walletRepositoryFactory(store.#walletRepository);
-		} else {
-			this.#repository = this.createStateRepository(this.attributeRepository, undefined, {
-				height: 0,
-				totalRound: 0,
-			});
-			this.#walletRepository = this.walletRepositoryFactory();
-		}
-
-		return this;
-	}
-
-	public get walletRepository(): Contracts.State.WalletRepository {
-		return this.#walletRepository;
+	public setGenesisCommit(block: Contracts.Crypto.Commit): void {
+		this.#genesisCommit = block;
 	}
 
 	public getGenesisCommit(): Contracts.Crypto.Commit {
-		Utils.assert.defined<Contracts.Crypto.Commit>(this.#genesisBlock);
+		assert.defined(this.#genesisCommit);
 
-		return this.#genesisBlock;
-	}
-
-	public setGenesisCommit(block: Contracts.Crypto.Commit): void {
-		this.#genesisBlock = block;
-	}
-
-	public getLastBlock(): Contracts.Crypto.Block {
-		Utils.assert.defined<Contracts.Crypto.Block>(this.#lastBlock);
-		return this.#lastBlock;
+		return this.#genesisCommit;
 	}
 
 	public setLastBlock(block: Contracts.Crypto.Block): void {
 		this.#lastBlock = block;
+		this.setBlockNumber(block.data.number);
 	}
 
-	public getLastHeight(): number {
-		return this.getAttribute("height");
+	public getLastBlock(): Contracts.Crypto.Block {
+		assert.defined(this.#lastBlock);
+		return this.#lastBlock;
+	}
+
+	// Set blockNumber is used on workers, because last block is not transferred
+	public setBlockNumber(blockNumber: number): void {
+		this.#blockNumber = blockNumber;
+		this.configuration.setHeight(blockNumber + 1);
+
+		if (this.configuration.isNewMilestone()) {
+			this.logger.notice(`Milestone change: ${JSON.stringify(this.configuration.getMilestoneDiff())}`);
+			void this.events.dispatch(Events.CryptoEvent.MilestoneChanged);
+		}
+	}
+
+	public getBlockNumber(): number {
+		return this.#blockNumber;
+	}
+
+	public setTotalRound(totalRound: number): void {
+		this.#totalRound = totalRound;
 	}
 
 	public getTotalRound(): number {
-		return this.getAttribute("totalRound");
-	}
-
-	public hasAttribute(key: string): boolean {
-		return this.#repository.hasAttribute(key);
-	}
-
-	public setAttribute<T>(key: string, value: T): void {
-		this.#repository.setAttribute(key, value);
-	}
-
-	public getAttribute<T>(key: string): T {
-		return this.#repository.getAttribute(key);
-	}
-
-	public getWalletRepository(): Contracts.State.WalletRepository {
-		return this.#walletRepository;
+		return this.#totalRound;
 	}
 
 	public async onCommit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
 		this.setLastBlock(unit.getBlock());
-		this.setAttribute("height", unit.height);
-		this.setAttribute("totalRound", this.getTotalRound() + unit.round + 1);
-	}
-
-	public commitChanges(): void {
-		if (this.#originalStore) {
-			this.#originalStore.#lastBlock = this.#lastBlock;
-			this.#originalStore.#genesisBlock = this.#genesisBlock;
-
-			this.#repository.commitChanges();
-			this.#walletRepository.commitChanges();
-		}
-	}
-
-	public toJson(): Contracts.Types.JsonObject {
-		return this.#repository.toJson();
-	}
-
-	public fromJson(data: Contracts.Types.JsonObject): void {
-		this.#repository.fromJson(data);
-	}
-
-	public changesToJson(): Contracts.State.StoreChange {
-		return {
-			store: this.#repository.changesToJson(),
-			walletRepository: this.#walletRepository.changesToJson(),
-		};
-	}
-
-	public applyChanges(data: Contracts.State.StoreChange): void {
-		this.#repository.applyChanges(data.store);
-		this.#walletRepository.applyChanges(data.walletRepository);
+		this.#totalRound += unit.round + 1;
 	}
 }

@@ -1,54 +1,87 @@
 import { AnySchemaObject } from "ajv";
 
-export const schemas: Record<"block" | "blockId" | "blockHeader", AnySchemaObject> = {
+export const schemas: Record<
+	"block" | "blockHash" | "prefixedBlockHash" | "blockHeader" | "logsBloom",
+	AnySchemaObject
+> = {
 	block: {
 		$id: "block",
 		$ref: "blockHeader",
 		properties: {
 			transactions: {
 				$ref: "transactions",
-				maxItems: { $data: "1/numberOfTransactions" },
-				minItems: { $data: "1/numberOfTransactions" },
+				maxItems: { $data: "1/transactionsCount" },
+				minItems: { $data: "1/transactionsCount" },
 				type: "array",
 			},
 		},
 		type: "object",
 	},
-	blockHeader: {
-		$id: "blockHeader",
-		properties: {
-			generatorPublicKey: { $ref: "publicKey" },
-			height: { minimum: 0, type: "integer" },
-			id: { $ref: "blockId" },
-			numberOfTransactions: { minimum: 0, type: "integer" },
-			payloadHash: { $ref: "hex" },
-			payloadLength: { minimum: 0, type: "integer" },
-			previousBlock: { $ref: "blockId" },
-			reward: { bignumber: { minimum: 0 } },
-			timestamp: { maximum: 2 ** 48 - 1, minimum: 0, type: "integer" },
-			totalAmount: { bignumber: { minimum: 0 } },
-			totalFee: { bignumber: { minimum: 0 } },
-			version: { enum: [1] },
-		},
-		required: [
-			"id",
-			"timestamp",
-			"previousBlock",
-			"height",
-			"totalAmount",
-			"totalFee",
-			"reward",
-			"generatorPublicKey",
-		],
-		type: "object",
-	},
-	blockId: {
-		$id: "blockId",
+	blockHash: {
+		$id: "blockHash",
 		allOf: [
 			{
 				$ref: "hex",
 				maxLength: 64,
 				minLength: 64,
+			},
+		],
+		type: "string",
+	},
+	blockHeader: {
+		$id: "blockHeader",
+		properties: {
+			fee: { bignumber: { minimum: 0 } },
+			gasUsed: { minimum: 0, type: "integer" },
+			hash: { $ref: "blockHash" },
+			logsBloom: { $ref: "logsBloom" },
+			number: { minimum: 0, type: "integer" },
+			parentHash: { $ref: "blockHash" },
+			payloadSize: { minimum: 0, type: "integer" },
+			proposer: { $ref: "address" },
+			reward: { bignumber: { minimum: 0 } },
+			stateRoot: { $ref: "hex" },
+			timestamp: { maximum: 2 ** 48 - 1, minimum: 0, type: "integer" },
+			transactionsCount: { minimum: 0, type: "integer" },
+			transactionsRoot: { $ref: "hex" },
+			version: { enum: [1] },
+		},
+		required: [
+			"fee",
+			"gasUsed",
+			"hash",
+			"logsBloom",
+			"number",
+			"parentHash",
+			"payloadSize",
+			"proposer",
+			"reward",
+			"stateRoot",
+			"timestamp",
+			"transactionsCount",
+			"transactionsRoot",
+			"version",
+		],
+		type: "object",
+	},
+	logsBloom: {
+		$id: "logsBloom",
+		allOf: [
+			{
+				$ref: "hex",
+				maxLength: 512,
+				minLength: 512,
+			},
+		],
+		type: "string",
+	},
+	prefixedBlockHash: {
+		$id: "prefixedBlockHash",
+		allOf: [
+			{
+				$ref: "prefixedQuantityHex",
+				maxLength: 66,
+				minLength: 66,
 			},
 		],
 		type: "string",

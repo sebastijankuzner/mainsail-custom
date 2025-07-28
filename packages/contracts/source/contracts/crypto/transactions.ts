@@ -1,120 +1,77 @@
-import { BigNumber, ByteBuffer } from "@mainsail/utils";
+import { BigNumber } from "@mainsail/utils";
 
-import type { KeyPair } from "./identities.js";
+import type { EcdsaSignature, KeyPair } from "./identities.js";
 import type { SchemaValidationResult } from "./validator.js";
 
 export interface Transaction {
-	readonly id: string;
-	readonly typeGroup: number;
-	readonly type: number;
+	readonly hash: string;
 	readonly key: string;
 
 	data: TransactionData;
 	serialized: Buffer;
-
-	assetSize(): number;
-	serialize(options?: SerializeOptions): Promise<ByteBuffer>;
-	deserialize(buf: ByteBuffer): Promise<void>;
-
-	hasVendorField(): boolean;
 }
 
 export type TransactionSchema = Record<string, any>;
 
-export interface TransactionAsset {
-	[custom: string]: any;
-
-	signature?: {
-		publicKey: string;
-	};
-	validatorPublicKey?: string;
-	username?: string;
-	votes?: string[];
-	unvotes?: string[];
-	multiSignatureLegacy?: MultiSignatureLegacyAsset;
-	multiSignature?: MultiSignatureAsset;
-	payments?: MultiPaymentItem[];
-}
-
 export interface TransactionData {
-	version: number;
 	network: number;
 
-	typeGroup: number;
-	type: number;
-	timestamp: number;
-	nonce: BigNumber;
+	from: string;
+	senderLegacyAddress?: string;
 	senderPublicKey: string;
+	to?: string;
 
-	fee: BigNumber;
-	amount: BigNumber;
+	value: BigNumber;
 
-	expiration?: number;
-	recipientId?: string;
+	gasPrice: number;
+	gasLimit: number;
 
-	asset?: TransactionAsset;
-	vendorField?: string;
+	nonce: BigNumber;
+	data: string;
 
-	id: string;
-	signature?: string;
-	signatures?: string[];
+	hash: string;
 
-	blockId?: string;
-	blockHeight?: number;
-	sequence?: number;
+	v?: number;
+	r?: string;
+	s?: string;
+	legacySecondSignature?: string;
+
+	transactionIndex?: number;
+	gasUsed?: number;
+	blockHash?: string;
+	blockNumber?: number;
 }
 
 export interface TransactionJson {
-	version?: number;
 	network?: number;
 
-	typeGroup?: number;
-	type: number;
-
-	timestamp?: number;
-	nonce?: string;
+	from: string;
 	senderPublicKey: string;
+	to?: string;
 
-	fee: string;
-	amount: string;
+	value: string;
 
-	expiration?: number;
-	recipientId?: string;
+	gasLimit: number;
+	gasPrice: number;
 
-	asset?: TransactionAsset;
-	vendorField?: string | undefined;
+	nonce: string;
+	data: string;
 
-	id?: string;
-	signature?: string;
-	signatures?: string[];
+	hash?: string;
+	timestamp?: number;
 
-	blockId?: string;
-	sequence?: number;
-}
-export interface MultiPaymentItem {
-	amount: BigNumber;
-	recipientId: string;
-}
+	v?: number;
+	r?: string;
+	s?: string;
 
-export interface MultiSignatureLegacyAsset {
-	min: number;
-	lifetime: number;
-	keysgroup: string[];
-}
-
-export interface MultiSignatureAsset {
-	min: number;
-	publicKeys: string[];
-}
-
-export interface VoteAsset {
-	votes: string[];
-	unvotes: string[];
+	transactionIndex?: number;
+	gasUsed?: number;
+	blockHash?: string;
+	blockNumber?: number;
 }
 
 export interface SerializeOptions {
 	excludeSignature?: boolean;
-	excludeMultiSignature?: boolean;
 	// TODO: consider passing pre-allocated buffer
 }
 
@@ -123,28 +80,24 @@ export interface TransactionServiceProvider {
 }
 
 export interface TransactionVerifier {
-	verifySignatures(transaction: TransactionData, multiSignature: MultiSignatureAsset): Promise<boolean>;
-
 	verifyHash(data: TransactionData): Promise<boolean>;
 
-	verifySchema(data: Omit<TransactionData, "id">, strict?: boolean): Promise<SchemaValidationResult>;
+	verifySchema(data: Omit<TransactionData, "hash">, strict?: boolean): Promise<SchemaValidationResult>;
+
+	verifyLegacySecondSignature(data: TransactionData, legacySecondPublicKey: string): Promise<boolean>;
 }
 
 export interface TransactionSigner {
-	sign(transaction: TransactionData, keys: KeyPair, options?: SerializeOptions): Promise<string>;
-	multiSign(transaction: TransactionData, keys: KeyPair, index?: number): Promise<string>;
+	sign(transaction: TransactionData, keys: KeyPair, options?: SerializeOptions): Promise<EcdsaSignature>;
+	legacySecondSign(transaction: TransactionData, keys: KeyPair, options?: SerializeOptions): Promise<string>;
 }
 
 export interface TransactionSerializer {
-	getBytes(transaction: TransactionData, options?: SerializeOptions): Promise<Buffer>;
-
 	serialize(transaction: Transaction, options?: SerializeOptions): Promise<Buffer>;
 }
 
 export interface TransactionDeserializer {
 	deserialize(serialized: string | Buffer): Promise<Transaction>;
-
-	deserializeCommon(transaction: TransactionData, buf: ByteBuffer): void;
 }
 
 export interface TransactionFactory {
@@ -165,10 +118,10 @@ export interface TransactionRegistry {
 	deregisterTransactionType(constructor: TransactionConstructor): void;
 }
 
-export interface TransactionUtils {
+export interface TransactionUtilities {
 	toBytes(data: TransactionData): Promise<Buffer>;
 
 	toHash(transaction: TransactionData, options?: SerializeOptions): Promise<Buffer>;
 
-	getId(transaction: Transaction): Promise<string>;
+	getHash(transaction: Transaction): Promise<string>;
 }

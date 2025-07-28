@@ -15,11 +15,11 @@ export class BlockJob implements Job {
 
 	protected blockCount = 1;
 
-	public execute(callback: Function): void {
+	public execute(callback: () => void): void {
 		const onCallback = async () => {
 			const start = performance.now();
 
-			await callback();
+			callback();
 
 			await this.events.dispatch(Events.ScheduleEvent.BlockJobFinished, {
 				blockCount: this.blockCount,
@@ -58,6 +58,6 @@ export class BlockJob implements Job {
 
 	public everyRound(): this {
 		// TODO: rebuild on milestone change
-		return this.cron(this.configuration.getMilestone(1).activeValidators);
+		return this.cron(this.configuration.getMilestone(1).roundValidators);
 	}
 }

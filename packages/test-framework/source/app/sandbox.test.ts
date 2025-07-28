@@ -17,7 +17,7 @@ describe("Sandbox", ({ it, assert, spyFn }) => {
 
 		const callback = spyFn();
 
-		await assert.resolves(() => sandbox.boot(() => callback.call()));
+		await assert.resolves(() => sandbox.boot(() => callback.call())).then(() => sandbox.dispose());
 		callback.calledOnce();
 	});
 
@@ -33,13 +33,14 @@ describe("Sandbox", ({ it, assert, spyFn }) => {
 			maxBlockPayload: 2_097_152,
 			maxTxPerBlock: 150,
 			network: "dummynet",
-			premine: "15300000000000000",
+			premine: "53000000000000000",
 			pubKeyHash: 23,
 			rewardAmount: "200000000",
 			rewardHeight: 75_600,
 			symbol: "DѦ",
 			token: "DARK",
 			validators: 53,
+			validatorRegistrationFee: "0",
 			wif: 186,
 		};
 
@@ -48,6 +49,8 @@ describe("Sandbox", ({ it, assert, spyFn }) => {
 
 		const crypto = readJSONSync(join(sandbox.getConfigurationPath(), "crypto.json"));
 		assert.equal(crypto.network.client.token, "DARK");
+
+		await assert.resolves(() => sandbox.dispose());
 	});
 
 	it("should dispose", async () => {

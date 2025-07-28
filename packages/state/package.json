@@ -1,6 +1,6 @@
 {
 	"name": "@mainsail/state",
-	"version": "0.0.1-alpha.20",
+	"version": "0.0.1-evm.25",
 	"description": "State management for Mainsail blockchain",
 	"license": "GPL-3.0-only",
 	"contributors": [],
@@ -16,7 +16,7 @@
 		"clean": "del distribution",
 		"release": "pnpm publish --access public",
 		"test": "pnpm run uvu source .test.ts",
-		"test:coverage": "c8 pnpm run test",
+		"test:coverage": "c8 -r=text -r=lcov --all pnpm run test",
 		"test:coverage:html": "c8 -r html --all pnpm run test",
 		"test:file": "pnpm run uvu source",
 		"uvu": "tsx --tsconfig ../../tsconfig.test.json ./node_modules/uvu/bin.js"
@@ -25,18 +25,15 @@
 		"@mainsail/container": "workspace:*",
 		"@mainsail/contracts": "workspace:*",
 		"@mainsail/kernel": "workspace:*",
-		"@mainsail/utils": "workspace:*",
-		"fs-extra": "11.2.0",
-		"joi": "17.12.2",
-		"pumpify": "2.0.1"
+		"@mainsail/utils": "workspace:*"
 	},
 	"devDependencies": {
-		"@mainsail/crypto-config": "workspace:*",
 		"@mainsail/crypto-transaction": "workspace:*",
 		"@types/fs-extra": "11.0.4",
 		"@types/pumpify": "1.4.4",
-		"sinon": "^17.0.1",
-		"uvu": "^0.5.6"
+		"@types/sinon": "17.0.4",
+		"sinon": "19.0.2",
+		"uvu": "0.5.6"
 	},
 	"engines": {
 		"node": ">=20.x"

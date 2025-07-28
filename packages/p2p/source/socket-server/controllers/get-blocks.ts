@@ -1,7 +1,7 @@
 import Hapi from "@hapi/hapi";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { pluralize } from "@mainsail/utils";
 
 import { constants } from "../../constants.js";
 import { mapAddr } from "../utils/map-addr.js";
@@ -11,8 +11,8 @@ export class GetBlocksController implements Contracts.P2P.Controller {
 	@inject(Identifiers.Services.Log.Service)
 	private readonly logger!: Contracts.Kernel.Logger;
 
-	@inject(Identifiers.State.Service)
-	private readonly stateService!: Contracts.State.Service;
+	@inject(Identifiers.State.Store)
+	private readonly stateStore!: Contracts.State.Store;
 
 	@inject(Identifiers.Database.Service)
 	private readonly database!: Contracts.Database.DatabaseService;
@@ -21,17 +21,17 @@ export class GetBlocksController implements Contracts.P2P.Controller {
 		request: Contracts.P2P.GetBlocksRequest,
 		h: Hapi.ResponseToolkit,
 	): Promise<Contracts.P2P.GetBlocksResponse> {
-		const requestBlockHeight: number = request.payload.fromHeight;
+		const requestBlockNumber: number = request.payload.fromBlockNumber;
 		const requestBlockLimit: number = request.payload.limit;
 
-		const lastHeight: number = this.stateService.getStore().getLastHeight();
-		if (requestBlockHeight > lastHeight) {
+		const lastBlockNumber: number = this.stateStore.getBlockNumber();
+		if (requestBlockNumber > lastBlockNumber) {
 			return { blocks: [] };
 		}
 
 		const commits: Buffer[] = await this.database.findCommitBuffers(
-			requestBlockHeight,
-			requestBlockHeight + requestBlockLimit - 1,
+			requestBlockNumber,
+			requestBlockNumber + requestBlockLimit - 1,
 		);
 
 		// Only return the blocks fetched while we are below the p2p maxPayload limit
@@ -49,11 +49,11 @@ export class GetBlocksController implements Contracts.P2P.Controller {
 		}
 
 		this.logger.info(
-			`${mapAddr(request.info.remoteAddress)} has downloaded ${Utils.pluralize(
+			`${mapAddr(request.info.remoteAddress)} has downloaded ${pluralize(
 				"block",
 				blocksToReturn.length,
 				true,
-			)} from height ${requestBlockHeight.toLocaleString()}`,
+			)} from block number ${requestBlockNumber.toLocaleString()}`,
 		);
 
 		return { blocks: blocksToReturn };

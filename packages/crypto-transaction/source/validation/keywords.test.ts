@@ -2,7 +2,7 @@ import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Configuration } from "@mainsail/crypto-config";
 import { Validator } from "@mainsail/validation/source/validator";
 
-import cryptoJson from "../../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../../core/bin/config/devnet/core/crypto.json";
 import { describe, Sandbox } from "../../../test-framework/source";
 import { makeKeywords } from "./keywords";
 
@@ -18,9 +18,15 @@ describe<{
 		context.sandbox.app.bind(Identifiers.Cryptography.Configuration).to(Configuration).inSingletonScope();
 		context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration).setConfig(cryptoJson);
 
-		const keywords = makeKeywords(context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration));
+		const configuration = context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration);
+		configuration.setHeight(0);
+
+		const keywords = makeKeywords(configuration);
 		context.validator.addKeyword(keywords.transactionType);
 		context.validator.addKeyword(keywords.network);
+		context.validator.addKeyword(keywords.transactionGasLimit);
+		context.validator.addKeyword(keywords.transactionGasPrice);
+		context.validator.addKeyword(keywords.bytecode);
 	});
 
 	it("keyword transactionType should be ok", (context) => {
@@ -47,7 +53,7 @@ describe<{
 		};
 		context.validator.addSchema(schema);
 
-		assert.undefined(context.validator.validate("test", 30).error);
+		assert.undefined(context.validator.validate("test", 10_000).error);
 
 		assert.defined(context.validator.validate("test", 23).error);
 		assert.defined(context.validator.validate("test", "a").error);
@@ -77,5 +83,96 @@ describe<{
 		assert.undefined(context.validator.validate("test", 30).error);
 		assert.undefined(context.validator.validate("test", 23).error);
 		assert.undefined(context.validator.validate("test", "a").error);
+	});
+
+	it("keyword transactionGasPrice should be ok", (context) => {
+		const schema = {
+			$id: "test",
+			transactionGasPrice: {},
+		};
+		context.validator.addSchema(schema);
+
+		// Accept 0 gasFee for genesis block
+		const configuration = context.sandbox.app.get<Configuration>(Identifiers.Cryptography.Configuration);
+		configuration.setHeight(1); // simulate non-genesis block
+
+		assert.undefined(context.validator.validate("test", cryptoJson.milestones[0].gas!.minimumGasPrice).error);
+		assert.undefined(context.validator.validate("test", "5000000000").error);
+		assert.undefined(context.validator.validate("test", 10000000000000).error);
+
+		assert.defined(context.validator.validate("test", 1).error);
+		assert.defined(context.validator.validate("test", 0).error);
+		assert.defined(context.validator.validate("test", -1).error);
+		assert.defined(context.validator.validate("test", "5").error);
+		assert.defined(context.validator.validate("test", 10001000000000).error);
+		assert.defined(context.validator.validate("test", Number.MAX_SAFE_INTEGER).error);
+	});
+
+	it("keyword transactionGasLimit should be ok", (context) => {
+		const schema = {
+			$id: "test",
+			transactionGasLimit: {},
+		};
+		context.validator.addSchema(schema);
+
+		assert.undefined(context.validator.validate("test", cryptoJson.milestones[0].gas!.minimumGasLimit).error);
+		assert.undefined(context.validator.validate("test", cryptoJson.milestones[0].gas!.maximumGasLimit).error);
+
+		assert.defined(context.validator.validate("test", 1).error);
+		assert.defined(context.validator.validate("test", 0).error);
+		assert.defined(context.validator.validate("test", -1).error);
+		assert.defined(context.validator.validate("test", Number.MAX_SAFE_INTEGER).error);
+		assert.defined(context.validator.validate("test", "asdf").error);
+	});
+
+	it("keyword bytecode should be ok", (context) => {
+		const schema = {
+			$id: "test",
+			bytecode: {},
+		};
+		context.validator.addSchema(schema);
+
+		assert.undefined(context.validator.validate("test", "").error);
+		assert.undefined(context.validator.validate("test", "0x00").error);
+		assert.undefined(context.validator.validate("test", "0x").error);
+		assert.undefined(context.validator.validate("test", "00").error);
+
+		const maxBytecodeLength = cryptoJson.milestones[0].gas!.maximumGasLimit / 16;
+		const maxPayload = "0x" + "a".repeat(maxBytecodeLength);
+		assert.undefined(context.validator.validate("test", maxPayload).error);
+
+		assert.defined(context.validator.validate("test", maxPayload + "aa").error);
+
+		assert.defined(context.validator.validate("test", 1).error);
+		assert.defined(context.validator.validate("test", 0).error);
+		assert.defined(context.validator.validate("test", -1).error);
+		assert.defined(context.validator.validate("test", Number.MAX_SAFE_INTEGER).error);
+		assert.defined(context.validator.validate("test", "asdf").error);
+	});
+
+	it("keyword bytecode should remove 0x prefix", (context) => {
+		const schema = {
+			$id: "test",
+			type: "object",
+			properties: {
+				payload: { bytecode: {} },
+			},
+		};
+
+		context.validator.addSchema(schema);
+
+		const withPrefix = {
+			payload: "0xdead",
+		};
+
+		assert.undefined(context.validator.validate("test", withPrefix).error);
+		assert.equal(withPrefix.payload, "dead");
+
+		const withoutPrefix = {
+			payload: "dead",
+		};
+
+		assert.undefined(context.validator.validate("test", withoutPrefix).error);
+		assert.equal(withoutPrefix.payload, "dead");
 	});
 });

@@ -20,6 +20,8 @@ export interface Configuration {
 
 	getHeight(): number;
 
+	getGenesisHeight(): number;
+
 	isNewMilestone(height?: number): boolean;
 
 	getMilestone(height?: number): Milestone;
@@ -33,5 +35,5 @@ export interface Configuration {
 
 	getMilestones(): any;
 
-	getMaxActiveValidators(): number;
+	getRoundValidators(): number;
 }

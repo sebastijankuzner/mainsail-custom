@@ -1,10 +1,10 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 import semver from "semver";
 
 import { PluginConfiguration, ServiceProvider, ServiceProviderRepository } from "../providers/index.js";
 import { ValidationManager } from "../services/validation/index.js";
-import { assert } from "../utils/assert.js";
 
 // @TODO review the implementation
 
@@ -24,7 +24,7 @@ export class RegisterServiceProviders implements Contracts.Kernel.Bootstrapper {
 		for (const [name, serviceProvider] of serviceProviders.all()) {
 			const serviceProviderName: string | undefined = serviceProvider.name();
 
-			assert.defined<string>(serviceProviderName);
+			assert.string(serviceProviderName);
 
 			try {
 				// Does the configuration conform to the given rules?
@@ -35,7 +35,7 @@ export class RegisterServiceProviders implements Contracts.Kernel.Bootstrapper {
 					await serviceProviders.register(name);
 				}
 			} catch (error) {
-				console.error(error.stack);
+				this.logger.error(`${name}: ${error.stack}`);
 
 				// Determine if the plugin is required to decide how to handle errors.
 				const isRequired: boolean = await serviceProvider.required();
@@ -55,18 +55,14 @@ export class RegisterServiceProviders implements Contracts.Kernel.Bootstrapper {
 		if (Object.keys(configSchema).length > 0) {
 			const config: PluginConfiguration = serviceProvider.config();
 
-			const validator: Contracts.Kernel.Validator | undefined = this.app
-				.get<ValidationManager>(Identifiers.Services.Validation.Manager)
-				.driver();
-
-			assert.defined<Contracts.Kernel.Validator>(validator);
+			const validator = this.app.get<ValidationManager>(Identifiers.Services.Validation.Manager).driver();
 
 			validator.validate(config.all(), configSchema);
 
 			if (validator.fails()) {
 				const serviceProviderName: string | undefined = serviceProvider.name();
 
-				assert.defined<string>(serviceProviderName);
+				assert.string(serviceProviderName);
 
 				throw new Exceptions.InvalidPluginConfiguration(serviceProviderName, validator.errors());
 			}
@@ -87,7 +83,7 @@ export class RegisterServiceProviders implements Contracts.Kernel.Bootstrapper {
 
 			const serviceProviderName: string | undefined = serviceProvider.name();
 
-			assert.defined<string>(serviceProviderName);
+			assert.string(serviceProviderName);
 
 			if (!serviceProviders.has(name)) {
 				// The dependency is necessary for this package to function. We'll output an error and terminate the process.
@@ -110,7 +106,7 @@ export class RegisterServiceProviders implements Contracts.Kernel.Bootstrapper {
 			if (constraint) {
 				const version: string | undefined = serviceProviders.get(name).version();
 
-				assert.defined<string>(version);
+				assert.string(version);
 
 				if (!semver.satisfies(version, constraint)) {
 					const error = new Exceptions.DependencyVersionOutOfRange(name, constraint, version);

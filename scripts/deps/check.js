@@ -1,6 +1,6 @@
-const depcheck = require("depcheck");
-const { resolve, join } = require("path");
-const { readdirSync, lstatSync } = require("fs");
+import depcheck from "depcheck";
+import { resolve, join } from "path";
+import { readdirSync, lstatSync } from "fs";
 
 // Dependency categorization:
 // USAGE in code -> Type:
@@ -32,7 +32,11 @@ const EXCEPTIONS = {
 		devDependencies: [],
 	},
 	"@mainsail/configuration-generator": {
-		dependencies: ["@mainsail/crypto-key-pair-ecdsa", "@mainsail/crypto-signature-schnorr-secp256k1"],
+		dependencies: [
+			"@mainsail/crypto-key-pair-ecdsa",
+			"@mainsail/crypto-signature-schnorr-secp256k1",
+			"@mainsail/snapshot-legacy-exporter",
+		],
 		devDependencies: [],
 	},
 	"@mainsail/core": {
@@ -40,9 +44,11 @@ const EXCEPTIONS = {
 			"@mainsail/api-common",
 			"@mainsail/api-database",
 			"@mainsail/api-development",
+			"@mainsail/api-evm",
 			"@mainsail/api-http",
 			"@mainsail/api-sync",
 			"@mainsail/api-transaction-pool",
+			"@mainsail/blockchain-utils",
 			"@mainsail/bootstrap",
 			"@mainsail/consensus-storage",
 			"@mainsail/consensus",
@@ -64,6 +70,7 @@ const EXCEPTIONS = {
 			"@mainsail/crypto-messages",
 			"@mainsail/crypto-signature-schnorr-secp256k1",
 			"@mainsail/crypto-signature-schnorr",
+			"@mainsail/crypto-transaction-evm-call",
 			"@mainsail/crypto-transaction-multi-payment",
 			"@mainsail/crypto-transaction-multi-signature-registration",
 			"@mainsail/crypto-transaction-transfer",
@@ -77,6 +84,12 @@ const EXCEPTIONS = {
 			"@mainsail/crypto-wif",
 			"@mainsail/crypto-worker",
 			"@mainsail/database",
+			"@mainsail/evm-api-worker",
+			"@mainsail/evm-consensus",
+			"@mainsail/evm-consensus",
+			"@mainsail/evm-contracts",
+			"@mainsail/evm-service",
+			"@mainsail/evm-state",
 			"@mainsail/fees-static",
 			"@mainsail/fees",
 			"@mainsail/logger-pino",
@@ -217,7 +230,7 @@ class Import {
 }
 
 const main = async () => {
-	const source = resolve(__dirname, "../../packages");
+	const source = resolve(process.cwd(), "packages");
 
 	const pkgs = readdirSync(source)
 		.filter((name) => lstatSync(`${source}/${name}`).isDirectory())
@@ -226,7 +239,7 @@ const main = async () => {
 	let pass = true;
 
 	for (const pkg of pkgs) {
-		const packageJson = require(join(source, pkg, "package.json"));
+		const packageJson = (await import(join(source, pkg, "package.json"), { with: { type: "json" } })).default;
 
 		await depcheck(
 			join(source, pkg),
@@ -236,13 +249,13 @@ const main = async () => {
 			},
 			(result) => {
 				const imports = Object.keys(result.using).map((name) => new Import(name, result.using[name]));
-				const package = new Package(packageJson, imports);
+				const pkg = new Package(packageJson, imports);
 
-				if (!package.pass()) {
+				if (!pkg.pass()) {
 					pass = false;
-					console.log("Package: ", package.name);
+					console.log("Package: ", pkg.name);
 
-					const { missing, unused, devMissing, devUnused } = package;
+					const { missing, unused, devMissing, devUnused } = pkg;
 
 					console.log({
 						missing,

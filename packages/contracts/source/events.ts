@@ -43,6 +43,7 @@ export enum PeerEvent {
 	Disconnected = "peer.disconnected",
 	Disconnecting = "peer.disconnecting",
 	Removed = "peer.removed",
+	Updated = "peer.updated",
 }
 
 export enum ConsensusEvent {
@@ -54,6 +55,10 @@ export enum ConsensusEvent {
 	PrevotedNull = "consensus.prevoted.null",
 	PrecommitedAny = "consensus.precommited.any",
 	PrecommitedProposal = "consensus.precommited.proposal",
+}
+
+export enum DeployerEvent {
+	ContractCreated = "deployer.contractCreated",
 }
 
 export enum ApiNodeEvent {
@@ -73,6 +78,10 @@ export enum TransactionEvent {
 	Expired = "transaction.expired",
 	RejectedByPool = "transaction.pool.rejected",
 	RemovedFromPool = "transaction.pool.removed",
+}
+
+export enum EvmEvent {
+	TransactionReceipt = "evm.transaction.receipt",
 }
 
 export enum ScheduleEvent {

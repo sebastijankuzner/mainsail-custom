@@ -2,15 +2,14 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers, Utils } from "@mainsail/contracts";
 import { TransactionFactory } from "@mainsail/crypto-transaction";
-import { Utils as AppUtils } from "@mainsail/kernel";
-import { ByteBuffer } from "@mainsail/utils";
+import { ByteBuffer, sleep } from "@mainsail/utils";
 
-import { IDFactory } from "./id.factory.js";
+import { HashFactory } from "./hash.factory.js";
 
 @injectable()
 export class Deserializer implements Contracts.Crypto.BlockDeserializer {
-	@inject(Identifiers.Cryptography.Block.IDFactory)
-	private readonly idFactory!: IDFactory;
+	@inject(Identifiers.Cryptography.Block.HashFactory)
+	private readonly hashFactory!: HashFactory;
 
 	@inject(Identifiers.Cryptography.Transaction.Factory)
 	private readonly transactionFactory!: TransactionFactory;
@@ -18,15 +17,15 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 	@inject(Identifiers.Cryptography.Serializer)
 	private readonly serializer!: Contracts.Serializer.Serializer;
 
-	@inject(Identifiers.Cryptography.Block.Serializer)
-	private readonly blockSerializer!: Contracts.Crypto.BlockSerializer;
+	@inject(Identifiers.Cryptography.Block.HeaderSize)
+	private readonly headerSize!: () => number;
 
 	public async deserializeHeader(serialized: Buffer): Promise<Contracts.Crypto.BlockHeader> {
 		const buffer: ByteBuffer = ByteBuffer.fromBuffer(serialized);
 
 		const header: Utils.Mutable<Contracts.Crypto.BlockData> = await this.#deserializeBufferHeader(buffer);
 
-		header.id = await this.idFactory.make(header);
+		header.hash = await this.hashFactory.make(header);
 
 		return header;
 	}
@@ -42,7 +41,7 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 			transactions = await this.#deserializeTransactions(block, buffer);
 		}
 
-		block.id = await this.idFactory.make(block);
+		block.hash = await this.hashFactory.make(block);
 
 		return { data: block, transactions };
 	}
@@ -51,7 +50,7 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 		const block = {} as Contracts.Crypto.BlockHeader;
 
 		await this.serializer.deserialize<Contracts.Crypto.BlockData>(buffer, block, {
-			length: this.blockSerializer.headerSize(),
+			length: this.headerSize(),
 			schema: {
 				version: {
 					type: "uint8",
@@ -59,35 +58,42 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 				timestamp: {
 					type: "uint48",
 				},
-				height: {
+				number: {
 					type: "uint32",
 				},
 				round: {
 					type: "uint32",
 				},
-				previousBlock: {
+				parentHash: {
 					type: "hash",
 				},
-				numberOfTransactions: {
+				stateRoot: {
+					type: "hash",
+				},
+				logsBloom: {
+					type: "hash",
+					size: 256,
+				},
+				transactionsCount: {
 					type: "uint16",
 				},
-				totalAmount: {
-					type: "bigint",
-				},
-				totalFee: {
-					type: "bigint",
-				},
-				reward: {
-					type: "bigint",
-				},
-				payloadLength: {
+				gasUsed: {
 					type: "uint32",
 				},
-				payloadHash: {
+				fee: {
+					type: "uint256",
+				},
+				reward: {
+					type: "uint256",
+				},
+				payloadSize: {
+					type: "uint32",
+				},
+				transactionsRoot: {
 					type: "hash",
 				},
-				generatorPublicKey: {
-					type: "publicKey",
+				proposer: {
+					type: "address",
 				},
 			},
 		});
@@ -100,7 +106,7 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 		buf: ByteBuffer,
 	): Promise<Contracts.Crypto.Transaction[]> {
 		await this.serializer.deserialize<Contracts.Crypto.BlockData>(buf, block, {
-			length: block.payloadLength,
+			length: block.payloadSize,
 			schema: {
 				transactions: {
 					type: "transactions",
@@ -118,7 +124,7 @@ export class Deserializer implements Contracts.Crypto.BlockDeserializer {
 
 		for (let index = 0; index < block.transactions.length; index++) {
 			if (index % 20 === 0) {
-				await AppUtils.sleep(0);
+				await sleep(0);
 			}
 
 			const transaction = await this.transactionFactory.fromBytes(block.transactions[index] as any);

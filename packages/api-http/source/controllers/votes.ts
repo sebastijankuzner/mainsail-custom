@@ -6,7 +6,7 @@ import {
 	Search,
 } from "@mainsail/api-database";
 import { inject, injectable } from "@mainsail/container";
-import { Contracts } from "@mainsail/contracts";
+import { FunctionSigs } from "@mainsail/evm-contracts";
 
 import { TransactionResource } from "../resources/index.js";
 import { Controller } from "./controller.js";
@@ -19,8 +19,7 @@ export class VotesController extends Controller {
 	public async index(request: Hapi.Request) {
 		const criteria: Search.Criteria.TransactionCriteria = {
 			...request.query,
-			type: Contracts.Crypto.TransactionType.Vote,
-			typeGroup: Contracts.Crypto.TransactionTypeGroup.Core,
+			data: FunctionSigs.ConsensusV1.Vote,
 		};
 
 		const pagination = this.getListingPage(request);
@@ -28,7 +27,7 @@ export class VotesController extends Controller {
 		const options = this.getListingOptions();
 
 		const walletRepository = this.walletRepositoryFactory();
-		const transactions = await this.transactionRepositoryFactory().findManyByCritera(
+		const transactions = await this.transactionRepositoryFactory().findManyByCriteria(
 			walletRepository,
 			criteria,
 			sorting,
@@ -37,9 +36,8 @@ export class VotesController extends Controller {
 		);
 
 		return this.toPagination(
-			await this.enrichTransactionResult(transactions),
+			await this.enrichTransactionResult(transactions, { fullReceipt: request.query.fullReceipt }),
 			TransactionResource,
-			request.query.transform,
 		);
 	}
 
@@ -47,9 +45,8 @@ export class VotesController extends Controller {
 		const transaction = await this.transactionRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.where("id = :id", { id: request.params.id })
-			.andWhere("type = :type", { type: Contracts.Crypto.TransactionType.Vote })
-			.andWhere("type_group = :typeGroup", { typeGroup: Contracts.Crypto.TransactionTypeGroup.Core })
+			.where("hash = :hash", { hash: request.params.hash })
+			.andWhere("SUBSTRING(data FROM 1 FOR 4) = :data", { data: `\\x${FunctionSigs.ConsensusV1.Vote.slice(2)}` })
 			.getOne();
 
 		if (!transaction) {
@@ -57,9 +54,8 @@ export class VotesController extends Controller {
 		}
 
 		return this.respondWithResource(
-			await this.enrichTransaction(transaction),
+			await this.enrichTransaction(transaction, undefined, undefined, request.query.fullReceipt),
 			TransactionResource,
-			request.query.transform,
 		);
 	}
 }

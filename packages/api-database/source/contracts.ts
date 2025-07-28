@@ -1,19 +1,23 @@
-import { type DataSource, EntityManager } from "typeorm";
+import { type DataSource, EntityManager, ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 
 import {
 	ApiNode,
 	Block,
 	Configuration,
+	Contract,
+	LegacyColdWallet,
 	Peer,
 	Plugin,
+	Receipt,
 	State,
 	Transaction,
 	TransactionType,
 	ValidatorRound,
 	Wallet,
 } from "./models/index.js";
-import type { ExtendedRepository } from "./repositories/repository-extension.js";
-import type { Criteria, Options, Pagination, ResultsPage, Sorting } from "./search/index.js";
+import { QueryHelper } from "./search/query-helper.js";
+import { Expression } from "./search/types/expressions.js";
+import type { Criteria, Options, Pagination, ResultsPage, Sorting } from "./search/types/index.js";
 
 export type RepositoryDataSource = DataSource | EntityManager;
 
@@ -33,8 +37,11 @@ export type BlockRepositoryExtension = {
 
 export type BlockRepository = ExtendedRepository<Block> & BlockRepositoryExtension;
 
-export type ConfigurationRepositoryExtension = {};
+export type ConfigurationRepositoryExtension = Record<string, any>;
 export type ConfigurationRepository = ExtendedRepository<Configuration> & ConfigurationRepositoryExtension;
+
+export type ContractRepositoryExtension = Record<string, any>;
+export type ContractRepository = ExtendedRepository<Contract> & ContractRepositoryExtension;
 
 export type ApiNodeRepositoryExtension = {
 	findManyByCriteria(
@@ -48,7 +55,7 @@ export type ApiNodeRepositoryExtension = {
 export type ApiNodeRepository = ExtendedRepository<ApiNode> & ApiNodeRepositoryExtension;
 
 export type PeerRepositoryExtension = {
-	getMedianPeerHeight(): Promise<number>;
+	getMedianPeerBlockNumber(): Promise<number>;
 
 	findManyByCriteria(
 		peerCriteria: Criteria.OrPeerCriteria,
@@ -60,12 +67,10 @@ export type PeerRepositoryExtension = {
 
 export type PeerRepository = ExtendedRepository<Peer> & PeerRepositoryExtension;
 
-export type TransactionTypeRepositoryExtension = {};
+export type TransactionTypeRepositoryExtension = Record<string, any>;
 export type TransactionTypeRepository = ExtendedRepository<TransactionType> & TransactionTypeRepositoryExtension;
 
 export type FeeStatistics = {
-	type: number;
-	typeGroup: number;
 	avg: string;
 	min: string;
 	max: string;
@@ -73,7 +78,7 @@ export type FeeStatistics = {
 };
 
 export type TransactionRepositoryExtension = {
-	findManyByCritera(
+	findManyByCriteria(
 		walletRepository: WalletRepository,
 		transactionCriteria: Criteria.OrTransactionCriteria,
 		sorting: Sorting,
@@ -81,27 +86,38 @@ export type TransactionRepositoryExtension = {
 		options?: Options,
 	): Promise<ResultsPage<Transaction>>;
 
-	getFeeStatistics(genesisTimestamp: number, days?: number, minFee?: number): Promise<FeeStatistics[]>;
+	getFeeStatistics(genesisTimestamp: number, days?: number, minFee?: number): Promise<FeeStatistics | undefined>;
 };
 export type TransactionRepository = ExtendedRepository<Transaction> & TransactionRepositoryExtension;
 
-export type ValidatorRoundRepositoryExtension = {};
+export type LegacyColdWalletRepositoryExtension = Record<string, any>;
+export type LegacyColdWalletRepository = ExtendedRepository<LegacyColdWallet> & LegacyColdWalletRepositoryExtension;
+export type ValidatorRoundRepositoryExtension = Record<string, any>;
 export type ValidatorRoundRepository = ExtendedRepository<ValidatorRound> & ValidatorRoundRepositoryExtension;
-export type PluginRepositoryExtension = {};
+export type PluginRepositoryExtension = Record<string, any>;
 export type PluginRepository = ExtendedRepository<Plugin> & PluginRepositoryExtension;
-export type StateRepositoryExtension = {};
+export type ReceiptRepositoryExtension = {
+	findManyByCriteria(
+		criteria: Criteria.OrReceiptCriteria,
+		sorting: Sorting,
+		pagination: Pagination,
+		options?: Options,
+	): Promise<ResultsPage<Receipt>>;
+};
+export type ReceiptRepository = ExtendedRepository<Receipt> & ReceiptRepositoryExtension;
+export type StateRepositoryExtension = Record<string, any>;
 export type StateRepository = ExtendedRepository<State> & StateRepositoryExtension;
 
 export type WalletRepositoryExtension = {
-	findManyByCritera(
+	findManyByCriteria(
 		walletCriteria: Criteria.OrWalletCriteria,
 		sorting: Sorting,
 		pagination: Pagination,
 		options?: Options,
 	): Promise<ResultsPage<Wallet>>;
 
-	findManyDelegatesByCritera(
-		delegateCriteria: Criteria.OrDelegateCriteria,
+	findManyValidatorsByCritera(
+		validatorCriteria: Criteria.OrValidatorCriteria,
 		sorting: Sorting,
 		pagination: Pagination,
 		options?: Options,
@@ -112,13 +128,16 @@ export type WalletRepository = ExtendedRepository<Wallet> & WalletRepositoryExte
 export type ApiNodeRepositoryFactory = (customDataSource?: RepositoryDataSource) => ApiNodeRepository;
 export type BlockRepositoryFactory = (customDataSource?: RepositoryDataSource) => BlockRepository;
 export type ConfigurationRepositoryFactory = (customDataSource?: RepositoryDataSource) => ConfigurationRepository;
+export type ContractRepositoryFactory = (customDataSource?: RepositoryDataSource) => ContractRepository;
 export type PeerRepositoryFactory = (customDataSource?: RepositoryDataSource) => PeerRepository;
+export type ReceiptRepositoryFactory = (customDataSource?: RepositoryDataSource) => ReceiptRepository;
 export type TransactionRepositoryFactory = (customDataSource?: RepositoryDataSource) => TransactionRepository;
 export type TransactionTypeRepositoryFactory = (customDataSource?: RepositoryDataSource) => TransactionTypeRepository;
 export type ValidatorRoundRepositoryFactory = (customDataSource?: RepositoryDataSource) => ValidatorRoundRepository;
 export type PluginRepositoryFactory = (customDataSource?: RepositoryDataSource) => PluginRepository;
 export type StateRepositoryFactory = (customDataSource?: RepositoryDataSource) => StateRepository;
 export type WalletRepositoryFactory = (customDataSource?: RepositoryDataSource) => WalletRepository;
+export type LegacyColdWalletRepositoryFactory = (customDataSource?: RepositoryDataSource) => LegacyColdWalletRepository;
 
 export { Brackets, Entity, Repository } from "typeorm";
 export { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConnectionOptions.js";
@@ -126,3 +145,25 @@ export { PostgresConnectionOptions } from "typeorm/driver/postgres/PostgresConne
 export interface Migrations {
 	run(): Promise<void>;
 }
+
+export interface RepositoryExtension<TEntity extends ObjectLiteral> {
+	queryHelper: QueryHelper<TEntity>;
+
+	addWhere(queryBuilder: SelectQueryBuilder<TEntity>, expression: Expression<TEntity>): void;
+
+	addOrderBy(queryBuilder: SelectQueryBuilder<TEntity>, sorting: Sorting): void;
+
+	addSkipOffset(queryBuilder: SelectQueryBuilder<TEntity>, pagination: Pagination): void;
+
+	findManyByExpression(expression: Expression<TEntity>, sorting?: Sorting): Promise<TEntity[]>;
+
+	listByExpression(
+		expression: Expression<TEntity>,
+		sorting: Sorting,
+		pagination: Pagination,
+		options?: Options,
+	): Promise<ResultsPage<TEntity>>;
+}
+
+export type ExtendedRepository<TEntity extends ObjectLiteral> = RepositoryExtension<TEntity> & Repository<TEntity>;
+export type ThisRepositoryExtension<TEntity extends ObjectLiteral> = ThisType<ExtendedRepository<TEntity>>;

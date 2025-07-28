@@ -1,17 +1,36 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { numberToHex } from "@mainsail/utils";
+import { formatEcdsaSignature } from "@mainsail/utils";
 
 @injectable()
-export class Signer {
+export class Signer implements Contracts.Crypto.TransactionSigner {
 	@inject(Identifiers.Cryptography.Signature.Instance)
 	@tagged("type", "wallet")
 	private readonly signatureFactory!: Contracts.Crypto.Signature;
 
 	@inject(Identifiers.Cryptography.Transaction.Utils)
-	private readonly utils!: Contracts.Crypto.TransactionUtils;
+	private readonly utils!: Contracts.Crypto.TransactionUtilities;
 
 	public async sign(
+		transaction: Contracts.Crypto.TransactionData,
+		keys: Contracts.Crypto.KeyPair,
+		options?: Contracts.Crypto.SerializeOptions,
+	): Promise<Contracts.Crypto.EcdsaSignature> {
+		if (!options || options.excludeSignature === undefined) {
+			options = { excludeSignature: true, ...options };
+		}
+
+		const hash: Buffer = await this.utils.toHash(transaction, options);
+		const signature = await this.signatureFactory.signRecoverable(hash, Buffer.from(keys.privateKey, "hex"));
+
+		transaction.v = signature.v;
+		transaction.r = signature.r;
+		transaction.s = signature.s;
+
+		return signature;
+	}
+
+	public async legacySecondSign(
 		transaction: Contracts.Crypto.TransactionData,
 		keys: Contracts.Crypto.KeyPair,
 		options?: Contracts.Crypto.SerializeOptions,
@@ -21,35 +40,12 @@ export class Signer {
 		}
 
 		const hash: Buffer = await this.utils.toHash(transaction, options);
-		const signature: string = await this.signatureFactory.sign(hash, Buffer.from(keys.privateKey, "hex"));
+		const { r, s, v } = await this.signatureFactory.signRecoverable(hash, Buffer.from(keys.privateKey, "hex"));
 
-		if (!transaction.signature && !options.excludeMultiSignature) {
-			transaction.signature = signature;
-		}
+		const legacySecondSignature = formatEcdsaSignature(r, s, v);
 
-		return signature;
-	}
+		transaction.legacySecondSignature = legacySecondSignature;
 
-	public async multiSign(
-		transaction: Contracts.Crypto.TransactionData,
-		keys: Contracts.Crypto.KeyPair,
-		index = -1,
-	): Promise<string> {
-		if (!transaction.signatures) {
-			transaction.signatures = [];
-		}
-
-		index = index === -1 ? transaction.signatures.length : index;
-
-		const hash: Buffer = await this.utils.toHash(transaction, {
-			excludeMultiSignature: true,
-			excludeSignature: true,
-		});
-
-		const signature: string = await this.signatureFactory.sign(hash, Buffer.from(keys.privateKey, "hex"));
-		const indexedSignature = `${numberToHex(index)}${signature}`;
-		transaction.signatures.push(indexedSignature);
-
-		return indexedSignature;
+		return legacySecondSignature;
 	}
 }

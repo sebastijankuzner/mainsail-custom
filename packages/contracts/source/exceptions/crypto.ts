@@ -1,5 +1,4 @@
 import { Wallet } from "../contracts/state/wallets.js";
-import { InternalTransactionType } from "../contracts/transactions.js";
 import { Exception } from "./base.js";
 
 export class Bip38CompressionError extends Exception {
@@ -128,12 +127,6 @@ export class MinimumPaymentCountSubceededError extends Exception {
 	}
 }
 
-export class VendorFieldLengthExceededError extends Exception {
-	public constructor(limit: number) {
-		super(`Length of vendor field exceeded the allowed maximum ${limit}.`);
-	}
-}
-
 export class MissingTransactionSignatureError extends Exception {
 	public constructor() {
 		super(`Expected the transaction to be signed.`);
@@ -156,13 +149,25 @@ export class PreviousBlockIdFormatError extends Exception {
 	}
 }
 
+export class EvmCallIncompleteAssetError extends Exception {
+	public constructor() {
+		super(`EvmCall asset is incomplete`);
+	}
+}
+
+export class EvmCallMissingRecipientError extends Exception {
+	public constructor() {
+		super(`EvmCall is missing recipient`);
+	}
+}
+
 export class InvalidMilestoneConfigurationError extends Exception {
 	public constructor(message: string) {
 		super(message);
 	}
 }
 
-export class InvalidNumberOfActiveValidatorsError extends Exception {
+export class InvalidNumberOfRoundValidatorsError extends Exception {
 	public constructor(message: string) {
 		super(message);
 	}
@@ -181,35 +186,34 @@ export class DuplicateParticipantInMultiSignatureError extends Exception {
 }
 
 export class InvalidTransactionTypeError extends Exception {
-	public constructor(type: InternalTransactionType) {
+	public constructor(type: number) {
 		super(`Transaction type ${type.toString()} does not exist.`);
 	}
 }
 
 export class DeactivatedTransactionHandlerError extends Exception {
-	public constructor(type: InternalTransactionType) {
+	public constructor(type: number) {
 		super(`Transaction type ${type.toString()} is deactivated.`);
 	}
 }
 
 export class UnsatisfiedDependencyError extends Exception {
-	public constructor(type: InternalTransactionType) {
+	public constructor(type: number) {
 		super(`Transaction type ${type.toString()} is missing required dependencies`);
 	}
 }
 
 export class AlreadyRegisteredError extends Exception {
-	public constructor(type: InternalTransactionType) {
+	public constructor(type: number) {
 		super(`Transaction type ${type.toString()} is already registered`);
 	}
 }
 
 export class UnexpectedNonceError extends Exception {
-	public constructor(txNonce: any, sender: Wallet, reversal: boolean) {
-		const action: string = reversal ? "revert" : "apply";
+	public constructor(txNonce: any, sender: Wallet) {
 		super(
-			`Cannot ${action} a transaction with nonce ${txNonce.toFixed()}: the ` +
-				`sender ${sender.getPublicKey()} has nonce ${sender.getNonce().toFixed()}.`,
+			`Cannot apply a transaction with nonce ${txNonce.toFixed()}: the ` +
+				`sender ${sender.getAddress()} has nonce ${sender.getNonce().toFixed()}${sender.getNonce().isZero() ? " (this might be due to a wrong signature)" : ""}.`,
 		);
 	}
 }
@@ -229,6 +233,24 @@ export class InsufficientBalanceError extends Exception {
 export class SenderWalletMismatchError extends Exception {
 	public constructor() {
 		super(`Failed to apply transaction, because the public key does not match the wallet.`);
+	}
+}
+
+export class UnexpectedLegacySecondSignatureError extends Exception {
+	public constructor() {
+		super(`Failed to apply transaction, because wallet does not allow legacy second signatures.`);
+	}
+}
+
+export class InvalidLegacySecondSignatureError extends Exception {
+	public constructor() {
+		super(`Failed to apply transaction, because the legacy second signature could not be verified.`);
+	}
+}
+
+export class MissingLegacySecondSignatureError extends Exception {
+	public constructor() {
+		super(`Failed to apply transaction, because the legacy second signature is missing.`);
 	}
 }
 

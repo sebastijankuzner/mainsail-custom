@@ -13,7 +13,7 @@ import { Providers, Services } from "@mainsail/kernel";
 import { BigNumber } from "@mainsail/utils";
 import { SinonSpy, spy } from "sinon";
 
-import cryptoJson from "../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../core/bin/config/devnet/core/crypto.json";
 import { AddressFactory } from "../../crypto-address-base58/source/address.factory";
 import { Configuration } from "../../crypto-config/distribution/index";
 import { HashFactory } from "../../crypto-hash-bcrypto/source/hash.factory";
@@ -21,7 +21,7 @@ import { KeyPairFactory } from "../../crypto-key-pair-schnorr/source/pair";
 import { PublicKeyFactory } from "../../crypto-key-pair-schnorr/source/public";
 import { PublicKeySerializer } from "../../crypto-key-pair-schnorr/source/serializer";
 import { Signature } from "../../crypto-signature-schnorr/source/signature";
-import { Selector } from "../../proposer/source/selector";
+import { ProposalCalculator } from "../../crypto.utils/source/proposal-calculator";
 import { Factories, Sandbox } from "../../test-framework/source";
 import { Validator } from "../../validation/source/validator";
 import { AttributeRepository } from "../source/attributes";
@@ -59,7 +59,7 @@ export interface Setup {
 export const setUpDefaults = {
 	getBlockRewards: [
 		{
-			generatorPublicKey: "03287bfebba4c7881a0509717e71b34b63f31e40021c321f89ae04f84be6d6ac37",
+			generatorAddress: "03287bfebba4c7881a0509717e71b34b63f31e40021c321f89ae04f84be6d6ac37",
 			rewards: BigNumber.make(10_000),
 		},
 	],
@@ -174,7 +174,7 @@ export const setUp = async (setUpOptions = setUpDefaults, skipBoot = false): Pro
 		saveBlocks: () => {},
 	});
 	sandbox.app.bind(Identifiers.ValidatorSet.Service).toConstantValue({
-		getActiveValidators: () => {},
+		getRoundValidators: () => {},
 		initialize: () => {},
 	});
 	sandbox.app.bind(Identifiers.Database.Service).toConstantValue({});
@@ -279,15 +279,7 @@ export const setUp = async (setUpOptions = setUpDefaults, skipBoot = false): Pro
 
 	sandbox.app.bind(Identifiers.Cryptography.Block.Factory).toConstantValue(blockFactory);
 
-	@injectable()
-	class MockValidatorMutator implements Contracts.State.ValidatorMutator {
-		public apply = spy();
-		public revert = spy();
-	}
-
-	sandbox.app.bind(Identifiers.State.ValidatorMutator).to(MockValidatorMutator).inSingletonScope();
-
-	sandbox.app.bind(Identifiers.Proposer.Selector).to(Selector);
+	sandbox.app.bind(Identifiers.BlockchainUtils.ProposerCalculator).to(ProposalCalculator);
 
 	if (!skipBoot) {
 		try {

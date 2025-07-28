@@ -1,12 +1,11 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { dotenv, get, set } from "@mainsail/utils";
+import { assert, dotenv, get, set } from "@mainsail/utils";
 import { existsSync, readFileSync } from "fs";
 import Joi from "joi";
 import { extname } from "path";
 
 import { KeyValuePair } from "../../../types/index.js";
-import { assert } from "../../../utils/assert.js";
 import { ConfigRepository } from "../repository.js";
 
 @injectable()
@@ -58,6 +57,9 @@ export class LocalConfigLoader implements Contracts.Kernel.ConfigLoader {
 				"crypto-worker": Joi.array()
 					.items(Joi.object().keys({ options: Joi.object().optional(), package: Joi.string() }))
 					.optional(),
+				"evm-api": Joi.array()
+					.items(Joi.object().keys({ options: Joi.object().optional(), package: Joi.string() }))
+					.optional(),
 				flags: Joi.array().items(Joi.string()).optional(),
 				main: Joi.array()
 					.items(Joi.object().keys({ options: Joi.object().optional(), package: Joi.string() }))
@@ -81,6 +83,7 @@ export class LocalConfigLoader implements Contracts.Kernel.ConfigLoader {
 		this.configRepository.set("app.main", get(this.validationService.valid(), "main", []));
 		this.configRepository.set("app.transaction-pool", get(this.validationService.valid(), "transaction-pool", []));
 		this.configRepository.set("app.crypto-worker", get(this.validationService.valid(), "crypto-worker", []));
+		this.configRepository.set("app.evm-api", get(this.validationService.valid(), "evm-api", []));
 	}
 
 	#loadPeers(): void {
@@ -144,12 +147,12 @@ export class LocalConfigLoader implements Contracts.Kernel.ConfigLoader {
 		for (const file of files) {
 			const fullPath: string = this.app.configPath(file);
 			if (existsSync(fullPath)) {
-				const config: KeyValuePair =
+				const config: KeyValuePair | undefined =
 					extname(fullPath) === ".json"
 						? JSON.parse(readFileSync(fullPath).toString())
 						: readFileSync(fullPath);
 
-				assert.defined<KeyValuePair>(config);
+				assert.defined(config);
 
 				return config;
 			}

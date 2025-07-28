@@ -4,14 +4,14 @@ import { request } from "../../test/helpers/request";
 
 import transactions from "../../test/fixtures/transactions.json";
 import votes from "../../test/fixtures/votes.json";
+import votesResponse from "../../test/fixtures/votes.response.json";
 
 describe<{
 	sandbox: Sandbox;
 }>("Votes", ({ it, afterAll, assert, afterEach, beforeAll, beforeEach, nock }) => {
 	let apiContext: ApiContext;
 
-	// TODO:
-	let options = { transform: false };
+	let options = {};
 
 	beforeAll(async (context) => {
 		nock.enableNetConnect();
@@ -32,20 +32,20 @@ describe<{
 	});
 
 	it("/votes", async () => {
-		await apiContext.transactionRepository.save(transactions);
+		await apiContext.transactionRepository.save(transactions.filter((tx) => !tx.data.startsWith("0x6dd7d8ea")));
 		await apiContext.transactionRepository.save(votes);
 
 		const { statusCode, data } = await request("/votes", options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, votes);
+		assert.equal(data.data, votesResponse);
 	});
 
-	it("/votes/{id}", async () => {
+	it("/votes/{hash}", async () => {
 		await apiContext.transactionRepository.save(votes);
 
-		const id = votes[votes.length - 1].id;
-		const { statusCode, data } = await request(`/votes/${id}`, options);
+		const hash = votes[votes.length - 1].hash;
+		const { statusCode, data } = await request(`/votes/${hash}`, options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, votes[votes.length - 1]);
+		assert.equal(data.data, votesResponse[votesResponse.length - 1]);
 	});
 });

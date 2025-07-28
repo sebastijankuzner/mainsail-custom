@@ -1,9 +1,10 @@
-type BigNumberType = bigint | number | string | BigInt | BigNumber;
+type BigNumberType = bigint | number | string | BigNumber;
 
 export class BigNumber {
 	public static readonly ZERO: BigNumber = new BigNumber(0);
 	public static readonly ONE: BigNumber = new BigNumber(1);
-	public static readonly SATOSHI: BigNumber = new BigNumber(1e8);
+	public static readonly WEI: BigNumber = new BigNumber(1e18);
+	public static readonly UINT256_MAX = new BigNumber(2n ** 256n - 1n);
 
 	private readonly value: bigint;
 

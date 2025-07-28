@@ -19,7 +19,7 @@ export interface Response {
 export interface GetBlocksRequest extends Request {
 	payload: {
 		headers: HeaderData;
-		fromHeight: number;
+		fromBlockNumber: number;
 		limit: number;
 	};
 }
@@ -57,7 +57,7 @@ export interface GetProposalRequest extends Request {
 export interface GetApiNodesRequest extends Request {
 	payload: {
 		headers: HeaderData;
-		fromHeight: number;
+		fromBlockNumber: number;
 		limit: number;
 	};
 }
@@ -77,7 +77,7 @@ export interface PostPrecommitRequest extends Request {
 	};
 }
 
-export interface PostPrecommitResponse extends Response {}
+export type PostPrecommitResponse = Response;
 
 export interface PostPrevoteRequest extends Request {
 	payload: {
@@ -86,7 +86,7 @@ export interface PostPrevoteRequest extends Request {
 	};
 }
 
-export interface PostPrevoteResponse extends Response {}
+export type PostPrevoteResponse = Response;
 
 export interface PostProposalRequest extends Request {
 	payload: {
@@ -95,4 +95,4 @@ export interface PostProposalRequest extends Request {
 	};
 }
 
-export interface PostProposalResponse extends Response {}
+export type PostProposalResponse = Response;

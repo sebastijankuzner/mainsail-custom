@@ -1,4 +1,4 @@
-import { Selectors } from "@mainsail/container";
+import { injectable, Selectors } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
@@ -15,33 +15,37 @@ export * from "./public.js";
 export * from "./schemas.js";
 export * from "./serializer.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.app
 			.bind(Identifiers.Cryptography.Identity.PublicKey.Size)
 			.toConstantValue(48)
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("type", "wallet"));
+			.when(Selectors.anyAncestorOrTargetTagged("type", "wallet"));
 
 		this.app
 			.bind(Identifiers.Cryptography.Identity.KeyPair.Factory)
 			.to(KeyPairFactory)
 			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("type", "wallet"));
+			.when(Selectors.anyAncestorOrTargetTagged("type", "wallet"));
+
 		this.app
 			.bind(Identifiers.Cryptography.Identity.PrivateKey.Factory)
 			.to(PrivateKeyFactory)
 			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("type", "wallet"));
+			.when(Selectors.anyAncestorOrTargetTagged("type", "wallet"));
+
 		this.app
 			.bind(Identifiers.Cryptography.Identity.PublicKey.Factory)
 			.to(PublicKeyFactory)
 			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("type", "wallet"));
+			.when(Selectors.anyAncestorOrTargetTagged("type", "wallet"));
+
 		this.app
 			.bind(Identifiers.Cryptography.Identity.PublicKey.Serializer)
 			.to(PublicKeySerializer)
 			.inSingletonScope()
-			.when(Selectors.anyAncestorOrTargetTaggedFirst("type", "wallet"));
+			.when(Selectors.anyAncestorOrTargetTagged("type", "wallet"));
 
 		this.#registerSchemas();
 	}

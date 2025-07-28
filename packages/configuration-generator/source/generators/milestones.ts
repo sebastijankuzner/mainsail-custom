@@ -5,48 +5,41 @@ import { Contracts } from "@mainsail/contracts";
 export class MilestonesGenerator {
 	#data: Contracts.Crypto.MilestonePartial[] = [];
 
-	setInitial(options: Contracts.NetworkGenerator.MilestoneOptions): MilestonesGenerator {
+	setInitial(options: Contracts.NetworkGenerator.InternalOptions): MilestonesGenerator {
 		this.#data = [
 			{
-				activeValidators: 0,
-				address: options.address,
 				block: {
+					maxGasLimit: options.maxBlockGasLimit,
 					maxPayload: options.maxBlockPayload,
-					maxTransactions: options.maxTxPerBlock,
 					version: 1,
 				},
 				epoch: options.epoch.toISOString().slice(0, 11) + "00:00:00.000Z",
-				fees: {
-					staticFees: {
-						multiPayment: 10_000_000,
-						multiSignature: 500_000_000,
-						transfer: 10_000_000,
-						usernameRegistration: 2_500_000_000,
-						usernameResignation: 2_500_000_000,
-						validatorRegistration: 2_500_000_000,
-						validatorResignation: 2_500_000_000,
-						vote: 100_000_000,
-					},
+				evmSpec: Contracts.Evm.SpecId.SHANGHAI,
+				gas: {
+					maximumGasLimit: 5_000_000,
+					maximumGasPrice: 10_000 * 1e9,
+					minimumGasLimit: 21_000,
+					minimumGasPrice: 5 * 1e9,
 				},
-				height: 0,
-				multiPaymentLimit: 256,
+				height: options.initialBlockNumber,
 				reward: "0",
+				roundValidators: 0,
 				satoshi: {
-					decimals: 8,
-					denomination: 1e8,
+					decimals: 18,
+					denomination: 1e18,
 				},
-				timeouts: {
+				timeouts: options.timeouts ?? {
 					blockPrepareTime: options.blockTime / 2,
 					blockTime: options.blockTime,
 					stageTimeout: 2000,
 					stageTimeoutIncrease: 2000,
 					tolerance: 100,
 				},
-				vendorFieldLength: options.vendorFieldLength,
+				validatorRegistrationFee: options.validatorRegistrationFee,
 			},
 			{
-				activeValidators: options.validators,
-				height: 1,
+				height: options.initialBlockNumber + 1,
+				roundValidators: options.validators,
 			},
 		];
 

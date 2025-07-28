@@ -1,4 +1,3 @@
-import { Search } from "@mainsail/api-database";
 import Joi from "joi";
 
 const isSchema = (value: Joi.Schema | SchemaObject): value is Joi.Schema => Joi.isSchema(value);
@@ -26,11 +25,7 @@ export const createRangeCriteriaSchema = (item: Joi.Schema): Joi.Schema =>
 
 // Sorting
 
-export const createSortingSchema = (
-	schemaObject: SchemaObject,
-	wildcardPaths: string[] = [],
-	transform = true,
-): Joi.ObjectSchema => {
+export const createSortingSchema = (schemaObject: SchemaObject, wildcardPaths: string[] = []): Joi.ObjectSchema => {
 	const getObjectPaths = (object: SchemaObject): string[] =>
 		Object.entries(object).flatMap(([key, value]) =>
 			isSchema(value) ? key : getObjectPaths(value).map((p) => `${key}.${p}`),
@@ -42,8 +37,6 @@ export const createSortingSchema = (
 		if (value === "") {
 			return [];
 		}
-
-		const sorting: Search.Sorting = [];
 
 		const sortingCriteria: string[] = Array.isArray(value) ? value : [value];
 
@@ -74,25 +67,13 @@ export const createSortingSchema = (
 						custom: `Unexpected orderBy direction '${direction}' for property '${property}'`,
 					});
 				}
-
-				if (transform) {
-					sorting.push({ direction: direction, property });
-				}
 			}
 		}
 
-		if (!transform) {
-			return value;
-		}
-
-		return sorting;
+		return value;
 	});
 
-	if (transform) {
-		return Joi.object({ orderBy: orderBy.default([]) });
-	} else {
-		return Joi.object({ orderBy });
-	}
+	return Joi.object({ orderBy });
 };
 
 export const pagination = Joi.object({
@@ -100,3 +81,17 @@ export const pagination = Joi.object({
 	offset: Joi.number().integer().min(0),
 	page: Joi.number().integer().positive().default(1),
 });
+
+export const equalCriteria = (value: any) => value;
+export const numericCriteria = (value: any) =>
+	Joi.alternatives().try(
+		value,
+		Joi.object().keys({ from: value }),
+		Joi.object().keys({ to: value }),
+		Joi.object().keys({ from: value, to: value }),
+	);
+export const containsCriteria = (value: any) => value;
+export const orCriteria = (criteria: any) => Joi.alternatives().try(criteria, Joi.array().items(criteria));
+export const orEqualCriteria = (value: any) => orCriteria(equalCriteria(value));
+export const orNumericCriteria = (value: any) => orCriteria(numericCriteria(value));
+export const orContainsCriteria = (value: any) => orCriteria(containsCriteria(value));

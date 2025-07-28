@@ -23,7 +23,7 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 	protected readonly signer!: Contracts.Crypto.TransactionSigner;
 
 	@inject(Identifiers.Cryptography.Transaction.Utils)
-	protected readonly utils!: Contracts.Crypto.TransactionUtils;
+	protected readonly utils!: Contracts.Crypto.TransactionUtilities;
 
 	@inject(Identifiers.Cryptography.Transaction.Verifier)
 	protected readonly verifier!: Contracts.Crypto.TransactionVerifier;
@@ -34,17 +34,6 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 
 	public async build(data: Partial<Contracts.Crypto.TransactionData> = {}): Promise<Contracts.Crypto.Transaction> {
 		return this.factory.fromData({ ...this.data, ...data }, false);
-	}
-
-	public version(version: number): TBuilder {
-		this.data.version = version;
-		return this.instance();
-	}
-
-	public typeGroup(typeGroup: number): TBuilder {
-		this.data.typeGroup = typeGroup;
-
-		return this.instance();
 	}
 
 	public nonce(nonce: string): TBuilder {
@@ -61,42 +50,26 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 		return this.instance();
 	}
 
-	public fee(fee: string): TBuilder {
-		if (fee) {
-			this.data.fee = BigNumber.make(fee);
-		}
+	public gasPrice(gasPrice: number): TBuilder {
+		this.data.gasPrice = gasPrice;
 
 		return this.instance();
 	}
 
-	public amount(amount: string): TBuilder {
-		this.data.amount = BigNumber.make(amount);
+	public value(value: string): TBuilder {
+		this.data.value = BigNumber.make(value);
 
 		return this.instance();
 	}
 
-	public recipientId(recipientId: string): TBuilder {
-		this.data.recipientId = recipientId;
+	public senderAddress(senderAddress: string): TBuilder {
+		this.data.from = senderAddress;
 
 		return this.instance();
 	}
 
-	public senderPublicKey(publicKey: string): TBuilder {
-		this.data.senderPublicKey = publicKey;
-
-		return this.instance();
-	}
-
-	public vendorField(vendorField: string): TBuilder {
-		const limit: number = this.configuration.getMilestone().vendorFieldLength;
-
-		if (vendorField) {
-			if (Buffer.byteLength(vendorField, "utf8") > limit) {
-				throw new Exceptions.VendorFieldLengthExceededError(limit);
-			}
-
-			this.data.vendorField = vendorField;
-		}
+	public recipientAddress(recipientAddress: string): TBuilder {
+		this.data.to = recipientAddress;
 
 		return this.instance();
 	}
@@ -113,16 +86,16 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 		return this.#signWithKeyPair(await this.keyPairFactory.fromWIF(wif));
 	}
 
-	public async multiSign(passphrase: string, index: number): Promise<TBuilder> {
-		return this.#multiSignWithKeyPair(index, await this.keyPairFactory.fromMnemonic(passphrase));
+	public async legacySecondSign(passphrase: string): Promise<TBuilder> {
+		return this.#legacySecondSignWithKeyPair(await this.keyPairFactory.fromMnemonic(passphrase));
 	}
 
-	public async multiSignWithKeyPair(keys: Contracts.Crypto.KeyPair, index: number): Promise<TBuilder> {
-		return this.#multiSignWithKeyPair(index, keys);
+	public async legacySecondSignWithKeyPair(keys: Contracts.Crypto.KeyPair): Promise<TBuilder> {
+		return this.#legacySecondSignWithKeyPair(keys);
 	}
 
-	public async multiSignWithWif(index: number, wif: string): Promise<TBuilder> {
-		return this.#multiSignWithKeyPair(index, await this.keyPairFactory.fromWIF(wif));
+	public async legacySecondsignWithWif(wif: string): Promise<TBuilder> {
+		return this.#legacySecondSignWithKeyPair(await this.keyPairFactory.fromWIF(wif));
 	}
 
 	public async verify(): Promise<boolean> {
@@ -130,47 +103,65 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 	}
 
 	public async getStruct(): Promise<Contracts.Crypto.TransactionData> {
-		if (!this.data.senderPublicKey || (!this.data.signature && !this.data.signatures)) {
+		if (
+			!this.data.from ||
+			!this.data.senderPublicKey ||
+			!this.data.r ||
+			!this.data.s ||
+			this.data.v === undefined
+		) {
 			throw new Exceptions.MissingTransactionSignatureError();
 		}
 
 		const struct: Contracts.Crypto.TransactionData = {
-			fee: this.data.fee,
-			id: await this.utils.getId(await this.build()),
+			from: this.data.from,
+			gasPrice: this.data.gasPrice,
+			hash: await this.utils.getHash(await this.build()),
+			legacySecondSignature: this.data.legacySecondSignature,
 			network: this.data.network,
 			nonce: this.data.nonce,
+			r: this.data.r,
+			s: this.data.s,
 			senderPublicKey: this.data.senderPublicKey,
-			signature: this.data.signature,
-			type: this.data.type,
-			typeGroup: this.data.typeGroup,
-			version: this.data.version,
+			v: this.data.v,
 		} as Contracts.Crypto.TransactionData;
-
-		if (Array.isArray(this.data.signatures)) {
-			struct.signatures = this.data.signatures;
-		}
 
 		return struct;
 	}
 
 	async #signWithKeyPair(keys: Contracts.Crypto.KeyPair): Promise<TBuilder> {
 		this.data.senderPublicKey = keys.publicKey;
+		this.data.from = await this.addressFactory.fromPublicKey(keys.publicKey);
 
 		if (this.signWithSenderAsRecipient) {
-			this.data.recipientId = await this.addressFactory.fromPublicKey(keys.publicKey);
+			this.data.to = this.data.from;
 		}
 
-		this.data.signature = await this.signer.sign(this.#getSigningObject(), keys);
+		const data = this.#getSigningObject();
+		const { error } = await this.verifier.verifySchema(data, false);
+		if (error) {
+			throw new Exceptions.ValidationFailed(error);
+		}
+
+		const signature = await this.signer.sign(data, keys);
+
+		this.data.v = signature.v;
+		this.data.r = signature.r;
+		this.data.s = signature.s;
 
 		return this.instance();
 	}
 
-	async #multiSignWithKeyPair(index: number, keys: Contracts.Crypto.KeyPair): Promise<TBuilder> {
-		if (!this.data.signatures) {
-			this.data.signatures = [];
+	async #legacySecondSignWithKeyPair(keys: Contracts.Crypto.KeyPair): Promise<TBuilder> {
+		const data = this.#getSigningObject();
+		const { error } = await this.verifier.verifySchema(data, false);
+		if (error) {
+			throw new Exceptions.ValidationFailed(error);
 		}
 
-		await this.signer.multiSign(this.#getSigningObject(), keys, index);
+		const signature = await this.signer.legacySecondSign(data, keys);
+
+		this.data.legacySecondSignature = signature;
 
 		return this.instance();
 	}
@@ -191,11 +182,10 @@ export abstract class TransactionBuilder<TBuilder extends TransactionBuilder<TBu
 
 	protected initializeData() {
 		this.data = {
-			fee: BigNumber.ZERO,
+			gasPrice: 0,
 			id: undefined,
-			nonce: BigNumber.ONE,
-			typeGroup: Contracts.Crypto.TransactionTypeGroup.Test,
-			version: 0x01,
+			network: this.configuration.get<number>("network.chainId"),
+			nonce: BigNumber.ZERO,
 		} as unknown as Contracts.Crypto.TransactionData;
 	}
 

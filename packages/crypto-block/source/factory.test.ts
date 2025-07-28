@@ -1,5 +1,5 @@
 import { Contracts, Identifiers, Utils } from "@mainsail/contracts";
-import clone from "lodash.clone";
+import clone from "lodash.clonedeep";
 
 import { describe, Sandbox } from "../../test-framework/source";
 import {
@@ -48,25 +48,27 @@ describe<{
 		assertBlockData(assert, block.data, blockData);
 		assertBlockData(assert, block.header, blockData);
 		assert.equal(block.transactions, []);
-		assert.string(block.serialized);
+		assert.equal(block.serialized, serialized);
 	});
 
 	it("#make - should make a block with transactions", async ({ factory }) => {
-		const block = await factory.make(blockDataWithTransactions, [
-			{ data: blockDataWithTransactions.transactions[0] },
-			{ data: blockDataWithTransactions.transactions[1] },
+		const block = await factory.make(blockDataWithTransactionsOriginal, [
+			// @ts-ignore
+			{ data: blockDataWithTransactionsOriginal.transactions[0] },
+			// @ts-ignore
+			{ data: blockDataWithTransactionsOriginal.transactions[1] },
 		]);
 
-		assertBlockData(assert, block.data, blockDataWithTransactions);
-		assertBlockData(assert, block.header, blockDataWithTransactions);
-		assert.length(block.transactions, blockDataWithTransactions.transactions.length);
-		assert.string(block.serialized);
+		assertBlockData(assert, block.data, blockDataWithTransactionsOriginal);
+		assertBlockData(assert, block.header, blockDataWithTransactionsOriginal);
+		assert.length(block.transactions, blockDataWithTransactionsOriginal.transactions.length);
+		assert.equal(block.serialized, serializedWithTransactions);
 
-		for (let index = 0; index < blockDataWithTransactions.transactions.length; index++) {
+		for (let index = 0; index < blockDataWithTransactionsOriginal.transactions.length; index++) {
 			assertTransactionData(
 				assert,
 				block.transactions[index].data,
-				blockDataWithTransactions.transactions[index],
+				blockDataWithTransactionsOriginal.transactions[index],
 			);
 		}
 	});
@@ -119,17 +121,17 @@ describe<{
 	});
 
 	it("#fromData - should create a block with transactions instance from an object", async (context) => {
-		const block = await context.factory.fromData(blockDataWithTransactions);
+		const block = await context.factory.fromData(blockDataWithTransactionsOriginal);
 
-		assertBlockData(assert, block.data, blockDataWithTransactions);
-		assertBlockData(assert, block.header, blockDataWithTransactions);
+		assertBlockData(assert, block.data, blockDataWithTransactionsOriginal);
+		assertBlockData(assert, block.header, blockDataWithTransactionsOriginal);
 		assert.string(block.serialized);
 
-		for (let index = 0; index < blockDataWithTransactions.transactions.length; index++) {
+		for (let index = 0; index < blockDataWithTransactionsOriginal.transactions.length; index++) {
 			assertTransactionData(
 				assert,
 				block.transactions[index].data,
-				blockDataWithTransactions.transactions[index],
+				blockDataWithTransactionsOriginal.transactions[index],
 			);
 		}
 	});
@@ -137,31 +139,32 @@ describe<{
 	it("#fromData - should throw on invalid input data - block property has an unexpected value", async ({
 		factory,
 	}) => {
-		const b2 = Object.assign({}, blockData, { totalAmount: "abcd" });
+		const b2 = Object.assign({}, blockData, { fee: "abcd" });
 		await assert.rejects(
 			() => factory.fromData(b2),
-			'Invalid data at /totalAmount: must pass "bignumber" keyword validation: undefined',
+			'Invalid data at /fee: must pass "bignumber" keyword validation: undefined',
 		);
 	});
 
 	it("#fromData - should throw on invalid input data - required block property is missing", async ({ factory }) => {
 		const partialBlock = {
 			...blockDataClone,
-			generatorPublicKey: undefined,
+			proposer: undefined,
 		} as unknown as Contracts.Crypto.BlockData;
 
 		await assert.rejects(
 			() => factory.fromData(partialBlock),
-			" Invalid data: must have required property 'generatorPublicKey': undefined",
+			" Invalid data: must have required property 'proposer': undefined",
 		);
 	});
 
 	it("#fromData - should throw on invalid transaction data", async ({ factory }) => {
-		delete blockDataWithTransactionsClone.transactions[0].id;
+		// @ts-ignore
+		delete blockDataWithTransactionsClone.transactions[0].hash;
 
 		await assert.rejects(
 			() => factory.fromData(blockDataWithTransactionsClone),
-			"Invalid data at /transactions/0: must have required property 'id': undefined",
+			"Invalid data at /transactions/0: must have required property 'hash': undefined",
 		);
 	});
 
@@ -169,7 +172,7 @@ describe<{
 		const block = await factory.fromJson(blockDataJson);
 
 		// Recalculated id
-		blockDataClone.id = blockDataJson.id;
+		blockDataClone.hash = blockDataJson.hash;
 
 		assertBlockData(assert, block.data, blockDataClone);
 		assertBlockData(assert, block.header, blockDataClone);
@@ -181,7 +184,7 @@ describe<{
 		const block = await factory.fromJson(blockDataWithTransactionsJson);
 
 		// Recalculated id
-		blockDataWithTransactionsClone.id = blockDataWithTransactionsJson.id;
+		blockDataWithTransactionsClone.hash = blockDataWithTransactionsJson.hash;
 
 		assertBlockData(assert, block.data, blockDataWithTransactionsClone);
 		assertBlockData(assert, block.header, blockDataWithTransactionsClone);

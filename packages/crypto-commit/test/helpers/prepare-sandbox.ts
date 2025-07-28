@@ -1,27 +1,34 @@
 import { Identifiers } from "@mainsail/contracts";
-import { ServiceProvider as CoreCryptoAddressBech32m } from "@mainsail/crypto-address-bech32m";
+import { ServiceProvider as CoreCryptoAddressKeccak256 } from "@mainsail/crypto-address-keccak256";
+import { ServiceProvider as CoreCryptoAddressBase58 } from "@mainsail/crypto-address-base58";
 import { ServiceProvider as CoreCryptoBlock } from "@mainsail/crypto-block";
 import { ServiceProvider as CoreCryptoConfig } from "@mainsail/crypto-config";
 import { ServiceProvider as CoreCryptoConsensus } from "@mainsail/crypto-consensus-bls12-381";
 import { ServiceProvider as CoreCryptoHashBcrypto } from "@mainsail/crypto-hash-bcrypto";
 import { ServiceProvider as CoreCryptoKeyPairSchnorr } from "@mainsail/crypto-key-pair-schnorr";
 import { ServiceProvider as CoreCryptoMessages } from "@mainsail/crypto-messages";
-import { ServiceProvider as CoreCryptoSignatureSchnorr } from "@mainsail/crypto-signature-schnorr";
+import { ServiceProvider as CoreCryptoSignatureEcdsa } from "@mainsail/crypto-signature-ecdsa";
 import { ServiceProvider as CoreCryptoTransaction } from "@mainsail/crypto-transaction";
 import { ServiceProvider as CoreCryptoValidation } from "@mainsail/crypto-validation";
 import { ServiceProvider as CoreCryptoWif } from "@mainsail/crypto-wif";
-import { ServiceProvider as CoreFees } from "@mainsail/fees";
-import { ServiceProvider as CoreFeesStatic } from "@mainsail/fees-static";
 import { ServiceProvider as CoreSerializer } from "@mainsail/serializer";
 import { ServiceProvider as CoreValidation } from "@mainsail/validation";
 
-import crypto from "../../../core/bin/config/testnet/core/crypto.json";
+import crypto from "../../../core/bin/config/devnet/core/crypto.json";
 import { Sandbox } from "../../../test-framework/source";
 import { Deserializer } from "../../source/deserializer";
 import { Serializer } from "../../source/serializer";
 
 export const prepareSandbox = async (context) => {
 	context.sandbox = new Sandbox();
+
+	context.sandbox.app.bind(Identifiers.Cryptography.Commit.ProofSize).toConstantValue(
+		() =>
+			4 + // round
+			context.sandbox.app.getTagged<number>(Identifiers.Cryptography.Signature.Size, "type", "consensus") + // signature
+			1 +
+			8, // validator set bitmap);
+	);
 
 	context.sandbox.app.get<Contracts.Kernel.Repository>(Identifiers.Config.Repository).set("crypto", crypto);
 	context.sandbox.app.bind(Identifiers.Services.EventDispatcher.Service).toConstantValue({ dispatchSync: () => {} });
@@ -32,13 +39,12 @@ export const prepareSandbox = async (context) => {
 	await context.sandbox.app.resolve(CoreCryptoConfig).register();
 	await context.sandbox.app.resolve(CoreCryptoValidation).register();
 	await context.sandbox.app.resolve(CoreCryptoHashBcrypto).register();
-	await context.sandbox.app.resolve(CoreCryptoSignatureSchnorr).register();
+	await context.sandbox.app.resolve(CoreCryptoSignatureEcdsa).register();
 	await context.sandbox.app.resolve(CoreCryptoConsensus).register();
 	await context.sandbox.app.resolve(CoreCryptoKeyPairSchnorr).register();
-	await context.sandbox.app.resolve(CoreCryptoAddressBech32m).register();
+	await context.sandbox.app.resolve(CoreCryptoAddressKeccak256).register();
+	await context.sandbox.app.resolve(CoreCryptoAddressBase58).register();
 	await context.sandbox.app.resolve(CoreCryptoWif).register();
-	await context.sandbox.app.resolve(CoreFees).register();
-	await context.sandbox.app.resolve(CoreFeesStatic).register();
 	await context.sandbox.app.resolve(CoreCryptoTransaction).register();
 	await context.sandbox.app.resolve(CoreCryptoBlock).register();
 	await context.sandbox.app.resolve(CoreCryptoMessages).register();

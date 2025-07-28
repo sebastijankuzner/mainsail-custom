@@ -1,10 +1,10 @@
 import { Consensus } from "@mainsail/consensus/distribution/consensus.js";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Proposal } from "@mainsail/crypto-messages";
-import { Utils } from "@mainsail/kernel";
 import { Sandbox } from "@mainsail/test-framework";
-import { BigNumber } from "@mainsail/utils";
+import { assert, BigNumber } from "@mainsail/utils";
 import { randomBytes } from "crypto";
+import { ethers } from "ethers";
 
 import { Validator } from "./contracts.js";
 
@@ -28,6 +28,17 @@ export const makeCustomProposal = async (
 		.get<Contracts.Validator.ValidatorRepository>(Identifiers.Validator.Repository)
 		.getValidator(validators[0].consensusPublicKey)!;
 
+	const stateService = node.app.get<Contracts.State.Service>(Identifiers.State.Service);
+	const previousBlock = stateService.getStore().getLastBlock();
+
+	const cryptoConfiguration = node.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration);
+	const milestone = cryptoConfiguration.getMilestone();
+
+	const transactionValidatorFactory = node.app.get<Contracts.Transactions.TransactionValidatorFactory>(
+		Identifiers.Transaction.Validator.Factory,
+	);
+	const transactionValidator = transactionValidatorFactory();
+
 	// 2)
 	const round = node.app.get<Consensus>(Identifiers.Consensus.Service).getRound();
 	const emptyBlock = await proposer.prepareBlock(validators[0].publicKey, round, Date.now());
@@ -40,20 +51,44 @@ export const makeCustomProposal = async (
 	// - amount + fee
 	let blockBuffer = Buffer.from(emptyBlock.serialized, "hex");
 
-	const totals: { amount: BigNumber; fee: BigNumber } = {
+	const totals: { amount: BigNumber; fee: BigNumber; gasUsed: number } = {
 		amount: BigNumber.ZERO,
 		fee: BigNumber.ZERO,
+		gasUsed: 0,
 	};
 
 	const payloadBuffers: Buffer[] = [];
 	const transactionBuffers: Buffer[] = [];
 
-	let payloadLength = transactions.length * 4;
-	for (const { data, serialized } of transactions) {
-		Utils.assert.defined<string>(data.id);
+	const commitKey = {
+		height: BigInt(emptyBlock.header.height),
+		round: BigInt(round),
+	};
+
+	let payloadLength = transactions.length * 2;
+	for (const transaction of transactions) {
+		let result = { gasUsed: 0 };
+
+		try {
+			result = await transactionValidator.validate(
+				{
+					commitKey,
+					gasLimit: milestone.block.maxGasLimit,
+					generatorAddress: validators[0].publicKey,
+					timestamp: emptyBlock.header.timestamp,
+				},
+				transaction,
+			);
+		} catch {
+			result = { gasUsed: transaction.gasLimit };
+		}
+
+		const { data, serialized } = transaction;
+		assert.string(data.id);
 
 		totals.amount = totals.amount.plus(data.amount);
 		totals.fee = totals.fee.plus(data.fee);
+		totals.gasUsed += result.gasUsed;
 
 		payloadBuffers.push(Buffer.from(data.id, "hex"));
 
@@ -65,24 +100,37 @@ export const makeCustomProposal = async (
 		payloadLength += serialized.length;
 	}
 
+	const stateRoot = await transactionValidator.getEvm().stateRoot(commitKey, previousBlock.header.stateRoot);
+
 	const hashFactory = node.app.get<Contracts.Crypto.HashFactory>(Identifiers.Cryptography.Hash.Factory);
 	const hashSize = node.app.get<number>(Identifiers.Cryptography.Hash.Size.SHA256);
 
-	// numberOfTransactions
 	let byteOffset = 1 + 6 + 4 + 4 + hashSize; // see headerSize
+
+	// stateRoot
+	Buffer.from(stateRoot, "hex").copy(blockBuffer, byteOffset);
+	byteOffset += hashSize;
+
+	// numberOfTransactions
 	blockBuffer.writeUint16LE(transactions.length, byteOffset);
 	byteOffset += 2;
 
+	// totalGasUsed
+	blockBuffer.writeUInt32LE(totals.gasUsed, byteOffset);
+	byteOffset += 4;
+
 	// totalAmount
-	blockBuffer.writeBigUInt64LE(totals.amount.toBigInt(), byteOffset);
-	byteOffset += 8;
+	const amountBuffer = toUint256Buffer(totals.amount);
+	amountBuffer.copy(blockBuffer, byteOffset);
+	byteOffset += 32;
 
 	// totalFee
-	blockBuffer.writeBigUInt64LE(totals.fee.toBigInt(), byteOffset);
-	byteOffset += 8;
+	const feeBuffer = toUint256Buffer(totals.fee);
+	feeBuffer.copy(blockBuffer, byteOffset);
+	byteOffset += 32;
 
 	// skip reward
-	byteOffset += 8;
+	byteOffset += 32;
 
 	// payloadLength
 	blockBuffer.writeUint32LE(payloadLength, byteOffset);
@@ -95,12 +143,12 @@ export const makeCustomProposal = async (
 	blockBuffer.fill(payloadHash, byteOffset, byteOffset + hashSize);
 	byteOffset += hashSize;
 
-	const generatorPublicKeySize = node.app.getTagged<number>(
+	const generatorAddressSize = node.app.getTagged<number>(
 		Identifiers.Cryptography.Identity.PublicKey.Size,
 		"type",
 		"wallet",
 	);
-	byteOffset += generatorPublicKeySize; // skip generatorPublicKey
+	byteOffset += generatorAddressSize; // skip generatorAddress
 
 	if (byteOffset !== blockBuffer.byteLength) {
 		throw new Error("block not empty");
@@ -117,10 +165,7 @@ export const makeCustomProposal = async (
 	// merge with transactions
 	blockBuffer = Buffer.concat([blockBuffer, ...transactionBuffers]);
 
-	if (
-		blockBuffer.byteLength !==
-		headerSize + payloadLength - /*TODO: workaround for uint32 mismatch */ 2 * transactions.length
-	) {
+	if (blockBuffer.byteLength !== headerSize + payloadLength) {
 		throw new Error("invalid block buffer size");
 	}
 
@@ -211,4 +256,15 @@ export const makeTransactionBuilderContext = (node: Sandbox, nodes: Sandbox[], v
 			return randomKeyPair;
 		},
 	};
+};
+
+const toUint256Buffer = (amount: BigNumber): Buffer => {
+	const bytes = ethers.toBeArray(BigNumber.make(amount).toBigInt());
+	if (bytes.byteLength > 32) {
+		throw new Error("value must fit into uint256");
+	}
+
+	const padded = ethers.zeroPadValue(bytes, 32);
+
+	return Buffer.from(ethers.getBytes(padded));
 };

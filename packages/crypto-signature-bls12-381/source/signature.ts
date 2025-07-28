@@ -1,5 +1,5 @@
 import { injectable } from "@mainsail/container";
-import { Contracts } from "@mainsail/contracts";
+import { Contracts, Exceptions } from "@mainsail/contracts";
 import { getBls } from "@mainsail/crypto-key-pair-bls12-381";
 import { ByteBuffer } from "@mainsail/utils";
 
@@ -32,5 +32,21 @@ export class Signature implements Contracts.Crypto.Signature {
 		return Buffer.from(
 			bls.aggregateSignatures(signatures.map((s) => bls.Signature.fromBytes(s).toBytes())),
 		).toString("hex");
+	}
+
+	public async signRecoverable(message: Buffer, privateKey: Buffer): Promise<Contracts.Crypto.EcdsaSignature> {
+		throw new Exceptions.NotImplemented(this.constructor.name, "signRecoverable");
+	}
+
+	public async verifyRecoverable(
+		signature: Contracts.Crypto.EcdsaSignature,
+		message: Buffer,
+		publicKey: Buffer,
+	): Promise<boolean> {
+		throw new Exceptions.NotImplemented(this.constructor.name, "verifyRecoverable");
+	}
+
+	public recoverPublicKey(message: Buffer, signature: Contracts.Crypto.EcdsaSignature): string {
+		throw new Exceptions.NotImplemented(this.constructor.name, "recoverPublicKey");
 	}
 }

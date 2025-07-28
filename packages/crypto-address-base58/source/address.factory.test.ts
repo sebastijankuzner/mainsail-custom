@@ -10,21 +10,15 @@ import { describe } from "../../test-framework/source";
 import { AddressFactory } from "./address.factory";
 
 const mnemonic = "this is a top secret passphrase";
+const wif = "SGq4xLgZKCGxs7bjmwnBrWcT4C1ADFEermj846KC97FSv1WFD1dA";
 
 describe<{ app: Application }>("AddressFactory", ({ assert, beforeEach, it }) => {
 	beforeEach(async (context) => {
 		context.app = new Application(new Container());
 		context.app.bind(Identifiers.Cryptography.Configuration).to(Configuration).inSingletonScope();
-		context.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration).setConfig({
-			milestones: [
-				// @ts-ignore
-				{
-					address: {
-						base58: 30,
-					},
-				},
-			],
-		});
+		context.app
+			.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
+			.set("network.pubKeyHash", 30);
 
 		await context.app.resolve(CoreValidation).register();
 	});
@@ -67,6 +61,12 @@ describe<{ app: Application }>("AddressFactory", ({ assert, beforeEach, it }) =>
 				.fromPublicKey("034151a3ec46b5670a682b0a63394f863587d1bc97483b1b6c70eb58e7f0aed192"),
 			"D61mfSggzbvQgTUe6JhYKH2doHaqJ3Dyib",
 		);
+	});
+
+	it("should derive an address from wif", async (context) => {
+		await context.app.resolve<Schnorr>(Schnorr).register();
+
+		assert.is(await context.app.resolve(AddressFactory).fromWIF(wif), "D5jdQXLMgL2TumzdJ8B1zVAGtYWc43VQSx");
 	});
 
 	it("should validate addresses", async (context) => {

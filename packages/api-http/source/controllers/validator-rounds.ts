@@ -10,12 +10,12 @@ import { Controller } from "./controller.js";
 @injectable()
 export class ValidatorRoundsController extends Controller {
 	@inject(ApiDatabaseIdentifiers.ValidatorRoundRepositoryFactory)
-	private readonly validatorRoundepositoryFactory!: ApiDatabaseContracts.ValidatorRoundRepositoryFactory;
+	private readonly validatorRoundRepositoryFactory!: ApiDatabaseContracts.ValidatorRoundRepositoryFactory;
 
 	public async index(request: Hapi.Request) {
 		const pagination = this.getQueryPagination(request.query);
 
-		const [validatorRounds, totalCount] = await this.validatorRoundepositoryFactory()
+		const [validatorRounds, totalCount] = await this.validatorRoundRepositoryFactory()
 			.createQueryBuilder()
 			.select()
 			.addOrderBy("round", "DESC")
@@ -30,12 +30,11 @@ export class ValidatorRoundsController extends Controller {
 				totalCount,
 			},
 			ValidatorRoundResource,
-			false,
 		);
 	}
 
 	public async show(request: Hapi.Request) {
-		const validatorRounds = await this.validatorRoundepositoryFactory()
+		const validatorRounds = await this.validatorRoundRepositoryFactory()
 			.createQueryBuilder()
 			.select()
 			.where("round = :round", { round: request.params.round })
@@ -45,11 +44,11 @@ export class ValidatorRoundsController extends Controller {
 			return Boom.notFound("Round not found");
 		}
 
-		return this.respondWithResource(validatorRounds, ValidatorRoundResource, false);
+		return this.respondWithResource(validatorRounds, ValidatorRoundResource);
 	}
 
-	public async delegates(request: Hapi.Request) {
-		const round = await this.validatorRoundepositoryFactory()
+	public async validators(request: Hapi.Request) {
+		const round = await this.validatorRoundRepositoryFactory()
 			.createQueryBuilder()
 			.select()
 			.where("round = :round", { round: request.params.id })
@@ -59,26 +58,14 @@ export class ValidatorRoundsController extends Controller {
 			return Boom.notFound("Round not found");
 		}
 
-		const validatorWallets = await this.walletRepositoryFactory()
-			.createQueryBuilder()
-			.select()
-			.where("public_key IN (:...publicKeys)", { publicKeys: round.validators })
-			.orderBy("public_key", "ASC")
-			.getMany();
+		const response: { address: string; votes: string }[] = [];
+		for (let index = 0; index < round.validators.length; index++) {
+			response.push({
+				address: round.validators[index],
+				votes: round.votes[index] ?? "0",
+			});
+		}
 
-		const indexLookup = round.validators.reduce((accumulator, key, index) => {
-			accumulator[key] = index;
-			return accumulator;
-		}, {});
-
-		validatorWallets.sort((a, b) => indexLookup[a.publicKey!] - indexLookup[b.publicKey!]);
-
-		return this.respondWithCollection(
-			validatorWallets.map((wallet) => ({
-				publicKey: wallet.publicKey,
-				votes: round.votes[indexLookup[wallet.publicKey!]] ?? "0",
-			})),
-			RoundResource,
-		);
+		return this.respondWithCollection(response, RoundResource);
 	}
 }

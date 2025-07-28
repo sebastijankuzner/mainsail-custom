@@ -20,11 +20,11 @@ describe<{
 		context.sandbox.app
 			.bind(Identifiers.ServiceProvider.Configuration)
 			.toConstantValue(new Providers.PluginConfiguration().from("", defaults))
-			.whenTargetTagged("plugin", "p2p");
+			.whenTagged("plugin", "p2p");
 		context.sandbox.app
 			.bind(Identifiers.ServiceProvider.Configuration)
 			.toConstantValue(new Providers.PluginConfiguration().from("", transactionPoolDefaults))
-			.whenTargetTagged("plugin", "transaction-pool-service");
+			.whenTagged("plugin", "transaction-pool-service");
 		context.sandbox.app.bind(Identifiers.Services.Log.Service).toConstantValue(logger);
 		context.sandbox.app.bind(Identifiers.P2P.Peer.Processor).toConstantValue(peerProcessor);
 		context.sandbox.app.bind(Identifiers.Database.Service).toConstantValue({});
@@ -32,7 +32,7 @@ describe<{
 		context.sandbox.app.bind(Identifiers.Cryptography.Configuration).toConstantValue({});
 		context.sandbox.app.bind(Identifiers.Cryptography.Block.Deserializer).toConstantValue({});
 		context.sandbox.app.bind(Identifiers.TransactionPool.Processor).toConstantValue({});
-		context.sandbox.app.bind(Identifiers.State.Service).toConstantValue({});
+		context.sandbox.app.bind(Identifiers.State.Store).toConstantValue({});
 
 		context.acceptPeerPlugin = context.sandbox.app.resolve<AcceptPeerPlugin>(AcceptPeerPlugin);
 	});

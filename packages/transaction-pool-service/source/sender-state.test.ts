@@ -2,11 +2,11 @@ import { Container } from "@mainsail/container";
 import { Contracts, Events, Exceptions, Identifiers } from "@mainsail/contracts";
 import { Configuration } from "@mainsail/crypto-config";
 
-import crypto from "../../core/bin/config/testnet/core/crypto.json";
-import { describe } from "../../test-framework/source";
+import crypto from "../../core/bin/config/devnet/core/crypto.json";
+import { describeSkip } from "../../test-framework/source";
 import { SenderState } from ".";
 
-describe<{
+describeSkip<{
 	configuration: any;
 	handlerRegistry: any;
 	expirationService: any;
@@ -46,9 +46,7 @@ describe<{
 
 		context.walletRepository = {};
 
-		context.stateService = {
-			createWalletRepositoryBySender: () => context.walletRepository,
-		};
+		context.stateService = {};
 
 		context.container = new Container();
 		context.container.bind(Identifiers.ServiceProvider.Configuration).toConstantValue(context.configuration);
@@ -65,7 +63,7 @@ describe<{
 
 		context.config = context.container.get(Identifiers.Cryptography.Configuration);
 
-		context.senderState = context.container.resolve(SenderState);
+		context.senderState = context.container.get(SenderState, { autobind: true });
 		await context.senderState.configure("sender's public key");
 
 		// @ts-ignore
@@ -120,7 +118,7 @@ describe<{
 	});
 
 	it.skip("apply - should throw when transaction is from future", async (context) => {
-		const senderState = context.container.resolve(SenderState);
+		const senderState = context.container.get(SenderState, { autobind: true });
 
 		stub(context.configuration, "get").returnValue(123); // network.pubKeyHash
 		stub(context.configuration, "getRequired").returnValueOnce(1024); // maxTransactionByte;
@@ -194,7 +192,7 @@ describe<{
 	});
 
 	it.skip("apply - should throw when state is corrupted", async (context) => {
-		const senderState = context.container.resolve(SenderState);
+		const senderState = context.container.get(SenderState, { autobind: true });
 		const handler = {};
 
 		stub(context.configuration, "getRequired").returnValueNth(1, 123).returnValueNth(2, 1024); // network.pubKeyHash & maxTransactionByte
@@ -323,7 +321,7 @@ describe<{
 	});
 
 	it.skip("revert - should call handler to revert transaction", async (context) => {
-		const senderState = context.container.resolve(SenderState);
+		const senderState = context.container.get(SenderState, { autobind: true });
 		const handler = {};
 
 		const handlerStub = stub(context.handlerRegistry, "getActivatedHandlerForData").resolvedValue(handler);

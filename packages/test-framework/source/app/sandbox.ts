@@ -1,5 +1,5 @@
 import { ConfigurationGenerator, makeApplication } from "@mainsail/configuration-generator";
-import { Container, interfaces } from "@mainsail/container";
+import { Container } from "@mainsail/container";
 import { Constants, Contracts, Identifiers } from "@mainsail/contracts";
 import { Application, Providers } from "@mainsail/kernel";
 import { readJSONSync, removeSync } from "fs-extra/esm";
@@ -10,25 +10,27 @@ import { SandboxCallback } from "./contracts.js";
 
 export class Sandbox {
 	public readonly app: Application;
+	readonly #container: Container;
 
-	readonly #container: interfaces.Container;
-
+	#configApp?: Application;
 	#path = dirSync().name;
 
 	#configurationOptions: Contracts.NetworkGenerator.Options = {
 		blockTime: 8000,
+		chainId: 99_999,
 		configPath: resolve(`${this.#path}/unitnet`),
 		distribute: true,
 		explorer: "http://uexplorer.ark.io",
 		maxBlockPayload: 2_097_152,
 		maxTxPerBlock: 150,
 		network: "unitnet",
-		premine: "15300000000000000",
+		premine: "53000000000000000",
 		pubKeyHash: 23,
 		rewardAmount: "200_000_000",
 		rewardHeight: 75_600,
 		symbol: "UѦ",
 		token: "UARK",
+		validatorRegistrationFee: "0",
 		validators: 53,
 		wif: 186,
 	};
@@ -55,6 +57,8 @@ export class Sandbox {
 		const configApp = await makeApplication(this.getConfigurationPath());
 		await configApp.resolve(ConfigurationGenerator).generate(this.#configurationOptions);
 
+		this.#configApp = configApp;
+
 		if (this.app.isBound(Identifiers.Cryptography.Configuration)) {
 			this.app
 				.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)
@@ -62,7 +66,7 @@ export class Sandbox {
 		}
 
 		// Configure Application
-		process.env[Constants.EnvironmentVariables.CORE_PATH_CONFIG] = this.getConfigurationPath();
+		process.env[Constants.EnvironmentVariables.MAINSAIL_PATH_CONFIG] = this.getConfigurationPath();
 
 		if (callback) {
 			callback({
@@ -76,8 +80,26 @@ export class Sandbox {
 
 	public async dispose(callback?: SandboxCallback): Promise<void> {
 		try {
-			await this.app.terminate();
-		} catch {
+			// Terminate calls process.exit(), which we cannot do during unit tests.
+			// However, due to exceptions it never gets that far currently so it happens to "work".
+			// await this.app.terminate();
+			//
+			// Furthermore, most unit tests fail to shutdown the sandbox correctly as the registered services are not tracked in
+			// the service registry meaning `#disposeServiceProviders` does not actually dispose them.
+			//
+			// Therefore, for now we simply manually dispose the services that are known to require explicit closing such as the EVM.
+			// In the future, we should automate this by tracking.
+			for (const tag of ["evm", "validator", "transaction-pool", "rpc"]) {
+				if (this.#configApp?.isBoundTagged(Identifiers.Evm.Instance, "instance", tag)) {
+					{
+						await this.#configApp
+							?.getTagged<Contracts.Evm.Instance>(Identifiers.Evm.Instance, "instance", tag)
+							.dispose();
+					}
+				}
+			}
+		} catch (error) {
+			console.log("ex", error);
 			// We encountered a unexpected error.
 		}
 

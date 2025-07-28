@@ -1,6 +1,6 @@
 import { Commands, Contracts, Utils } from "@mainsail/cli";
-import { injectable } from "@mainsail/container";
-import { Utils as AppUtils } from "@mainsail/kernel";
+import { injectable, postConstruct } from "@mainsail/container";
+import { assert } from "@mainsail/utils";
 import { readJSONSync } from "fs-extra/esm";
 import Joi from "joi";
 import path from "path";
@@ -12,6 +12,7 @@ export class Command extends Commands.Command {
 
 	public description = "Run the API process in foreground. Exiting the process will stop it from running.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition
 			.setFlag("env", "", Joi.string().default("production"))
@@ -20,7 +21,7 @@ export class Command extends Commands.Command {
 
 	public async execute(): Promise<void> {
 		const { name } = readJSONSync(path.resolve(new URL(".", import.meta.url).pathname, "../../package.json"));
-		AppUtils.assert.defined<string>(name);
+		assert.string(name);
 
 		const flags: Contracts.AnyObject = {
 			...this.getFlags(),

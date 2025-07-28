@@ -9,12 +9,12 @@ import {
 } from "../contracts.js";
 import { Transaction } from "../models/index.js";
 import { TransactionFilter } from "../search/filters/transaction-filter.js";
-import { Criteria, Options, Pagination, ResultsPage, Sorting } from "../search/index.js";
+import { Criteria, Options, Pagination, ResultsPage, Sorting } from "../search/types/index.js";
 import { makeExtendedRepository } from "./repository-extension.js";
 
 export const makeTransactionRepository = (dataSource: RepositoryDataSource): TransactionRepository =>
 	makeExtendedRepository<Transaction, TransactionRepositoryExtension>(Transaction, dataSource, {
-		async findManyByCritera(
+		async findManyByCriteria(
 			walletRepository: WalletRepository,
 			transactionCriteria: Criteria.OrTransactionCriteria,
 			sorting: Sorting,
@@ -25,43 +25,41 @@ export const makeTransactionRepository = (dataSource: RepositoryDataSource): Tra
 			return this.listByExpression(transactionExpression, sorting, pagination, options);
 		},
 
-		async getFeeStatistics(genesisTimestamp: number, days?: number, minFee = 0): Promise<FeeStatistics[]> {
+		async getFeeStatistics(
+			genesisTimestamp: number,
+			days?: number,
+			minGasPrice = 0,
+		): Promise<FeeStatistics | undefined> {
 			if (days) {
 				const age = Math.max(dayjs().subtract(days, "day").valueOf() - 1, genesisTimestamp);
 
 				return this.createQueryBuilder()
-					.select(['type_group AS "typeGroup"', "type"])
-					.addSelect("COALESCE(AVG(fee), 0)::int8", "avg")
-					.addSelect("COALESCE(MIN(fee), 0)::int8", "min")
-					.addSelect("COALESCE(MAX(fee), 0)::int8", "max")
-					.addSelect("COALESCE(SUM(fee), 0)::int8", "sum")
-					.where("timestamp > :age AND fee >= :minFee", { age, minFee })
-					.groupBy("type_group")
-					.addGroupBy("type")
-					.orderBy("type_group")
-					.addOrderBy("type")
-					.getRawMany();
+					.select("TRUNC(COALESCE(AVG(gas_price), 0)::numeric)", "avg")
+					.addSelect("TRUNC(COALESCE(MIN(gas_price), 0)::numeric)", "min")
+					.addSelect("TRUNC(COALESCE(MAX(gas_price), 0)::numeric)", "max")
+					.addSelect("TRUNC(COALESCE(SUM(gas_price), 0)::numeric)", "sum")
+					.where("timestamp > :age AND gas_price >= :minGasPrice", { age, minGasPrice })
+					.getRawOne();
 			}
 
 			// no days parameter, take the stats from each type for its last 20 txs
-			return this.manager.query<FeeStatistics[]>(
+			const result = await this.manager.query<FeeStatistics>(
 				`
-				select t_outer.type_group as "typeGroup", t_outer.type as "type", 
-					COALESCE(AVG(fee), 0)::int8 AS "avg",
-					COALESCE(MIN(fee), 0)::int8 AS "min",
-					COALESCE(MIN(fee), 0)::int8 AS "max",
-					COALESCE(MAX(fee), 0)::int8 AS "sum"
-				from transactions t_outer
-				join lateral (
-					select 1 from transactions t_inner
-					where t_inner.timestamp > $1 and t_inner.type_group = t_outer.type_group and t_inner.type = t_outer.type and fee >= $2
-					order by t_inner.timestamp desc
+				select
+					TRUNC(COALESCE(AVG(txs.gas_price), 0)::numeric) AS "avg",
+					TRUNC(COALESCE(MIN(txs.gas_price), 0)::numeric) AS "min",
+					TRUNC(COALESCE(MAX(txs.gas_price), 0)::numeric) AS "max",
+					TRUNC(COALESCE(SUM(txs.gas_price), 0)::numeric) AS "sum"
+				from (
+					select gas_price from transactions
+					where timestamp > $1 and gas_price >= $2
+					order by timestamp desc
 					limit $3
-				) t_limit on true
-				group by t_outer.type_group, t_outer.type
-				order by t_outer.type_group, t_outer.type;
+				) txs;
 			`,
-				[genesisTimestamp, minFee, 20],
+				[genesisTimestamp, minGasPrice, 20],
 			);
+
+			return result?.[0] ?? undefined;
 		},
 	});

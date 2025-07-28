@@ -1,7 +1,7 @@
 import { BlockRepository, BlockRepositoryExtension, RepositoryDataSource } from "../contracts.js";
 import { Block } from "../models/block.js";
 import { BlockFilter } from "../search/filters/index.js";
-import { Criteria, Options, Pagination, ResultsPage, Sorting } from "../search/index.js";
+import { Criteria, Options, Pagination, ResultsPage, Sorting } from "../search/types/index.js";
 import { makeExtendedRepository } from "./repository-extension.js";
 
 export const makeBlockRepository = (dataSource: RepositoryDataSource): BlockRepository =>
@@ -27,19 +27,19 @@ export const makeBlockRepository = (dataSource: RepositoryDataSource): BlockRepo
 		},
 
 		async getLatest(): Promise<Block | null> {
-			return this.createQueryBuilder().select().orderBy("height", "DESC").limit(1).getOne();
+			return this.createQueryBuilder().select().orderBy("number", "DESC").limit(1).getOne();
 		},
 
 		async getLatestHeight(): Promise<number | undefined> {
 			const result = await this.createQueryBuilder()
-				.select("height")
-				.orderBy("height", "DESC")
+				.select("number")
+				.orderBy("number", "DESC")
 				.limit(1)
-				.getRawOne<{ height: string }>();
+				.getRawOne<{ number: string }>();
 			if (!result) {
 				return undefined;
 			}
 
-			return Number(result.height);
+			return Number(result.number);
 		},
 	});

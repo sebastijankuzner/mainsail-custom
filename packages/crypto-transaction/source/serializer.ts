@@ -1,165 +1,44 @@
-import { inject, injectable, tagged } from "@mainsail/container";
-import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { ByteBuffer } from "@mainsail/utils";
+import { injectable } from "@mainsail/container";
+import { Contracts } from "@mainsail/contracts";
+import { encodeRlp, toBeArray } from "ethers";
 
 @injectable()
 export class Serializer implements Contracts.Crypto.TransactionSerializer {
-	@inject(Identifiers.Cryptography.Configuration)
-	private readonly configuration!: Contracts.Crypto.Configuration;
-
-	@inject(Identifiers.Cryptography.Transaction.TypeFactory)
-	private readonly transactionTypeFactory!: Contracts.Transactions.TransactionTypeFactory;
-
-	@inject(Identifiers.Cryptography.Identity.PublicKey.Size)
-	@tagged("type", "wallet")
-	private readonly publicKeySize!: number;
-
-	@inject(Identifiers.Cryptography.Signature.Size)
-	@tagged("type", "wallet")
-	private readonly signatureSize!: number;
-
-	public async getBytes(
-		transaction: Contracts.Crypto.TransactionData,
-		options: Contracts.Crypto.SerializeOptions = {},
-	): Promise<Buffer> {
-		const version: number = transaction.version || 1;
-
-		if (version) {
-			return this.serialize(this.transactionTypeFactory.create(transaction), options);
-		}
-
-		throw new Exceptions.TransactionVersionError(version);
-	}
-
-	public commonSize(transaction: Contracts.Crypto.Transaction): number {
-		return (
-			1 + // magic byte
-			1 + // version
-			1 + // network
-			4 + // typeGroup
-			2 + // type
-			8 + // nonce
-			(transaction.data.senderPublicKey ? this.publicKeySize : 0) + // sender public key
-			8 // fee
-		);
-	}
-
-	public vendorFieldSize(transaction: Contracts.Crypto.Transaction): number {
-		let vendorFieldSize = 1; // length byte
-
-		if (transaction.hasVendorField() && transaction.data.vendorField) {
-			const vf: Buffer = Buffer.from(transaction.data.vendorField, "utf8");
-			vendorFieldSize += vf.length;
-		}
-
-		return vendorFieldSize;
-	}
-
-	public signaturesSize(
-		transaction: Contracts.Crypto.Transaction,
-		options: Contracts.Crypto.SerializeOptions = {},
-	): number {
-		let size = 0;
-
-		const { data } = transaction;
-		if (data.signature && !options.excludeSignature) {
-			size += this.signatureSize;
-		}
-
-		if (data.signatures && !options.excludeMultiSignature) {
-			size += data.signatures.length * (1 + this.signatureSize) /* 1 additional byte for index */;
-		}
-
-		return size;
-	}
-
-	public totalSize(
-		transaction: Contracts.Crypto.Transaction,
-		options: Contracts.Crypto.SerializeOptions = {},
-	): number {
-		return (
-			this.commonSize(transaction) +
-			this.vendorFieldSize(transaction) +
-			transaction.assetSize() +
-			this.signaturesSize(transaction, options)
-		);
-	}
-
 	public async serialize(
 		transaction: Contracts.Crypto.Transaction,
 		options: Contracts.Crypto.SerializeOptions = {},
 	): Promise<Buffer> {
-		const bufferSize = this.totalSize(transaction, options);
-		const buff: ByteBuffer = ByteBuffer.fromSize(bufferSize);
+		const fields = [
+			toBeArray(transaction.data.nonce.toBigInt()), // nonce - 0
+			toBeArray(transaction.data.gasPrice), // maxFeePerGas - 1
+			toBeArray(transaction.data.gasLimit), // gasLimit - 2
+			transaction.data.to || "0x", // to - 3
+			toBeArray(transaction.data.value.toBigInt()), // value - 4
+			transaction.data.data.startsWith("0x") ? transaction.data.data : `0x${transaction.data.data}`, // data - 5
+			toBeArray(transaction.data.network), // v - 6
+			toBeArray(0), // r - 7
+			toBeArray(0), // s - 8
+		];
 
-		this.#serializeCommon(transaction.data, buff);
-		this.#serializeVendorField(transaction, buff);
+		if (transaction.data.v !== undefined && transaction.data.r && transaction.data.s && !options.excludeSignature) {
+			// Legacy with EIP-155
+			const normalizedV = transaction.data.v;
+			const v = transaction.data.network * 2 + 35 + normalizedV;
 
-		const serialized: ByteBuffer | undefined = await transaction.serialize(options);
+			// 6, 7, 8
+			fields[6] = toBeArray(v);
+			fields[7] = `0x${transaction.data.r}`;
+			fields[8] = `0x${transaction.data.s}`;
 
-		if (!serialized) {
-			throw new Error();
+			if (transaction.data.legacySecondSignature) {
+				// 9
+				fields.push(`0x${transaction.data.legacySecondSignature}`);
+			}
 		}
 
-		buff.writeBytes(serialized.getResult());
+		const rlpEncoded = encodeRlp(fields);
+		transaction.serialized = Buffer.from(`${rlpEncoded.slice(2)}`, "hex");
 
-		this.#serializeSignatures(transaction.data, buff, options);
-
-		const bufferBuffer = buff.getResult();
-		if (bufferBuffer.length !== bufferSize) {
-			throw new Exceptions.InvalidTransactionBytesError(
-				`expected size ${bufferSize} actual size: ${bufferBuffer.length}`,
-			);
-		}
-
-		transaction.serialized = bufferBuffer;
-
-		return bufferBuffer;
-	}
-
-	#serializeCommon(transaction: Contracts.Crypto.TransactionData, buff: ByteBuffer): void {
-		transaction.version = transaction.version || 0x01;
-		if (transaction.typeGroup === undefined) {
-			transaction.typeGroup = Contracts.Crypto.TransactionTypeGroup.Core;
-		}
-
-		buff.writeUint8(0xff);
-		buff.writeUint8(transaction.version);
-		buff.writeUint8(transaction.network || this.configuration.get("network.pubKeyHash"));
-		buff.writeUint32(transaction.typeGroup);
-		buff.writeUint16(transaction.type);
-		buff.writeUint64(transaction.nonce.toBigInt());
-
-		if (transaction.senderPublicKey) {
-			buff.writeBytes(Buffer.from(transaction.senderPublicKey, "hex"));
-		}
-
-		buff.writeUint64(transaction.fee.toBigInt());
-	}
-
-	#serializeVendorField(transaction: Contracts.Crypto.Transaction, buff: ByteBuffer): void {
-		const { data }: Contracts.Crypto.Transaction = transaction;
-
-		if (transaction.hasVendorField() && data.vendorField) {
-			const vf: Buffer = Buffer.from(data.vendorField, "utf8");
-			buff.writeUint8(vf.length);
-			buff.writeBytes(vf);
-		} else {
-			buff.writeUint8(0x00);
-		}
-	}
-
-	#serializeSignatures(
-		transaction: Contracts.Crypto.TransactionData,
-		buff: ByteBuffer,
-		options: Contracts.Crypto.SerializeOptions = {},
-	): void {
-		if (transaction.signature && !options.excludeSignature) {
-			buff.writeBytes(Buffer.from(transaction.signature, "hex"));
-		}
-
-		if (transaction.signatures && !options.excludeMultiSignature) {
-			buff.writeBytes(Buffer.from(transaction.signatures.join(""), "hex"));
-		}
+		return transaction.serialized;
 	}
 }

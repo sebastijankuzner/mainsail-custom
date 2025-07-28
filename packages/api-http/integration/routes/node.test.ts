@@ -1,4 +1,4 @@
-import cryptoJson from "../../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../../core/bin/config/devnet/core/crypto.json";
 import { describe, Sandbox } from "../../../test-framework/source";
 import nodeConfiguration from "../../test/fixtures/node_configuration.json";
 import nodeFees from "../../test/fixtures/node_fees.json";
@@ -47,7 +47,7 @@ describe<{
 		assert.equal(statusCode, 200);
 		assert.equal(data.data, {
 			blocks: 0,
-			height: 0,
+			blockNumber: 0,
 			id: 0,
 			syncing: false,
 		});
@@ -63,7 +63,14 @@ describe<{
 
 		const { statusCode, data } = await request(`/node/configuration`, options);
 		assert.equal(statusCode, 200);
-		assert.equal(data.data, nodeConfiguration);
+		assert.equal(data.data, {
+			...nodeConfiguration,
+			constants: {
+				...nodeConfiguration.constants,
+				epoch: cryptoJson.milestones[0].epoch,
+			},
+			nethash: cryptoJson.network.nethash,
+		});
 	});
 
 	it("/node/configuration/crypto", async () => {
@@ -89,7 +96,7 @@ describe<{
 
 		await apiContext.transactionTypeRepository.save(transactionTypes);
 		await apiContext.transactionRepository.save(
-			transactions.map((tx) => ({ ...tx, timestamp: Math.floor(new Date().getTime()) })),
+			transactions.map((tx) => ({ ...tx, gasPrice: "5000000000", timestamp: Math.floor(new Date().getTime()) })),
 		);
 
 		const { statusCode, data } = await request(`/node/fees`, options);

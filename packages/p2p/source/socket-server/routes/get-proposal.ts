@@ -1,9 +1,12 @@
+import { injectable } from "@mainsail/container";
+
 import { Routes } from "../../enums.js";
 import { Codecs } from "../codecs/index.js";
 import { GetProposalController } from "../controllers/index.js";
 import { Schemas } from "../schemas/index.js";
 import { Route, RouteConfig } from "./route.js";
 
+@injectable()
 export class GetProposalRoute extends Route {
 	public getRoutesConfigByPath(): { [path: string]: RouteConfig } {
 		const controller = this.getController();

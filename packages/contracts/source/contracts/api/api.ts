@@ -5,6 +5,11 @@ import { Processor } from "./rpc.js";
 
 export type ApiServer = Hapi.Server<ServerState>;
 
+export interface Server {
+	boot(): Promise<void>;
+	dispose(): Promise<void>;
+}
+
 export enum ServerType {
 	Http = "HTTP",
 	Https = "HTTPS",
@@ -37,6 +42,5 @@ export type ResultsPage<T> = {
 };
 
 export interface Resource {
-	raw(resource): object;
 	transform(resource): object;
 }

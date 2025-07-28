@@ -1,4 +1,5 @@
-import { time } from "console";
+import { Contracts } from "@mainsail/contracts";
+
 import { describe } from "../../../test-framework/source";
 import { MilestonesGenerator } from "./milestones";
 
@@ -22,57 +23,47 @@ describe<{
 				.setInitial({
 					blockTime: 8000,
 					epoch: date,
+					initialBlockNumber: 0,
+					maxBlockGasLimit: 1000,
 					maxBlockPayload: 2000,
 					maxTxPerBlock: 100,
 					validators: 53,
-					vendorFieldLength: 255,
-					address: {
-						bech32m: "ark",
-					},
+					validatorRegistrationFee: "250",
 				})
 				.generate(),
 			[
 				{
-					activeValidators: 0,
-					address: {
-						bech32m: "ark",
-					},
+					roundValidators: 0,
 					block: {
+						maxGasLimit: 1000,
 						maxPayload: 2000,
-						maxTransactions: 100,
 						version: 1,
 					},
+					epoch: date.toISOString().slice(0, 11) + "00:00:00.000Z",
+					evmSpec: Contracts.Evm.SpecId.SHANGHAI,
+					gas: {
+						maximumGasLimit: 5_000_000,
+						maximumGasPrice: 10_000 * 1e9,
+						minimumGasLimit: 21_000,
+						minimumGasPrice: 5 * 1e9,
+					},
+					height: 0,
+					reward: "0",
+					satoshi: {
+						decimals: 18,
+						denomination: 1e18,
+					},
 					timeouts: {
-						tolerance: 100,
 						blockPrepareTime: 4000,
 						blockTime: 8000,
 						stageTimeout: 2000,
 						stageTimeoutIncrease: 2000,
+						tolerance: 100,
 					},
-					epoch: date.toISOString().slice(0, 11) + "00:00:00.000Z",
-					fees: {
-						staticFees: {
-							multiPayment: 10_000_000,
-							multiSignature: 500_000_000,
-							transfer: 10_000_000,
-							usernameRegistration: 2_500_000_000,
-							usernameResignation: 2_500_000_000,
-							validatorRegistration: 2_500_000_000,
-							validatorResignation: 2_500_000_000,
-							vote: 100_000_000,
-						},
-					},
-					height: 0,
-					multiPaymentLimit: 256,
-					reward: "0",
-					satoshi: {
-						decimals: 8,
-						denomination: 1e8,
-					},
-					vendorFieldLength: 255,
+					validatorRegistrationFee: "250",
 				},
 				{
-					activeValidators: 53,
+					roundValidators: 53,
 					height: 1,
 				},
 			],

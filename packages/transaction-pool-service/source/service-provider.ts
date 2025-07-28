@@ -1,9 +1,9 @@
-import { Identifiers } from "@mainsail/contracts";
+import { injectable } from "@mainsail/container";
+import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers, Services } from "@mainsail/kernel";
 import Joi from "joi";
 
-import { ApplyTransactionAction, ThrowIfCannotEnterPoolAction, VerifyTransactionAction } from "./actions/index.js";
-import { ExpirationService } from "./expiration-service.js";
+import { ThrowIfCannotBeAppliedAction, VerifyTransactionAction } from "./actions/index.js";
 import { Mempool } from "./mempool.js";
 import { Processor } from "./processor.js";
 import { Query } from "./query.js";
@@ -12,6 +12,7 @@ import { SenderState } from "./sender-state.js";
 import { Service } from "./service.js";
 import { Storage } from "./storage.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.#registerServices();
@@ -46,15 +47,18 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	}
 
 	#registerServices(): void {
-		this.app.bind(Identifiers.TransactionPool.ExpirationService).to(ExpirationService);
 		this.app.bind(Identifiers.TransactionPool.Mempool).to(Mempool).inSingletonScope();
 		this.app.bind(Identifiers.TransactionPool.Processor).to(Processor);
 		this.app.bind(Identifiers.TransactionPool.Query).to(Query);
-		this.app.bind(Identifiers.TransactionPool.SenderMempool.Factory).toFactory(
-			({ container }) =>
-				async (publicKey: string) =>
-					await container.resolve(SenderMempool).configure(publicKey),
-		);
+		this.app
+			.bind<
+				(address: string, legacyAddress?: string) => Promise<SenderMempool>
+			>(Identifiers.TransactionPool.SenderMempool.Factory)
+			.toFactory(
+				(context: Contracts.Kernel.Container.ResolutionContext) =>
+					async (address: string, legacyAddress?: string) =>
+						await context.get(SenderMempool, { autobind: true }).configure(address, legacyAddress),
+			);
 		this.app.bind(Identifiers.TransactionPool.SenderState).to(SenderState);
 		this.app.bind(Identifiers.TransactionPool.Service).to(Service).inSingletonScope();
 		this.app.bind(Identifiers.TransactionPool.Storage).to(Storage).inSingletonScope();
@@ -63,14 +67,10 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	#registerActions(): void {
 		this.app
 			.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-			.bind("applyTransaction", new ApplyTransactionAction());
+			.bind("verifyTransaction", this.app.resolve(VerifyTransactionAction));
 
 		this.app
 			.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-			.bind("throwIfCannotEnterPool", new ThrowIfCannotEnterPoolAction());
-
-		this.app
-			.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-			.bind("verifyTransaction", new VerifyTransactionAction());
+			.bind("throwIfCannotBeApplied", this.app.resolve(ThrowIfCannotBeAppliedAction));
 	}
 }

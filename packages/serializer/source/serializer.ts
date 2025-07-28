@@ -1,7 +1,6 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
-import { BigNumber, ByteBuffer, validatorSetPack, validatorSetUnpack } from "@mainsail/utils";
+import { assert, BigNumber, ByteBuffer, validatorSetPack, validatorSetUnpack } from "@mainsail/utils";
 
 @injectable()
 export class Serializer implements Contracts.Serializer.Serializer {
@@ -26,7 +25,7 @@ export class Serializer implements Contracts.Serializer.Serializer {
 	private readonly consensusSignatureSerializer!: Contracts.Crypto.Signature;
 
 	@inject(Identifiers.Cryptography.Transaction.Utils)
-	private readonly transactionUtils!: Contracts.Crypto.TransactionUtils;
+	private readonly transactionUtils!: Contracts.Crypto.TransactionUtilities;
 
 	@inject(Identifiers.Cryptography.Hash.Size.HASH256)
 	private readonly hashSize!: number;
@@ -69,6 +68,11 @@ export class Serializer implements Contracts.Serializer.Serializer {
 				continue;
 			}
 
+			if (schema.type === "uint256") {
+				this.#writeOptional(schema, result, value, () => result.writeUint256(value));
+				continue;
+			}
+
 			if (schema.type === "bigint") {
 				this.#writeOptional(schema, result, value, () => result.writeUint64(value));
 				continue;
@@ -79,7 +83,7 @@ export class Serializer implements Contracts.Serializer.Serializer {
 				continue;
 			}
 
-			if (schema.type === "blockId") {
+			if (schema.type === "blockHash") {
 				this.#writeOptional(schema, result, value, () => result.writeBytes(Buffer.from(value, "hex")));
 				continue;
 			}
@@ -106,7 +110,7 @@ export class Serializer implements Contracts.Serializer.Serializer {
 
 			if (schema.type === "validatorSet") {
 				const validatorSet = data[property];
-				Utils.assert.array<boolean>(validatorSet);
+				assert.array<boolean>(validatorSet);
 
 				const packed = validatorSetPack(validatorSet);
 
@@ -117,7 +121,7 @@ export class Serializer implements Contracts.Serializer.Serializer {
 			}
 
 			if (schema.type === "hex") {
-				Utils.assert.string(data[property]["serialized"]);
+				assert.string(data[property]["serialized"]);
 
 				const serialized = Buffer.from(data[property]["serialized"], "hex");
 				result.writeUint32(serialized.length);
@@ -129,7 +133,7 @@ export class Serializer implements Contracts.Serializer.Serializer {
 				for (const transaction of value) {
 					const serialized: Buffer = await this.transactionUtils.toBytes(transaction);
 
-					result.writeUint16(serialized.length);
+					result.writeUint32(serialized.length);
 					result.writeBytes(serialized);
 				}
 				continue;
@@ -172,6 +176,13 @@ export class Serializer implements Contracts.Serializer.Serializer {
 				continue;
 			}
 
+			if (schema.type === "uint256") {
+				target[property] = this.#readOptional<BigNumber>(schema, source, () =>
+					BigNumber.make(source.readUint256()),
+				);
+				continue;
+			}
+
 			if (schema.type === "bigint") {
 				target[property] = this.#readOptional<BigNumber>(schema, source, () =>
 					BigNumber.make(source.readUint64().toString()),
@@ -185,7 +196,7 @@ export class Serializer implements Contracts.Serializer.Serializer {
 				continue;
 			}
 
-			if (schema.type === "blockId") {
+			if (schema.type === "blockHash") {
 				target[property] = this.#readOptional<string>(schema, source, () =>
 					source.readBytes(this.hashSize).toString("hex"),
 				);
@@ -229,8 +240,8 @@ export class Serializer implements Contracts.Serializer.Serializer {
 			if (schema.type === "transactions") {
 				target[property] = [];
 
-				for (let index = 0; index < (target as any).numberOfTransactions; index++) {
-					target[property].push(source.readBytes(source.readUint16()));
+				for (let index = 0; index < (target as any).transactionsCount; index++) {
+					target[property].push(source.readBytes(source.readUint32()));
 				}
 				continue;
 			}

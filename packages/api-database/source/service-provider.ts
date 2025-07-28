@@ -1,16 +1,37 @@
-import { Providers, Utils } from "@mainsail/kernel";
+import { injectable } from "@mainsail/container";
+import { Providers } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 import { DataSource } from "typeorm";
 import { URL } from "url";
 
-import { PostgresConnectionOptions, RepositoryDataSource } from "./contracts.js";
+import {
+	ApiNodeRepository,
+	BlockRepository,
+	ConfigurationRepository,
+	ContractRepository,
+	LegacyColdWalletRepository,
+	PeerRepository,
+	PluginRepository,
+	PostgresConnectionOptions,
+	ReceiptRepository,
+	RepositoryDataSource,
+	StateRepository,
+	TransactionRepository,
+	TransactionTypeRepository,
+	ValidatorRoundRepository,
+	WalletRepository,
+} from "./contracts.js";
 import { Identifiers } from "./identifiers.js";
 import { Migrations } from "./migrations.js";
 import {
 	ApiNode,
 	Block,
 	Configuration,
+	Contract,
+	LegacyColdWallet,
 	Peer,
 	Plugin,
+	Receipt,
 	State,
 	Transaction,
 	TransactionType,
@@ -21,8 +42,11 @@ import {
 	makeApiNodeRepository,
 	makeBlockRepository,
 	makeConfigurationRepository,
+	makeContractRepository,
+	makeLegacyColdWalletRepository,
 	makePeerRepository,
 	makePluginRepository,
+	makeReceiptRepository,
 	makeStateRepository,
 	makeTransactionRepository,
 	makeTransactionTypeRepository,
@@ -31,8 +55,13 @@ import {
 } from "./repositories/index.js";
 import { SnakeNamingStrategy } from "./utils/snake-naming-strategy.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
+		if (!this.#isEnabled()) {
+			return;
+		}
+
 		await this.#configureDatabase();
 	}
 
@@ -50,7 +79,7 @@ export class ServiceProvider extends Providers.ServiceProvider {
 		}
 
 		const options = this.config().get<PostgresConnectionOptions>("database");
-		Utils.assert.defined<PostgresConnectionOptions>(options);
+		assert.defined(options);
 
 		try {
 			const dataSource = new DataSource({
@@ -60,13 +89,16 @@ export class ServiceProvider extends Providers.ServiceProvider {
 					ApiNode,
 					Block,
 					Configuration,
+					Contract,
 					Peer,
 					Plugin,
+					Receipt,
 					State,
 					TransactionType,
 					Transaction,
 					ValidatorRound,
 					Wallet,
+					LegacyColdWallet,
 				],
 				migrations: [new URL(".", import.meta.url).pathname + "/migrations/*.js"],
 				migrationsRun: false,
@@ -77,82 +109,111 @@ export class ServiceProvider extends Providers.ServiceProvider {
 			// Note: this only initializes the connection pool, etc. but does not run migrations.
 			// Migrations are handled during bootstrap elsewhere in the main process (see sync.ts)
 			await dataSource.initialize();
+			await dataSource.createQueryRunner().query("CREATE EXTENSION IF NOT EXISTS citext;");
 
 			this.app.bind(Identifiers.DataSource).toConstantValue(dataSource);
 			this.app.bind(Identifiers.Migrations).to(Migrations).inSingletonScope();
 
 			// Bind factories to allow creating repositories in a transaction context
 			this.app
-				.bind(Identifiers.ApiNodeRepositoryFactory)
+				.bind<() => ApiNodeRepository>(Identifiers.ApiNodeRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeApiNodeRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.BlockRepositoryFactory)
+				.bind<() => BlockRepository>(Identifiers.BlockRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeBlockRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.ConfigurationRepositoryFactory)
+				.bind<() => ConfigurationRepository>(Identifiers.ConfigurationRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeConfigurationRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.PeerRepositoryFactory)
+				.bind<() => ContractRepository>(Identifiers.ContractRepositoryFactory)
+				.toFactory(
+					() => (customDataSource?: RepositoryDataSource) =>
+						makeContractRepository(customDataSource ?? dataSource),
+				);
+
+			this.app
+				.bind<() => PeerRepository>(Identifiers.PeerRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makePeerRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.PluginRepositoryFactory)
+				.bind<() => PluginRepository>(Identifiers.PluginRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makePluginRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.StateRepositoryFactory)
+				.bind<() => ReceiptRepository>(Identifiers.ReceiptRepositoryFactory)
+				.toFactory(
+					() => (customDataSource?: RepositoryDataSource) =>
+						makeReceiptRepository(customDataSource ?? dataSource),
+				);
+
+			this.app
+				.bind<() => StateRepository>(Identifiers.StateRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeStateRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.TransactionRepositoryFactory)
+				.bind<() => TransactionRepository>(Identifiers.TransactionRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeTransactionRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.TransactionTypeRepositoryFactory)
+				.bind<() => TransactionTypeRepository>(Identifiers.TransactionTypeRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeTransactionTypeRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.ValidatorRoundRepositoryFactory)
+				.bind<() => ValidatorRoundRepository>(Identifiers.ValidatorRoundRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeValidatorRoundRepository(customDataSource ?? dataSource),
 				);
 
 			this.app
-				.bind(Identifiers.WalletRepositoryFactory)
+				.bind<() => WalletRepository>(Identifiers.WalletRepositoryFactory)
 				.toFactory(
 					() => (customDataSource?: RepositoryDataSource) =>
 						makeWalletRepository(customDataSource ?? dataSource),
 				);
+
+			this.app
+				.bind<() => LegacyColdWalletRepository>(Identifiers.LegacyColdWalletRepositoryFactory)
+				.toFactory(
+					() => (customDataSource?: RepositoryDataSource) =>
+						makeLegacyColdWalletRepository(customDataSource ?? dataSource),
+				);
 		} catch (error) {
 			await this.app.terminate("Failed to configure database!", error);
 		}
+	}
+
+	#isEnabled(): boolean {
+		return (
+			this.app.name() === "api" ||
+			(this.config().getRequired<boolean>("enabled") === true && !this.app.isWorker())
+		);
 	}
 }

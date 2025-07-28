@@ -1,6 +1,6 @@
 import { Column, Entity } from "typeorm";
 
-import { vendorFieldTransformer } from "../transformers/vendor-field.js";
+import { bufferTransformer } from "../transformers/buffer.js";
 
 @Entity({
 	name: "transactions",
@@ -8,99 +8,84 @@ import { vendorFieldTransformer } from "../transformers/vendor-field.js";
 export class Transaction {
 	@Column({
 		primary: true,
-		type: "varchar",
+		type: "citext",
 	})
-	public id!: string;
+	public readonly hash!: string;
 
 	@Column({
 		nullable: false,
-		type: "smallint",
+		type: "citext",
 	})
-	public version!: number;
-
-	@Column({
-		nullable: false,
-		type: "smallint",
-	})
-	public type!: number;
-
-	@Column({
-		default: 1,
-		nullable: false,
-		type: "integer",
-	})
-	public typeGroup!: number;
-
-	@Column({
-		nullable: false,
-		type: "varchar",
-	})
-	public blockId!: string;
+	public readonly blockHash!: string;
 
 	@Column({
 		nullable: false,
 		type: "bigint",
 	})
-	public blockHeight!: string;
+	public readonly blockNumber!: string;
 
 	@Column({
 		nullable: false,
 		type: "smallint",
 	})
-	public sequence!: number;
+	public readonly transactionIndex!: number;
 
 	@Column({
 		nullable: false,
 		type: "bigint",
 	})
-	public timestamp!: string;
+	public readonly timestamp!: string;
 
 	@Column({
 		nullable: false,
 		type: "bigint",
 	})
-	public nonce!: string;
+	public readonly nonce!: string;
 
 	@Column({
 		nullable: false,
-		type: "varchar",
+		type: "citext",
 	})
-	public senderPublicKey!: string;
+	public readonly senderPublicKey!: string;
+
+	@Column({
+		nullable: false,
+		type: "citext",
+	})
+	public readonly from!: string;
 
 	@Column({
 		default: undefined,
 		nullable: true,
-		type: "varchar",
+		type: "citext",
 	})
-	public recipientId!: string | undefined;
+	public readonly to!: string | undefined;
+
+	@Column({
+		nullable: false,
+		type: "numeric",
+	})
+	public readonly value!: string;
+
+	@Column({
+		nullable: false,
+		type: "bigint",
+	})
+	public readonly gasPrice!: number;
+
+	@Column({
+		nullable: false,
+		type: "bigint",
+	})
+	public readonly gas!: number;
 
 	@Column({
 		default: undefined,
 		nullable: true,
-		transformer: vendorFieldTransformer,
+		transformer: bufferTransformer,
 		type: "bytea",
 	})
-	public vendorField: string | undefined;
-
-	@Column({
-		nullable: false,
-		type: "bigint",
-	})
-	public amount!: string;
-
-	@Column({
-		nullable: false,
-		type: "bigint",
-	})
-	public fee!: string;
-
-	@Column({
-		default: undefined,
-		nullable: true,
-		type: "jsonb",
-		// TODO: separate tables for 1:n assets
-	})
-	public asset: Record<string, any> | undefined;
+	public readonly data: string | undefined;
 
 	@Column({
 		default: undefined,
@@ -112,7 +97,7 @@ export class Transaction {
 	@Column({
 		default: undefined,
 		nullable: true,
-		type: "jsonb",
+		type: "varchar",
 	})
-	public readonly signatures: string[] | undefined;
+	public readonly legacySecondSignature: string | undefined;
 }

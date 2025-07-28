@@ -26,7 +26,7 @@ export class TransactionsController extends Controller {
 		const options = this.getListingOptions();
 
 		const walletRepository = this.walletRepositoryFactory();
-		const transactions = await this.transactionRepositoryFactory().findManyByCritera(
+		const transactions = await this.transactionRepositoryFactory().findManyByCriteria(
 			walletRepository,
 			criteria,
 			sorting,
@@ -35,9 +35,8 @@ export class TransactionsController extends Controller {
 		);
 
 		return this.toPagination(
-			await this.enrichTransactionResult(transactions),
+			await this.enrichTransactionResult(transactions, { fullReceipt: request.query.fullReceipt }),
 			TransactionResource,
-			request.query.transform,
 		);
 	}
 
@@ -45,77 +44,26 @@ export class TransactionsController extends Controller {
 		const transaction = await this.transactionRepositoryFactory()
 			.createQueryBuilder()
 			.select()
-			.where("id = :id", { id: request.params.id })
+			.where("hash = :hash", { hash: request.params.hash })
 			.getOne();
 
 		return this.respondEnrichedTransaction(transaction, request);
 	}
 
-	public async types(request: Hapi.Request) {
-		const rows = await this.transactionTypeRepositoryFactory()
-			.createQueryBuilder()
-			.select()
-			.addOrderBy("type", "ASC")
-			.addOrderBy("type_group", "ASC")
-			.getMany();
-
-		const typeGroups: Record<string | number, Record<string, number>> = {};
-
-		for (const { type, typeGroup, key } of rows) {
-			if (typeGroups[typeGroup] === undefined) {
-				typeGroups[typeGroup] = {};
-			}
-
-			typeGroups[typeGroup][key[0].toUpperCase() + key.slice(1)] = type;
-		}
-
-		return { data: typeGroups };
-	}
-
 	public async schemas(request: Hapi.Request) {
 		const transactionTypes = await this.getTransactionTypes();
 
-		const schemasByType: Record<string, Record<string, any>> = {};
+		const schemasByKey: Record<string, any> = {};
 
-		for (const { type, typeGroup, schema } of transactionTypes) {
-			if (schemasByType[typeGroup] === undefined) {
-				schemasByType[typeGroup] = {};
-			}
-
-			schemasByType[typeGroup][type] = schema;
+		for (const { key, schema } of transactionTypes) {
+			schemasByKey[key] = schema;
 		}
 
-		return { data: schemasByType };
-	}
-
-	public async fees(request: Hapi.Request) {
-		const configuration = await this.getConfiguration();
-		const {
-			fees: { staticFees },
-		} = configuration.activeMilestones;
-
-		const transactionTypes = await this.getTransactionTypes();
-
-		const typeGroups: Record<string | number, Record<string, number>> = {};
-
-		for (const { typeGroup, key } of transactionTypes) {
-			if (typeGroups[typeGroup] === undefined) {
-				typeGroups[typeGroup] = {};
-			}
-
-			typeGroups[typeGroup][key] = staticFees[key].toFixed() ?? "0";
-		}
-
-		return { data: typeGroups };
+		return { data: schemasByKey };
 	}
 
 	private async getTransactionTypes(): Promise<Models.TransactionType[]> {
-		return this.transactionTypeRepositoryFactory()
-			.createQueryBuilder()
-			.select()
-			.addOrderBy("type", "ASC")
-			.addOrderBy("type_group", "ASC")
-			.getMany();
+		return this.transactionTypeRepositoryFactory().createQueryBuilder().select().addOrderBy("key", "ASC").getMany();
 	}
 
 	private async respondEnrichedTransaction(transaction: Models.Transaction | null, request: Hapi.Request) {
@@ -124,9 +72,8 @@ export class TransactionsController extends Controller {
 		}
 
 		return this.respondWithResource(
-			await this.enrichTransaction(transaction),
+			await this.enrichTransaction(transaction, undefined, undefined, request.query.fullReceipt),
 			TransactionResource,
-			request.query.transform,
 		);
 	}
 }

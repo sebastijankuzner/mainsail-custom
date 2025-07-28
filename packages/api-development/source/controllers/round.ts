@@ -1,40 +1,38 @@
 import Hapi from "@hapi/hapi";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
 
 import { Controller } from "./controller.js";
 
 @injectable()
 export class RoundController extends Controller {
-	@inject(Identifiers.Cryptography.Configuration)
-	private readonly configuration!: Contracts.Crypto.Configuration;
-
 	@inject(Identifiers.ValidatorSet.Service)
 	private readonly validatorSet!: Contracts.ValidatorSet.Service;
 
-	@inject(Identifiers.Proposer.Selector)
-	private readonly proposerSelector!: Contracts.Proposer.Selector;
+	@inject(Identifiers.BlockchainUtils.ProposerCalculator)
+	private readonly proposerCalculator!: Contracts.BlockchainUtils.ProposerCalculator;
+
+	@inject(Identifiers.BlockchainUtils.RoundCalculator)
+	private readonly roundCalculator!: Contracts.BlockchainUtils.RoundCalculator;
 
 	public async index(request: Hapi.Request, h: Hapi.ResponseToolkit) {
-		const activeValidators = this.validatorSet.getActiveValidators();
+		const roundValidators = this.validatorSet.getRoundValidators();
 
 		const orderedValidators = Array.from(
-			{ length: activeValidators.length },
-			(_, index) => activeValidators[this.proposerSelector.getValidatorIndex(index)],
+			{ length: roundValidators.length },
+			(_, index) => roundValidators[this.proposerCalculator.getValidatorIndex(index)],
 		);
 
-		const height = this.stateService.getStore().getLastHeight();
+		const blockNumber = this.stateStore.getBlockNumber();
 
 		return {
-			height,
-			...Utils.roundCalculator.calculateRound(height, this.configuration),
-			// Map the active validator set (static, vote-weighted, etc.) to actual proposal order
+			blockNumber,
+			...this.roundCalculator.calculateRound(blockNumber),
+			// Map the round validator set (static, vote-weighted, etc.) to actual proposal order
 			validators: orderedValidators.map((validator) => ({
-				wallet: validator.toString(),
-				// eslint-disable-next-line sort-keys-fix/sort-keys-fix
-				rank: validator.getVoteBalance().toFixed(),
-				voteBalance: validator.getRank(),
+				voteBalance: validator.voteBalance.toFixed(),
+
+				wallet: validator,
 			})),
 		};
 	}

@@ -1,9 +1,10 @@
 import { inject, injectable, tagged } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Providers, Services, Utils } from "@mainsail/kernel";
+import { Providers, Services } from "@mainsail/kernel";
+import { shuffle } from "@mainsail/utils";
 import dayjs from "dayjs";
 
-import { normalizeUrl } from "./index.js";
+import { normalizeUrl } from "./utils/index.js";
 
 @injectable()
 export class ApiNodeDiscoverer implements Contracts.P2P.ApiNodeDiscoverer {
@@ -34,9 +35,10 @@ export class ApiNodeDiscoverer implements Contracts.P2P.ApiNodeDiscoverer {
 			const { apiNodes } = await this.communicator.getApiNodes(peer);
 
 			for (const apiNode of apiNodes) {
-				await this.app
-					.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-					.call("validateAndAcceptApiNode", { apiNode, options: {} });
+				await this.app.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service).call<{
+					apiNode: Contracts.P2P.ApiNode;
+					options: Contracts.P2P.AcceptNewPeerOptions;
+				}>("validateAndAcceptApiNode", { apiNode, options: {} });
 			}
 		} catch (error) {
 			this.logger.debug(`Failed to get api nodes from ${peer.ip}: ${error.message}`);
@@ -51,15 +53,16 @@ export class ApiNodeDiscoverer implements Contracts.P2P.ApiNodeDiscoverer {
 
 		return Promise.all(
 			Object.values(apiNodes).map((apiNode: Contracts.P2P.ApiNode) =>
-				this.app
-					.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-					.call("validateAndAcceptApiNode", { apiNode, options: { seed: true } }),
+				this.app.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service).call<{
+					apiNode: Contracts.P2P.ApiNode;
+					options: Contracts.P2P.AcceptNewPeerOptions;
+				}>("validateAndAcceptApiNode", { apiNode, options: { seed: true } }),
 			),
 		);
 	}
 
 	async discoverNewApiNodes(): Promise<any> {
-		const peers = Utils.shuffle(this.peerRepository.getPeers()).slice(0, 5);
+		const peers = shuffle(this.peerRepository.getPeers()).slice(0, 5);
 		return Promise.all(peers.map((peer) => this.discoverApiNodes(peer)));
 	}
 
@@ -72,9 +75,9 @@ export class ApiNodeDiscoverer implements Contracts.P2P.ApiNodeDiscoverer {
 					(apiNode.lastPinged ?? dayjs()).isAfter(dayjs().add(10, "minutes")),
 				)
 				.map((apiNode) =>
-					this.app
-						.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-						.call("revalidateApiNode", { apiNode }),
+					this.app.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service).call<{
+						apiNode: Contracts.P2P.ApiNode;
+					}>("revalidateApiNode", { apiNode }),
 				),
 		);
 	}

@@ -1,11 +1,10 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { camelCase, expandTilde, set } from "@mainsail/utils";
+import { assert, camelCase, expandTilde, set } from "@mainsail/utils";
 import envPaths from "env-paths";
 import { join, resolve } from "path";
 
 import { ConfigRepository } from "../services/config/index.js";
-import { assert } from "../utils/assert.js";
 
 @injectable()
 export class RegisterBasePaths implements Contracts.Kernel.Bootstrapper {
@@ -24,7 +23,7 @@ export class RegisterBasePaths implements Contracts.Kernel.Bootstrapper {
 		for (let [type, path] of paths) {
 			path = join(path, this.app.name());
 
-			const configKey = `CORE_PATH_${type.toUpperCase()}`;
+			const configKey = `MAINSAIL_PATH_${type.toUpperCase()}`;
 
 			const processPath: string | undefined = process.env[configKey];
 
@@ -43,7 +42,7 @@ export class RegisterBasePaths implements Contracts.Kernel.Bootstrapper {
 
 			path = resolve(expandTilde(path));
 
-			assert.defined<string>(path);
+			assert.string(path);
 
 			this.fileSystem.ensureDirSync(path);
 
@@ -51,7 +50,7 @@ export class RegisterBasePaths implements Contracts.Kernel.Bootstrapper {
 
 			const pathMethod: string | undefined = camelCase(`use_${type}_path`);
 
-			assert.defined<string>(pathMethod);
+			assert.string(pathMethod);
 
 			this.app[pathMethod](path);
 

@@ -1,7 +1,7 @@
 import { Commands, Identifiers, Services } from "@mainsail/cli";
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, postConstruct } from "@mainsail/container";
 import { Constants } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 import Joi from "joi";
 
 @injectable()
@@ -13,6 +13,7 @@ export class Command extends Commands.Command {
 
 	public description = "Update the CLI configuration.";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition.setFlag(
 			"channel",
@@ -36,7 +37,7 @@ export class Command extends Commands.Command {
 
 			spinner.start();
 
-			Utils.assert.defined<string>(this.pkg.name);
+			assert.string(this.pkg.name);
 			this.installer.install(this.pkg.name, newChannel);
 
 			spinner.succeed();

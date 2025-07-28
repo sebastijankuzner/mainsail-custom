@@ -1,6 +1,6 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { assert, isEmpty } from "@mainsail/utils";
 import chalk, { ChalkInstance } from "chalk";
 import { error as console_error } from "console";
 import pino from "pino";
@@ -15,6 +15,8 @@ import { inspect } from "util";
 
 @injectable()
 export class PinoLogger implements Contracts.Kernel.Logger {
+	static LOG_LEVELS = new Set(["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"]);
+
 	@inject(Identifiers.Application.Instance)
 	private readonly app!: Contracts.Kernel.Application;
 
@@ -39,6 +41,22 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 
 	public async make(options?: any): Promise<Contracts.Kernel.Logger> {
 		this.#stream = new PassThrough();
+
+		if (options.workerMode) {
+			this.#logger = Object.fromEntries(
+				[...PinoLogger.LOG_LEVELS].map((level) => [
+					level,
+					(message: string) => {
+						process.stdout.write(`[${level}] (${this.app.thread()}) ${message}\n`);
+					},
+				]),
+			) as unknown as pino.Logger<
+				"alert" | "critical" | "debug" | "emergency" | "error" | "info" | "notice" | "warning"
+			>;
+
+			return this;
+		}
+
 		this.#logger = pino.default(
 			{
 				base: null,
@@ -64,7 +82,7 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 			this.#stream,
 		);
 
-		if (this.#isValidLevel(options.levels.console)) {
+		if (this.isValidLevel(options.levels.console)) {
 			pump(
 				this.#stream,
 				split(),
@@ -77,7 +95,7 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 			);
 		}
 
-		if (this.#isValidLevel(options.levels.file)) {
+		if (this.isValidLevel(options.levels.file)) {
 			this.#combinedFileStream = new pumpify(
 				split(),
 				this.#createPrettyTransport(options.levels.file, { colorize: false }),
@@ -138,7 +156,7 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 				this.#combinedFileStream.end();
 
 				return new Promise<void>((resolve) => {
-					Utils.assert.defined<Writable>(this.#combinedFileStream);
+					assert.defined(this.#combinedFileStream);
 					this.#combinedFileStream.on("finish", () => {
 						resolve();
 					});
@@ -152,7 +170,7 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 			return;
 		}
 
-		if (Utils.isEmpty(message)) {
+		if (isEmpty(message)) {
 			return;
 		}
 
@@ -164,14 +182,8 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 	}
 
 	#createPrettyTransport(level: string, prettyOptions?: PrettyOptions): Transform {
-		const thread = this.app.thread();
-		const ignore = this.app.isWorker() ? `` : `pid`;
-
 		const pinoPretty = prettyFactory({
-			customPrettifiers: {
-				pid: () => thread,
-			},
-			ignore,
+			ignore: "pid",
 			levelFirst: false,
 			translateTime: "yyyy-mm-dd HH:MM:ss.l",
 			...prettyOptions,
@@ -229,7 +241,7 @@ export class PinoLogger implements Contracts.Kernel.Logger {
 		);
 	}
 
-	#isValidLevel(level: string): boolean {
-		return ["emergency", "alert", "critical", "error", "warning", "notice", "info", "debug"].includes(level);
+	public isValidLevel(level: string): boolean {
+		return PinoLogger.LOG_LEVELS.has(level);
 	}
 }

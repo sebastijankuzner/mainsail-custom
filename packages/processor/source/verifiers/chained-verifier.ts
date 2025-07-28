@@ -1,21 +1,38 @@
+import { isBlockChained } from "@mainsail/blockchain-utils";
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 
 @injectable()
 export class ChainedVerifier implements Contracts.Processor.Handler {
 	@inject(Identifiers.Application.Instance)
 	protected readonly app!: Contracts.Kernel.Application;
 
-	@inject(Identifiers.State.Service)
-	private readonly stateService!: Contracts.State.Service;
+	@inject(Identifiers.Cryptography.Configuration)
+	private readonly configuration!: Contracts.Crypto.Configuration;
+
+	@inject(Identifiers.State.Store)
+	private readonly store!: Contracts.State.Store;
 
 	public async execute(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
-		if (unit.getBlock().data.height === 0) {
-			return;
-		}
+		const blockData = unit.getBlock().data;
 
-		if (!Utils.isBlockChained(this.stateService.getStore().getLastBlock().data, unit.getBlock().data)) {
+		if (blockData.number === this.configuration.getGenesisHeight()) {
+			const milestone = this.configuration.getMilestone();
+
+			let validPreviousBlock = false;
+			if (milestone.snapshot) {
+				assert.defined(milestone.snapshot);
+				validPreviousBlock = blockData.parentHash === milestone.snapshot.previousGenesisBlockHash;
+			} else {
+				validPreviousBlock =
+					blockData.parentHash === "0000000000000000000000000000000000000000000000000000000000000000";
+			}
+
+			if (!validPreviousBlock) {
+				throw new Exceptions.BlockNotChained(unit.getBlock());
+			}
+		} else if (!isBlockChained(this.store.getLastBlock().data, blockData)) {
 			throw new Exceptions.BlockNotChained(unit.getBlock());
 		}
 	}

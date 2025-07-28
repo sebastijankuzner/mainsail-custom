@@ -3,7 +3,7 @@ import { Configuration } from "@mainsail/crypto-config";
 import { BigNumber } from "@mainsail/utils";
 import { Validator } from "@mainsail/validation/source/validator";
 
-import cryptoJson from "../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../core/bin/config/devnet/core/crypto.json";
 import { describe, Sandbox } from "../../test-framework/source";
 import { makeKeywords } from "./keywords";
 
@@ -114,7 +114,11 @@ describe<{
 
 		assert.undefined(context.validator.validate("test", Number.MAX_SAFE_INTEGER).error);
 
-		assert.defined(context.validator.validate("test", 9_223_372_036_854_775_808).error);
+		assert.undefined(context.validator.validate("test", 9_223_372_036_854_775_808).error);
+
+		assert.undefined(context.validator.validate("test", BigNumber.UINT256_MAX).error);
+
+		assert.defined(context.validator.validate("test", BigNumber.UINT256_MAX.plus(1)).error);
 	});
 
 	it("keyword bignumber should be ok for number, string and bignumber as input", (context) => {

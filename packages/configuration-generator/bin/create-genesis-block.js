@@ -1,5 +1,6 @@
 import envPaths from "env-paths";
 import path from "path";
+import { Identifiers as AppIdentifiers } from "@mainsail/contracts";
 import { makeApplication } from "../distribution/application-factory.js";
 import { Identifiers } from "../distribution/identifiers.js";
 
@@ -8,29 +9,27 @@ async function run() {
 	const configCore = path.join(paths.config, "core");
 	console.log(paths, configCore);
 
-	const flags = {
-		address: "bech32m",
-		bech32mPrefix: "ark",
-	};
-
-	// const flags = {
-	// 	address: "base58",
-	// 	base58Prefix: 30,
-	// }
-
-	const app = await makeApplication(configCore, flags);
+	const app = await makeApplication(configCore, {});
 	const generator = app.get(Identifiers.ConfigurationGenerator);
 
 	await generator.generate({
-		network: "testnet",
+		network: "devnet",
 		symbol: "TѦ",
 		token: "ARK",
 		distribute: true,
-		address: {
-			...(flags.bech32mPrefix ? { bech32m: flags.bech32mPrefix } : {}),
-			...(flags.base58Prefix ? { base58: flags.base58Prefix } : {}),
-		},
+		premine: "125000000000000000000000000",
+		chainId: 10000,
+		initialHeight: 0,
+		// snapshot: {
+		// 	path: "../../62b828b447bb37642fc267c971621db611e19c8a92ee3fe0dc89a080118fc47a.compressed",
+		// },
 	});
+
+	for (const tag of ["evm", "validator", "transaction-pool", "rpc"]) {
+		if (app.isBoundTagged(AppIdentifiers.Evm.Instance, "instance", tag)) {
+			await app.getTagged(AppIdentifiers.Evm.Instance, "instance", tag).dispose();
+		}
+	}
 }
 
 run();

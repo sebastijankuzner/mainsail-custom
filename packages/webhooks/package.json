@@ -1,6 +1,6 @@
 {
 	"name": "@mainsail/webhooks",
-	"version": "0.0.1-alpha.20",
+	"version": "0.0.1-evm.25",
 	"description": "Webhooks service for the Mainsail blockchain",
 	"license": "GPL-3.0-only",
 	"contributors": [],
@@ -15,29 +15,28 @@
 		"clean": "del distribution",
 		"release": "pnpm publish --access public",
 		"test": "pnpm run uvu source .test.ts",
-		"test:coverage": "c8 pnpm run test",
+		"test:coverage": "c8 -r=text -r=lcov --all pnpm run test",
 		"test:coverage:html": "c8 -r html --all pnpm run test",
 		"test:file": "pnpm run uvu source",
 		"uvu": "tsx --tsconfig ../../tsconfig.test.json ./node_modules/uvu/bin.js"
 	},
 	"dependencies": {
 		"@hapi/boom": "10.0.1",
-		"@hapi/hapi": "21.3.6",
+		"@hapi/hapi": "21.4.0",
 		"@mainsail/container": "workspace:*",
 		"@mainsail/contracts": "workspace:*",
 		"@mainsail/kernel": "workspace:*",
 		"@mainsail/utils": "workspace:*",
-		"fs-extra": "11.2.0",
-		"joi": "17.12.2",
+		"fs-extra": "11.3.0",
+		"joi": "17.13.3",
 		"lowdb": "7.0.1",
-		"uuid": "9.0.1"
+		"uuid": "11.1.0"
 	},
 	"devDependencies": {
 		"@types/fs-extra": "11.0.4",
 		"@types/tmp": "0.2.6",
-		"@types/uuid": "9.0.8",
 		"tmp": "0.2.3",
-		"uvu": "^0.5.6"
+		"uvu": "0.5.6"
 	},
 	"engines": {
 		"node": ">=20.x"

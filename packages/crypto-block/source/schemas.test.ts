@@ -1,12 +1,12 @@
 import { Identifiers } from "@mainsail/contracts";
-import { schemas as addressSchemas } from "@mainsail/crypto-address-bech32m";
+import { schemas as addressSchemas } from "@mainsail/crypto-address-keccak256";
 import { Configuration } from "@mainsail/crypto-config";
-import { schemas as kayPairSchemas } from "@mainsail/crypto-key-pair-schnorr";
+import { schemas as keyPairSchemas } from "@mainsail/crypto-key-pair-ecdsa";
 import { schemas as transactionSchemas } from "@mainsail/crypto-transaction";
 import { makeKeywords, schemas as sharedSchemas } from "@mainsail/crypto-validation";
 import { Validator } from "@mainsail/validation/source/validator";
 
-import cryptoJson from "../../core/bin/config/testnet/core/crypto.json";
+import cryptoJson from "../../core/bin/config/devnet/core/crypto.json";
 import { describe, Sandbox } from "../../test-framework/source";
 import { schemas } from "./schemas";
 
@@ -31,7 +31,7 @@ describe<{
 		for (const schema of Object.values({
 			...sharedSchemas,
 			...addressSchemas,
-			...kayPairSchemas,
+			...keyPairSchemas,
 			...transactionSchemas,
 			...schemas,
 		})) {
@@ -39,39 +39,42 @@ describe<{
 		}
 	});
 
-	it("blockId - should be ok", ({ validator }) => {
+	it("blockHash - should be ok", ({ validator }) => {
 		const lenght = 64;
 		const validChars = "0123456789abcdef";
 
 		for (const char of validChars) {
-			assert.undefined(validator.validate("blockId", char.repeat(lenght)).error);
+			assert.undefined(validator.validate("blockHash", char.repeat(lenght)).error);
 		}
 	});
 
-	it("blockId - should not be ok", ({ validator }) => {
+	it("blockHash - should not be ok", ({ validator }) => {
 		const lenght = 64;
 		const invalidChars = "ABCDEFGHIJKLMNOghijklmno$%!+-";
 
 		for (const char of invalidChars) {
-			assert.defined(validator.validate("blockId", char.repeat(lenght)).error);
+			assert.defined(validator.validate("blockHash", char.repeat(lenght)).error);
 		}
 
-		assert.defined(validator.validate("blockId", "a".repeat(lenght - 1)).error);
-		assert.defined(validator.validate("blockId", "a".repeat(lenght + 1)).error);
+		assert.defined(validator.validate("blockHash", "a".repeat(lenght - 1)).error);
+		assert.defined(validator.validate("blockHash", "a".repeat(lenght + 1)).error);
 	});
 
 	const blockOriginal = {
 		blockSignature: "123",
-		generatorPublicKey: "a".repeat(64),
-		height: 0,
-		id: "1".repeat(64),
-		numberOfTransactions: 0,
-		payloadHash: "123",
-		previousBlock: "0".repeat(64),
+		proposer: "0x" + "A".repeat(40),
+		number: 0,
+		hash: "1".repeat(64),
+		transactionsCount: 0,
+		payloadSize: 0,
+		transactionsRoot: "123",
+		parentHash: "0".repeat(64),
 		reward: 0,
+		stateRoot: "0".repeat(64),
+		logsBloom: "0".repeat(512),
 		timestamp: 0,
-		totalAmount: 0,
-		totalFee: 0,
+		fee: 0,
+		gasUsed: 0,
 		version: 1,
 	};
 
@@ -81,28 +84,24 @@ describe<{
 		};
 
 		assert.undefined(validator.validate("blockHeader", block).error);
-
-		const optionalFields = ["numberOfTransactions", "payloadHash", "version"];
-
-		for (const field of optionalFields) {
-			const blockWithoutField = { ...blockOriginal };
-
-			delete blockWithoutField[field];
-
-			assert.undefined(validator.validate("blockHeader", blockWithoutField).error);
-		}
 	});
 
 	it("blockHeader - should not be ok if any required field is missing", ({ validator }) => {
 		const requiredFields = [
-			"id",
-			"timestamp",
-			"previousBlock",
-			"height",
-			"totalAmount",
-			"totalFee",
+			"fee",
+			"gasUsed",
+			"hash",
+			"logsBloom",
+			"number",
+			"parentHash",
+			"payloadSize",
+			"proposer",
 			"reward",
-			"generatorPublicKey",
+			"stateRoot",
+			"timestamp",
+			"transactionsCount",
+			"transactionsRoot",
+			"version",
 		];
 
 		for (const field of requiredFields) {
@@ -114,118 +113,118 @@ describe<{
 		}
 	});
 
-	it("blockHeader - generatorPublicKey should be publicKey", ({ validator }) => {
+	it("blockHeader - proposer should be publicKey", ({ validator }) => {
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					generatorPublicKey: "a".repeat(63),
+					proposer: "a".repeat(63),
 				})
-				.error.includes("generatorPublicKey"),
+				.error.includes("proposer"),
 		);
 
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					generatorPublicKey: "a".repeat(65),
+					proposer: "a".repeat(65),
 				})
-				.error.includes("generatorPublicKey"),
+				.error.includes("proposer"),
 		);
 	});
 
-	it("blockHeader - height should be integer & min 0", ({ validator }) => {
+	it("blockHeader - number should be integer & min 0", ({ validator }) => {
 		// Integer OK
-		for (const height of [0, 1, 2]) {
+		for (const number of [0, 1, 2]) {
 			assert.undefined(
 				validator.validate("blockHeader", {
 					...blockOriginal,
-					height,
+					number,
 				}).error,
 			);
 		}
 
 		// NOT OK
-		for (const height of ["0", "1", 0.12, 1.234, -1.0, -0.23, null, undefined]) {
+		for (const number of ["0", "1", 0.12, 1.234, -1, -0.23, null, undefined]) {
 			assert.true(
 				validator
 					.validate("blockHeader", {
 						...blockOriginal,
-						height,
+						number,
 					})
-					.error.includes("height"),
+					.error.includes("number"),
 			);
 		}
 	});
 
-	it("blockHeader - id should be blockId", ({ validator }) => {
+	it("blockHeader - hash should be blockHash", ({ validator }) => {
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					id: "1",
+					hash: "1",
 				})
-				.error.includes("id"),
+				.error.includes("hash"),
 		);
 	});
 
-	it("blockHeader - numberOfTransactions should be integer & min 0", ({ validator }) => {
+	it("blockHeader - transactionsCount should be integer & min 0", ({ validator }) => {
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					numberOfTransactions: "1",
+					transactionsCount: "1",
 				})
-				.error.includes("numberOfTransactions"),
+				.error.includes("transactionsCount"),
 		);
 
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					numberOfTransactions: -1,
+					transactionsCount: -1,
 				})
-				.error.includes("numberOfTransactions"),
+				.error.includes("transactionsCount"),
 		);
 	});
 
-	it("blockHeader - payloadHash should be hex", ({ validator }) => {
+	it("blockHeader - transactionsRoot should be hex", ({ validator }) => {
 		const block = {
 			...blockOriginal,
-			payloadHash: "GHIJK",
+			transactionsRoot: "GHIJK",
 		};
 
-		assert.true(validator.validate("blockHeader", block).error.includes("payloadHash"));
+		assert.true(validator.validate("blockHeader", block).error.includes("transactionsRoot"));
 	});
 
-	it("blockHeader - payloadLength should be integer & min 0", ({ validator }) => {
+	it("blockHeader - payloadSize should be integer & min 0", ({ validator }) => {
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					payloadLength: "1",
+					payloadSize: "1",
 				})
-				.error.includes("payloadLength"),
+				.error.includes("payloadSize"),
 		);
 
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					payloadLength: -1,
+					payloadSize: -1,
 				})
-				.error.includes("payloadLength"),
+				.error.includes("payloadSize"),
 		);
 	});
 
-	it("blockHeader - id should be blockId", ({ validator }) => {
+	it("blockHeader - parentHash should be blockHash", ({ validator }) => {
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					id: "1",
+					parentHash: "1",
 				})
-				.error.includes("id"),
+				.error.includes("parentHash"),
 		);
 	});
 
@@ -268,25 +267,14 @@ describe<{
 		);
 	});
 
-	it("blockHeader - totalAmount should be bigNumber & min 0", ({ validator }) => {
+	it("blockHeader - fee should be bigNumber & min 0", ({ validator }) => {
 		assert.true(
 			validator
 				.validate("blockHeader", {
 					...blockOriginal,
-					totalAmount: -1,
+					fee: -1,
 				})
-				.error.includes("totalAmount"),
-		);
-	});
-
-	it("blockHeader - totalFee should be bigNumber & min 0", ({ validator }) => {
-		assert.true(
-			validator
-				.validate("blockHeader", {
-					...blockOriginal,
-					totalFee: -1,
-				})
-				.error.includes("totalFee"),
+				.error.includes("fee"),
 		);
 	});
 
@@ -310,23 +298,22 @@ describe<{
 		);
 	});
 
-	it("block - transactions count should be equal numberOfTransactions", ({ validator }) => {
+	it("block - transactions count should be equal transactionsCount", ({ validator }) => {
 		validator.addSchema({
 			$id: "transactions",
 			type: "array",
 		});
 
 		assert.undefined(
-			validator.validate("block", { ...blockOriginal, numberOfTransactions: 2, transactions: [{}, {}] }).error,
+			validator.validate("block", { ...blockOriginal, transactionsCount: 2, transactions: [{}, {}] }).error,
 		);
 
 		assert.defined(
-			validator.validate("block", { ...blockOriginal, numberOfTransactions: 2, transactions: [{}] }).error,
+			validator.validate("block", { ...blockOriginal, transactionsCount: 2, transactions: [{}] }).error,
 		);
 
 		assert.defined(
-			validator.validate("block", { ...blockOriginal, numberOfTransactions: 2, transactions: [{}, {}, {}] })
-				.error,
+			validator.validate("block", { ...blockOriginal, transactionsCount: 2, transactions: [{}, {}, {}] }).error,
 		);
 	});
 });

@@ -3,15 +3,15 @@ import { Column, Entity, Unique } from "typeorm";
 @Entity({
 	name: "blocks",
 })
-@Unique("unique_block_height", ["height"])
+@Unique("unique_block_number", ["number"])
 @Unique("unique_block_timestamp", ["timestamp"])
-@Unique("unique_previous_block", ["previousBlock"])
+@Unique("unique_parent_hash", ["parentHash"])
 export class Block {
 	@Column({
 		primary: true,
-		type: "varchar",
+		type: "citext",
 	})
-	public readonly id!: string;
+	public readonly hash!: string;
 
 	@Column({
 		type: "smallint",
@@ -25,37 +25,42 @@ export class Block {
 	public readonly timestamp!: string;
 
 	@Column({
-		type: "varchar",
+		type: "citext",
 	})
-	public readonly previousBlock!: string;
+	public readonly parentHash!: string;
+
+	@Column({
+		type: "citext",
+	})
+	public readonly stateRoot!: string;
 
 	@Column({
 		nullable: false,
 		type: "bigint",
 	})
-	public readonly height!: string;
+	public readonly number!: string;
 
 	@Column({
 		nullable: false,
 		type: "integer",
 	})
-	public readonly numberOfTransactions!: number;
+	public readonly transactionsCount!: number;
 
 	@Column({
 		nullable: false,
-		type: "bigint",
+		type: "integer",
 	})
-	public readonly totalAmount!: string;
+	public readonly gasUsed!: number;
 
 	@Column({
 		nullable: false,
-		type: "bigint",
+		type: "numeric",
 	})
-	public readonly totalFee!: string;
+	public readonly fee!: string;
 
 	@Column({
 		nullable: false,
-		type: "bigint",
+		type: "numeric",
 	})
 	public readonly reward!: string;
 
@@ -63,19 +68,19 @@ export class Block {
 		nullable: false,
 		type: "integer",
 	})
-	public readonly payloadLength!: number;
+	public readonly payloadSize!: number;
 
 	@Column({
 		nullable: false,
-		type: "varchar",
+		type: "citext",
 	})
-	public readonly payloadHash!: string;
+	public readonly transactionsRoot!: string;
 
 	@Column({
 		nullable: false,
-		type: "varchar",
+		type: "citext",
 	})
-	public readonly generatorPublicKey!: string;
+	public readonly proposer!: string;
 
 	@Column({
 		nullable: false,

@@ -14,7 +14,7 @@ const importDefaults = async () =>
 
 const removeTransactionPoolEnvironmentVariables = () => {
 	for (const key of Object.keys(process.env)) {
-		if (key.includes("CORE_TRANSACTION_POOL") || key === "CORE_MAX_TRANSACTIONS_IN_POOL") {
+		if (key.includes("MAINSAIL_TRANSACTION_POOL") || key === "MAINSAIL_MAX_TRANSACTIONS_IN_POOL") {
 			delete process.env[key];
 		}
 	}
@@ -29,16 +29,19 @@ describe<{
 	beforeEach((context) => {
 		context.app = new Application(new Container());
 		context.app.bind(Identifiers.Services.Trigger.Service).to(Services.Triggers.Triggers).inSingletonScope();
-
-		context.txPoolEnv = process.env.CORE_TRANSACTION_POOL;
-		context.maxTxPoolEnv = process.env.CORE_MAX_TRANSACTIONS_IN_POOL;
+		context.app.bind(Identifiers.Evm.Instance).toConstantValue({
+			transact: () => ({}),
+			view: () => ({}),
+		});
+		context.txPoolEnv = process.env.MAINSAIL_TRANSACTION_POOL;
+		context.maxTxPoolEnv = process.env.MAINSAIL_MAX_TRANSACTIONS_IN_POOL;
 
 		context.serviceProvider = context.app.resolve(ServiceProvider);
 	});
 
 	afterEach((context) => {
-		process.env.CORE_TRANSACTION_POOL = context.txPoolEnv;
-		process.env.CORE_MAX_TRANSACTIONS_IN_POOL = context.maxTxPoolEnv;
+		process.env.MAINSAIL_TRANSACTION_POOL = context.txPoolEnv;
+		process.env.MAINSAIL_MAX_TRANSACTIONS_IN_POOL = context.maxTxPoolEnv;
 	});
 
 	it("should register, boot and dispose", async (context) => {
@@ -98,7 +101,7 @@ describe<{
 		assert.equal(result.value.customField, "dummy");
 	});
 
-	it("should return true when process.env.CORE_TRANSACTION_POOL_DISABLED is undefined", async (context) => {
+	it("should return true when process.env.MAINSAIL_TRANSACTION_POOL_DISABLED is undefined", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
@@ -107,10 +110,10 @@ describe<{
 		assert.true(result.value.enabled);
 	});
 
-	it("should return false when process.env.CORE_TRANSACTION_POOL_DISABLED is present", async (context) => {
+	it("should return false when process.env.MAINSAIL_TRANSACTION_POOL_DISABLED is present", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_TRANSACTION_POOL_DISABLED = "true";
+		process.env.MAINSAIL_TRANSACTION_POOL_DISABLED = "true";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -118,10 +121,10 @@ describe<{
 		assert.false(result.value.enabled);
 	});
 
-	it("should return path containing process.env.CORE_PATH_DATA", async (context) => {
+	it("should return path containing process.env.MAINSAIL_PATH_DATA", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_PATH_DATA = "dummy/path";
+		process.env.MAINSAIL_PATH_DATA = "dummy/path";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -129,10 +132,10 @@ describe<{
 		assert.equal(result.value.storage, "dummy/path/transaction-pool.sqlite");
 	});
 
-	it("should parse process.env.CORE_MAX_TRANSACTIONS_IN_POOL", async (context) => {
+	it("should parse process.env.MAINSAIL_MAX_TRANSACTIONS_IN_POOL", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_MAX_TRANSACTIONS_IN_POOL = "4000";
+		process.env.MAINSAIL_MAX_TRANSACTIONS_IN_POOL = "4000";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -140,10 +143,10 @@ describe<{
 		assert.equal(result.value.maxTransactionsInPool, 4000);
 	});
 
-	it("should throw if process.env.CORE_MAX_TRANSACTIONS_IN_POOL is not number", async (context) => {
+	it("should throw if process.env.MAINSAIL_MAX_TRANSACTIONS_IN_POOL is not number", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_MAX_TRANSACTIONS_IN_POOL = "false";
+		process.env.MAINSAIL_MAX_TRANSACTIONS_IN_POOL = "false";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -151,10 +154,10 @@ describe<{
 		assert.equal(result.error.message, '"maxTransactionsInPool" must be a number');
 	});
 
-	it("should parse process.env.CORE_TRANSACTION_POOL_MAX_PER_SENDER", async (context) => {
+	it("should parse process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_SENDER", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_TRANSACTION_POOL_MAX_PER_SENDER = "4000";
+		process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_SENDER = "4000";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -162,10 +165,10 @@ describe<{
 		assert.equal(result.value.maxTransactionsPerSender, 4000);
 	});
 
-	it("should throw if process.env.CORE_TRANSACTION_POOL_MAX_PER_SENDER is not number", async (context) => {
+	it("should throw if process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_SENDER is not number", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_TRANSACTION_POOL_MAX_PER_SENDER = "false";
+		process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_SENDER = "false";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -173,10 +176,10 @@ describe<{
 		assert.equal(result.error.message, '"maxTransactionsPerSender" must be a number');
 	});
 
-	it("should parse process.env.CORE_TRANSACTION_POOL_MAX_PER_SENDER", async (context) => {
+	it("should parse process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_SENDER", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_TRANSACTION_POOL_MAX_PER_REQUEST = "4000";
+		process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_REQUEST = "4000";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 
@@ -184,10 +187,10 @@ describe<{
 		assert.equal(result.value.maxTransactionsPerRequest, 4000);
 	});
 
-	it("should throw if process.env.CORE_TRANSACTION_POOL_MAX_PER_REQUEST is not number", async (context) => {
+	it("should throw if process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_REQUEST is not number", async (context) => {
 		removeTransactionPoolEnvironmentVariables();
 
-		process.env.CORE_TRANSACTION_POOL_MAX_PER_REQUEST = "false";
+		process.env.MAINSAIL_TRANSACTION_POOL_MAX_PER_REQUEST = "false";
 
 		const result = (context.serviceProvider.configSchema() as AnySchema).validate(await importDefaults());
 

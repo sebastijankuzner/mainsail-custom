@@ -1,49 +1,41 @@
-import { MultiSignatureAsset, Transaction, TransactionConstructor, TransactionData } from "./crypto/index.js";
-import { AttributeType, Wallet, WalletRepository } from "./state/index.js";
+import { Transaction, TransactionConstructor, TransactionData } from "./crypto/index.js";
+import { BlockContext, CommitKey, Instance, TransactionReceipt } from "./evm/index.js";
+import { Wallet } from "./state/index.js";
 
 export type TransactionHandlerConstructor = new () => TransactionHandler;
 
+export type TransactionHandlerContext = {
+	evm: {
+		instance: Instance;
+		blockContext: BlockContext;
+	};
+};
+
 export interface TransactionHandler {
-	verify(walletRepository: WalletRepository, transaction: Transaction): Promise<boolean>;
+	verify(transaction: Transaction): Promise<boolean>;
 
-	throwIfCannotBeApplied(walletRepository: WalletRepository, transaction: Transaction, sender: Wallet): Promise<void>;
+	throwIfCannotBeApplied(transaction: Transaction, sender: Wallet, evm: Instance): Promise<void>;
 
-	apply(walletRepository: WalletRepository, transaction: Transaction): Promise<void>;
-
-	applyToSender(walletRepository: WalletRepository, transaction: Transaction): Promise<void>;
+	apply(context: TransactionHandlerContext, transaction: Transaction): Promise<TransactionReceipt>;
 
 	emitEvents(transaction: Transaction): void;
-
-	throwIfCannotEnterPool(walletRepository: WalletRepository, transaction: Transaction): Promise<void>;
-
-	verifySignatures(
-		wallet: Wallet,
-		transaction: TransactionData,
-		multiSignature?: MultiSignatureAsset,
-	): Promise<boolean>;
 
 	// Abstract
 	getConstructor(): TransactionConstructor;
 
 	dependencies(): ReadonlyArray<TransactionHandlerConstructor>;
 
-	walletAttributes(): ReadonlyArray<{ name: string; type: AttributeType }>;
-
 	isActivated(): Promise<boolean>;
-
-	applyToRecipient(walletRepository: WalletRepository, transaction: Transaction): Promise<void>;
 }
 
 export interface TransactionHandlerRegistry {
-	initialize(): void;
-
 	getRegisteredHandlers(): TransactionHandler[];
 
-	getRegisteredHandlerByType(internalType: InternalTransactionType, version?: number): TransactionHandler;
+	getRegisteredHandlerByType(type: number, version?: number): TransactionHandler;
 
 	getActivatedHandlers(): Promise<TransactionHandler[]>;
 
-	getActivatedHandlerByType(internalType: InternalTransactionType, version?: number): Promise<TransactionHandler>;
+	getActivatedHandlerByType(type: number, version?: number): Promise<TransactionHandler>;
 
 	getActivatedHandlerForData(transactionData: TransactionData): Promise<TransactionHandler>;
 }
@@ -54,23 +46,24 @@ export interface TransactionHandlerProvider {
 	registerHandlers(): void;
 }
 
-// @TODO: move this out of contracts, it's an implementation
-export interface InternalTransactionType {
-	// private constructor(public readonly type: number, public readonly typeGroup: number) {}
-
-	toString(): string;
-}
-
 export interface TransactionTypeFactory {
-	initialize(transactionTypes: Map<InternalTransactionType, Map<number, TransactionConstructor>>);
+	initialize(transactionTypes: Map<number, TransactionConstructor>);
 
 	create(data: TransactionData): Transaction;
 
 	get(type: number, typeGroup?: number, version?: number): TransactionConstructor;
 }
 
+export interface TransactionValidatorContext {
+	commitKey: CommitKey;
+	gasLimit: number;
+	timestamp: number;
+	generatorAddress: string;
+}
+
 export interface TransactionValidator {
-	validate(transaction: Transaction): Promise<void>;
+	getEvm(): Instance;
+	validate(context: TransactionValidatorContext, transaction: Transaction): Promise<TransactionReceipt>;
 }
 
 export type TransactionValidatorFactory = () => TransactionValidator;

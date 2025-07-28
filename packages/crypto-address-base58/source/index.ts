@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
@@ -5,14 +6,19 @@ import { AddressFactory } from "./address.factory.js";
 import { schemas } from "./schemas.js";
 import { AddressSerializer } from "./serializer.js";
 
+export * from "./address.factory.js";
 export * from "./schemas.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
-		this.app.bind(Identifiers.Cryptography.Identity.Address.Size).toConstantValue(21);
+		this.app.bind(Identifiers.Cryptography.Legacy.Identity.AddressSize).toConstantValue(21);
 
-		this.app.bind(Identifiers.Cryptography.Identity.Address.Factory).to(AddressFactory).inSingletonScope();
-		this.app.bind(Identifiers.Cryptography.Identity.Address.Serializer).to(AddressSerializer).inSingletonScope();
+		this.app.bind(Identifiers.Cryptography.Legacy.Identity.AddressFactory).to(AddressFactory).inSingletonScope();
+		this.app
+			.bind(Identifiers.Cryptography.Legacy.Identity.AddressSerializer)
+			.to(AddressSerializer)
+			.inSingletonScope();
 
 		this.#registerSchemas();
 	}

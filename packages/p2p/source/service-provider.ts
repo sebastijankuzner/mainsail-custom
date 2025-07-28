@@ -1,5 +1,7 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Providers, Services, Utils } from "@mainsail/kernel";
+import { Providers, Services } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 import Joi from "joi";
 
 import {
@@ -18,7 +20,6 @@ import { MessageDownloader } from "./downloader/message-downloader.js";
 import { ProposalDownloader } from "./downloader/proposal-downloader.js";
 import { Header } from "./header.js";
 import { HeaderService } from "./header-service.js";
-import { normalizeUrl } from "./index.js";
 import { Logger } from "./logger.js";
 import { Peer } from "./peer.js";
 import { PeerCommunicator } from "./peer-communicator.js";
@@ -34,8 +35,10 @@ import { State } from "./state.js";
 import { Throttle } from "./throttle.js";
 import { TxPoolNode } from "./tx-pool-node.js";
 import { TxPoolNodeVerifier } from "./tx-pool-node-verifier.js";
+import { normalizeUrl } from "./utils/index.js";
 import { makeFormats, makeKeywords, sanitizeRemoteAddress } from "./validation/index.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.#registerValidation();
@@ -96,33 +99,31 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	}
 
 	#registerFactories(): void {
-		this.app.bind(Identifiers.P2P.Peer.Factory).toFactory<Peer, [string]>(() => (ip: string) => {
+		this.app.bind<(ip: string) => Peer>(Identifiers.P2P.Peer.Factory).toFactory(() => (ip: string) => {
 			const sanitizedIp = sanitizeRemoteAddress(ip);
-			Utils.assert.defined<string>(sanitizedIp);
+			assert.string(sanitizedIp);
 
 			return this.app.resolve(Peer).init(sanitizedIp, Number(this.config().getRequired<number>("server.port")));
 		});
 
-		this.app.bind(Identifiers.P2P.ApiNode.Factory).toFactory<ApiNode, [string]>(() => (url: string) => {
+		this.app.bind<(url: string) => ApiNode>(Identifiers.P2P.ApiNode.Factory).toFactory(() => (url: string) => {
 			const normalizedUrl = normalizeUrl(url);
 			return this.app.resolve(ApiNode).init(normalizedUrl);
 		});
 
-		this.app.bind(Identifiers.P2P.TxPoolNode.Factory).toFactory<TxPoolNode, [string]>(() => (ip: string) => {
+		this.app.bind<(ip: string) => TxPoolNode>(Identifiers.P2P.TxPoolNode.Factory).toFactory(() => (ip: string) => {
 			const sanitizedIp = sanitizeRemoteAddress(ip);
-			Utils.assert.defined<string>(sanitizedIp);
+			assert.string(sanitizedIp);
 
 			return this.app.resolve(TxPoolNode).init(sanitizedIp, this.config().getRequired<number>("txPoolPort"));
 		});
 
-		this.app
-			.bind(Identifiers.P2P.Header.Factory)
-			.toFactory<Contracts.P2P.Header>(() => () => this.app.resolve(Header));
+		this.app.bind<() => Header>(Identifiers.P2P.Header.Factory).toFactory(() => () => this.app.resolve(Header));
 	}
 
 	#registerServices(): void {
 		this.app
-			.bind(Identifiers.P2P.Throttle.Factory)
+			.bind<() => Promise<Throttle>>(Identifiers.P2P.Throttle.Factory)
 			.toFactory(() => async () => await this.app.resolve(Throttle).initialize());
 
 		this.app.bind(Identifiers.P2P.Logger).to(Logger).inSingletonScope();
@@ -171,7 +172,7 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	async #buildServer(): Promise<void> {
 		const server = this.app.get<Contracts.P2P.Server>(Identifiers.P2P.Server);
 		const serverConfig = this.config().getRequired<{ hostname: string; port: number }>("server");
-		Utils.assert.defined(serverConfig);
+		assert.defined(serverConfig);
 
 		await server.initialize("P2P Server", serverConfig);
 	}

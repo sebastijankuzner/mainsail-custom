@@ -1,6 +1,6 @@
 import { inject, injectable } from "@mainsail/container";
 import { Constants, Contracts, Identifiers } from "@mainsail/contracts";
-import { Utils } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 import dayjs from "dayjs";
 
 import { isValidVersion } from "./utils/index.js";
@@ -19,8 +19,8 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly cryptoConfiguration!: Contracts.Crypto.Configuration;
 
-	@inject(Identifiers.State.Service)
-	private readonly stateService!: Contracts.State.Service;
+	@inject(Identifiers.State.Store)
+	private readonly stateStore!: Contracts.State.Store;
 
 	@inject(Identifiers.Database.Service)
 	private readonly database!: Contracts.Database.DatabaseService;
@@ -32,7 +32,7 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 	private readonly logger!: Contracts.P2P.Logger;
 
 	public async verify(peer: Contracts.P2P.Peer): Promise<boolean> {
-		if (process.env[Constants.EnvironmentVariables.CORE_SKIP_PEER_STATE_VERIFICATION] === "true") {
+		if (process.env[Constants.EnvironmentVariables.MAINSAIL_SKIP_PEER_STATE_VERIFICATION] === "true") {
 			return true;
 		}
 
@@ -74,11 +74,11 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 	}
 
 	async #verifyHighestCommonBlock(peer: Contracts.P2P.Peer, state: Contracts.P2P.PeerState): Promise<void> {
-		const block = this.stateService.getStore().getLastBlock();
+		const block = this.stateStore.getLastBlock();
 
-		const heightToRequest = state.header.height < block.data.height ? state.header.height : block.data.height;
+		const blockNumberToRequest = state.blockNumber < block.data.number ? state.blockNumber : block.data.number;
 
-		const { blocks } = await this.communicator.getBlocks(peer, { fromHeight: heightToRequest, limit: 1 });
+		const { blocks } = await this.communicator.getBlocks(peer, { fromBlockNumber: blockNumberToRequest, limit: 1 });
 
 		if (blocks.length !== 1) {
 			throw new Error("Failed to get blocks from peer");
@@ -88,16 +88,16 @@ export class PeerVerifier implements Contracts.P2P.PeerVerifier {
 		const receivedCommit = await this.commitFactory.fromBytes(blocks[0]);
 
 		const blockToCompare =
-			block.data.height === heightToRequest ? block : (await this.database.getCommit(heightToRequest))?.block;
+			block.data.number === blockNumberToRequest ? block : await this.database.getBlock(blockNumberToRequest);
 
-		Utils.assert.defined<Contracts.Crypto.Block>(blockToCompare);
+		assert.defined(blockToCompare);
 
-		if (receivedCommit.block.data.height !== blockToCompare.data.height) {
-			throw new Error("Received block does not match the requested height");
+		if (receivedCommit.block.data.number !== blockToCompare.data.number) {
+			throw new Error("Received block does not match the requested block number");
 		}
 
-		if (receivedCommit.block.data.id !== blockToCompare.data.id) {
-			throw new Error("Received block does not match the requested id. Peer is on a different chain.");
+		if (receivedCommit.block.data.hash !== blockToCompare.data.hash) {
+			throw new Error("Received block does not match the requested hash. Peer is on a different chain.");
 		}
 	}
 }

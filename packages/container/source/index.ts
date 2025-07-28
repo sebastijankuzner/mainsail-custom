@@ -1,3 +1,3 @@
 export * from "./container.js";
-export * from "./exceptions.js";
+export * from "./decorators.js";
 export * from "./ioc.js";

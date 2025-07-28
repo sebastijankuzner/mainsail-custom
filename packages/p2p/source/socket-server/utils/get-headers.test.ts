@@ -7,10 +7,9 @@ describe("getHeaders", ({ it, assert }) => {
 	let port = 4007;
 	const version = "3.0.9";
 	const height = 387;
-	const store = { getLastHeight: () => height, isStarted: () => true };
-	const stateService = { getStore: () => store };
+	const store = { getBlockNumber: () => height, isStarted: () => true };
 	const appGet = {
-		[Identifiers.State.Service]: stateService,
+		[Identifiers.State.Store]: store,
 	};
 	const app = {
 		get: (key) => appGet[key],

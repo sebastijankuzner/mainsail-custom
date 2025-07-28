@@ -1,4 +1,4 @@
-import { NumericCriteria, OrCriteria } from "./criteria.js";
+import { NumericCriteria, OrCriteria } from "./types/criteria.js";
 import {
 	AndExpression,
 	BetweenExpression,
@@ -8,7 +8,7 @@ import {
 	JsonFieldAccessor,
 	LessThanEqualExpression,
 	OrExpression,
-} from "./expressions.js";
+} from "./types/expressions.js";
 
 export const optimizeExpression = <TEntity>(expression: Expression<TEntity>): Expression<TEntity> => {
 	switch (expression.op) {
@@ -83,7 +83,7 @@ export const everyOrCriteria = <TCriteria>(
 export const hasOrCriteria = <TCriteria>(criteria: OrCriteria<TCriteria>): boolean =>
 	someOrCriteria(criteria, () => true);
 
-export const handleAndCriteria = async <TEntity, TCriteria extends {}>(
+export const handleAndCriteria = async <TEntity, TCriteria extends Record<string, any>>(
 	criteria: TCriteria,
 	callback: <K extends keyof TCriteria>(key: K) => Promise<Expression<TEntity>>,
 ): Promise<AndExpression<TEntity>> => {

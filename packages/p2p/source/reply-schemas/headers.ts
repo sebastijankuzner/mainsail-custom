@@ -1,12 +1,12 @@
 export const headers = {
 	additionalProperties: false,
 	properties: {
-		height: {
+		blockNumber: {
 			minimum: 1,
 			type: "integer",
 		},
-		proposedBlockId: {
-			$ref: "blockId",
+		proposedBlockHash: {
+			$ref: "blockHash",
 		},
 		round: {
 			minimum: 0,
@@ -21,14 +21,14 @@ export const headers = {
 			items: {
 				typeof: "boolean",
 			},
-			limitToActiveValidators: {},
+			limitToRoundValidators: {},
 			type: "array",
 		},
 		validatorsSignedPrevote: {
 			items: {
 				typeof: "boolean",
 			},
-			limitToActiveValidators: {},
+			limitToRoundValidators: {},
 			type: "array",
 		},
 		version: {
@@ -37,8 +37,8 @@ export const headers = {
 		},
 	},
 	required: [
-		"height",
-		// "proposedBlockId",
+		"blockNumber",
+		// "proposedBlockHash",
 		"round",
 		"step",
 		"validatorsSignedPrecommit",

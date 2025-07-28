@@ -23,7 +23,6 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 				query: Joi.object({
 					...server.app.schemas.blockCriteriaSchemas,
 					orderBy: server.app.schemas.blocksOrderBy,
-					transform: Joi.bool().default(true),
 				})
 					.concat(blockSortingSchema)
 					.concat(Schemas.pagination),
@@ -37,9 +36,7 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 		method: "GET",
 		options: {
 			validate: {
-				query: Joi.object({
-					transform: Joi.bool().default(true),
-				}),
+				query: Joi.object({}),
 			},
 		},
 		path: "/blocks/first",
@@ -50,9 +47,7 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 		method: "GET",
 		options: {
 			validate: {
-				query: Joi.object({
-					transform: Joi.bool().default(true),
-				}),
+				query: Joi.object({}),
 			},
 		},
 		path: "/blocks/last",
@@ -64,11 +59,9 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 		options: {
 			validate: {
 				params: Joi.object({
-					id: server.app.schemas.blockId,
+					id: server.app.schemas.blockHash,
 				}),
-				query: Joi.object({
-					transform: Joi.bool().default(true),
-				}),
+				query: Joi.object({}),
 			},
 		},
 		path: "/blocks/{id}",
@@ -89,8 +82,8 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 				}),
 				query: Joi.object({
 					...server.app.schemas.transactionCriteriaSchemas,
+					fullReceipt: Joi.bool().default(false),
 					orderBy: server.app.schemas.transactionsOrderBy,
-					transform: Joi.bool().default(true),
 				})
 					.concat(transactionSortingSchema)
 					.concat(Schemas.pagination),

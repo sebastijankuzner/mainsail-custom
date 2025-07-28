@@ -1,0 +1,72 @@
+version: "3.8"
+services:
+    peerdiscovery:
+        build: ./peer-discovery
+        image: peerdiscovery
+
+    checks:
+        build: ./checks
+        image: checks
+        depends_on:
+            - peerdiscovery
+
+    nginx:
+        image: nginxinc/nginx-unprivileged:latest
+        volumes:
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+        ports:
+            - 4900:4900
+
+    node0: &nodeDefinition
+        build: ./nodes
+        image: mainsail
+        volumes:
+            - ./../../../:/mainsail
+        working_dir: /mainsail
+        depends_on:
+            - peerdiscovery
+        command:
+            - /bin/sh
+            - -c
+            - packages/core/bin/run.js core:run --network=testnet
+        environment: &nodeEnvironment
+            MAINSAIL_P2P_PEER_LOG_EXTRA: true
+            MAINSAIL_P2P_MIN_NETWORK_REACH: 2
+            MAINSAIL_PATH_CONFIG: tests/e2e/snapshot/nodes/node0
+            MAINSAIL_PATH_DATA: tests/e2e/snapshot/nodes/node0
+
+    node1:
+        <<: *nodeDefinition
+        depends_on:
+            - peerdiscovery
+        environment:
+            <<: *nodeEnvironment
+            MAINSAIL_PATH_CONFIG: tests/e2e/snapshot/nodes/node1
+            MAINSAIL_PATH_DATA: tests/e2e/snapshot/nodes/node1
+
+    node2:
+        <<: *nodeDefinition
+        depends_on:
+            - peerdiscovery
+        environment:
+            <<: *nodeEnvironment
+            MAINSAIL_PATH_CONFIG: tests/e2e/snapshot/nodes/node2
+            MAINSAIL_PATH_DATA: tests/e2e/snapshot/nodes/node2
+
+    node3:
+        <<: *nodeDefinition
+        depends_on:
+            - peerdiscovery
+        environment:
+            <<: *nodeEnvironment
+            MAINSAIL_PATH_CONFIG: tests/e2e/snapshot/nodes/node3
+            MAINSAIL_PATH_DATA: tests/e2e/snapshot/nodes/node3
+
+    node4:
+        <<: *nodeDefinition
+        depends_on:
+            - peerdiscovery
+        environment:
+            <<: *nodeEnvironment
+            MAINSAIL_PATH_CONFIG: tests/e2e/snapshot/nodes/node4
+            MAINSAIL_PATH_DATA: tests/e2e/snapshot/nodes/node4

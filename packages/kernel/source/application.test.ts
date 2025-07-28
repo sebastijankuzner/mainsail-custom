@@ -1,4 +1,4 @@
-import { Container, injectable, interfaces } from "@mainsail/container";
+import { Container, injectable } from "@mainsail/container";
 import { Exceptions, Identifiers } from "@mainsail/contracts";
 import { setMaxListeners } from "events";
 import { join } from "path";
@@ -27,11 +27,11 @@ class StubServiceProvider extends ServiceProvider {
 
 describe<{
 	app: Application;
-	container: interfaces.Container;
+	container: Container;
 	logger: Record<string, Function>;
-}>("Application", ({ afterEach, assert, beforeEach, it, spy }) => {
+}>("Application", ({ afterEach, assert, beforeEach, it, spy, stub }) => {
 	beforeEach((context) => {
-		delete process.env.CORE_PATH_CONFIG;
+		delete process.env.MAINSAIL_PATH_CONFIG;
 
 		// TODO
 		setMaxListeners(1000);
@@ -52,7 +52,7 @@ describe<{
 	});
 
 	afterEach(() => {
-		delete process.env.CORE_PATH_CONFIG;
+		delete process.env.MAINSAIL_PATH_CONFIG;
 	});
 
 	it("should bootstrap the application", async (context) => {
@@ -61,7 +61,7 @@ describe<{
 		await context.app.bootstrap({
 			flags: {
 				name: "local",
-				network: "testnet",
+				network: "devnet",
 				paths: { config: join(import.meta.dirname, "../test/stubs/config/local") },
 				token: "ark",
 			},
@@ -69,15 +69,15 @@ describe<{
 	});
 
 	it("should bootstrap the application with a config path from process.env", async (context) => {
-		process.env.CORE_PATH_CONFIG = join(import.meta.dirname, "../test/stubs/config");
+		process.env.MAINSAIL_PATH_CONFIG = join(import.meta.dirname, "../test/stubs/config");
 
 		context.app.unbind(Identifiers.Services.Filesystem.Service);
 
 		await context.app.bootstrap({
-			flags: { name: "local", network: "testnet", token: "ark" },
+			flags: { name: "local", network: "devnet", token: "ark" },
 		});
 
-		assert.is(context.app.configPath(), process.env.CORE_PATH_CONFIG);
+		assert.is(context.app.configPath(), process.env.MAINSAIL_PATH_CONFIG);
 	});
 
 	it("should boot the application", async (context) => {
@@ -149,7 +149,9 @@ describe<{
 	});
 
 	it("should fail to set a path if it does not exist", (context) => {
-		context.app.bind("path.data").toConstantValue();
+		context.app.bind("path.data").toConstantValue("");
+
+		stub(context.app.get(Identifiers.Services.Filesystem.Service), "existsSync").returnValue(false);
 
 		assert.throws(() => context.app.dataPath(), new Exceptions.DirectoryCannotBeFound());
 
@@ -360,7 +362,7 @@ describe<{
 		assert.false(context.app.isBoundTagged("key", "a", "b"));
 		assert.false(context.app.isBoundTagged("key", "a", "c"));
 
-		context.app.bind("key").toConstantValue("value").whenTargetTagged("a", "b");
+		context.app.bind("key").toConstantValue("value").whenTagged("a", "b");
 
 		assert.true(context.app.isBoundTagged("key", "a", "b"));
 		assert.false(context.app.isBoundTagged("key", "a", "c"));
@@ -378,8 +380,8 @@ describe<{
 	});
 
 	it("should get tagged value from the IoC container", async (context) => {
-		context.app.bind("animal").toConstantValue("bear").whenTargetTagged("order", "carnivora");
-		context.app.bind("animal").toConstantValue("dolphin").whenTargetTagged("order", "cetacea");
+		context.app.bind("animal").toConstantValue("bear").whenTagged("order", "carnivora");
+		context.app.bind("animal").toConstantValue("dolphin").whenTagged("order", "cetacea");
 
 		assert.throws(() => context.app.get("animal"));
 		assert.is(context.app.getTagged("animal", "order", "carnivora"), "bear");

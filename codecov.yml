@@ -1,0 +1,6 @@
+ignore:
+  - "contracts/test"
+  - "packages/contracts"
+  - "packages/utils/benchmark"
+  - "packages/configuration-generator/bin"
+

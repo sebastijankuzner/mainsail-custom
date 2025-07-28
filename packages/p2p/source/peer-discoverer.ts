@@ -1,6 +1,7 @@
 import { inject, injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Services, Utils } from "@mainsail/kernel";
+import { Services } from "@mainsail/kernel";
+import { http } from "@mainsail/utils";
 import { readJSONSync } from "fs-extra/esm";
 
 @injectable()
@@ -25,9 +26,10 @@ export class PeerDiscoverer implements Contracts.P2P.PeerDiscoverer {
 			const { peers } = await this.communicator.getPeers(peer);
 
 			for (const peer of peers) {
-				await this.app
-					.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-					.call("validateAndAcceptPeer", { ip: peer.ip, options: {} });
+				await this.app.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service).call<{
+					ip: string;
+					options: Contracts.P2P.AcceptNewPeerOptions;
+				}>("validateAndAcceptPeer", { ip: peer.ip, options: {} });
 			}
 		} catch (error) {
 			this.logger.debug(`Failed to get peers from ${peer.ip}: ${error.message}`);
@@ -62,9 +64,10 @@ export class PeerDiscoverer implements Contracts.P2P.PeerDiscoverer {
 
 		return Promise.all(
 			Object.values(peers).map((peer: Contracts.P2P.Peer) =>
-				this.app
-					.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service)
-					.call("validateAndAcceptPeer", { ip: peer.ip, options: { seed: true } }),
+				this.app.get<Services.Triggers.Triggers>(Identifiers.Services.Trigger.Service).call<{
+					ip: string;
+					options: Contracts.P2P.AcceptNewPeerOptions;
+				}>("validateAndAcceptPeer", { ip: peer.ip, options: { seed: true } }),
 			),
 		);
 	}
@@ -81,7 +84,7 @@ export class PeerDiscoverer implements Contracts.P2P.PeerDiscoverer {
 
 			// URL...
 			this.logger.debug(`GET ${url}`);
-			const { data } = await Utils.http.get(url);
+			const { data } = await http.get(url);
 			return typeof data === "object" ? data : JSON.parse(data);
 		}
 

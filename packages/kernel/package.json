@@ -1,6 +1,6 @@
 {
 	"name": "@mainsail/kernel",
-	"version": "0.0.1-alpha.20",
+	"version": "0.0.1-evm.25",
 	"description": "Kernel for the Mainsail blockchain",
 	"license": "GPL-3.0-only",
 	"contributors": [],
@@ -22,7 +22,7 @@
 		"clean": "del distribution",
 		"release": "pnpm publish --access public",
 		"test": "pnpm run uvu source .test.ts",
-		"test:coverage": "c8 pnpm run test",
+		"test:coverage": "c8 -r=text -r=lcov --all pnpm run test",
 		"test:coverage:html": "c8 -r html --all pnpm run test",
 		"test:file": "pnpm run uvu source",
 		"uvu": "tsx --tsconfig ../../tsconfig.test.json ./node_modules/uvu/bin.js"
@@ -31,34 +31,31 @@
 		"@mainsail/container": "workspace:*",
 		"@mainsail/contracts": "workspace:*",
 		"@mainsail/utils": "workspace:*",
-		"chalk": "^5.3.0",
-		"cron": "3.1.6",
-		"date-fns": "3.4.0",
+		"chalk": "5.4.1",
+		"cron": "4.1.0",
+		"date-fns": "4.1.0",
 		"deepmerge": "4.3.1",
 		"env-paths": "3.0.0",
-		"fs-extra": "11.2.0",
-		"glob": "10.3.10",
-		"ipaddr.js": "2.1.0",
-		"joi": "17.12.2",
+		"fs-extra": "11.3.0",
+		"glob": "11.0.1",
+		"joi": "17.13.3",
 		"log-process-errors": "12.0.0",
 		"nanomatch": "1.2.13",
-		"nsfw": "2.2.4",
-		"semver": "7.6.0"
+		"nsfw": "2.2.5",
+		"semver": "7.7.1",
+		"split2": "4.2.0"
 	},
 	"devDependencies": {
 		"@types/capture-console": "1.0.5",
-		"@types/cron": "2.0.1",
-		"@types/deepmerge": "2.2.0",
-		"@types/env-paths": "2.1.0",
 		"@types/fs-extra": "11.0.4",
-		"@types/glob": "8.1.0",
 		"@types/log-process-errors": "6.3.1",
 		"@types/semver": "7.5.8",
+		"@types/split2": "4.2.3",
 		"@types/tmp": "0.2.6",
 		"capture-console": "1.0.2",
-		"moment-timezone": "0.5.45",
+		"moment-timezone": "0.5.47",
 		"tmp": "0.2.3",
-		"uvu": "^0.5.6"
+		"uvu": "0.5.6"
 	},
 	"engines": {
 		"node": ">=20.x"

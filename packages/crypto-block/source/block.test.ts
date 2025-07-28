@@ -1,7 +1,7 @@
 import { Contracts } from "@mainsail/contracts";
 import clone from "lodash.clone";
 
-import crypto from "../../core/bin/config/testnet/core/crypto.json";
+import crypto from "../../core/bin/config/devnet/core/crypto.json";
 import { describe, Factories } from "../../test-framework/source";
 import { blockData } from "../test/fixtures/block";
 import { sealBlock } from "./block";
@@ -11,12 +11,15 @@ describe<{}>("Block", ({ it, assert }) => {
 		const transactionFactory = await Factories.factory("Transfer", crypto);
 
 		const transaction1 = await transactionFactory.withStates("sign").make<Contracts.Crypto.Transaction>();
-		const transaction2 = await transactionFactory.withStates("sign").make<Contracts.Crypto.Transaction>();
+		const transaction2 = await transactionFactory
+			.withOptions({ nonce: 1 })
+			.withStates("sign")
+			.make<Contracts.Crypto.Transaction>();
 
 		const indexedTransaction1 = clone(transaction1);
-		indexedTransaction1.data.sequence = 1;
+		indexedTransaction1.data.transactionIndex = 1;
 		const indexedTransaction2 = clone(transaction2);
-		indexedTransaction2.data.sequence = 1;
+		indexedTransaction2.data.transactionIndex = 1;
 
 		const block = sealBlock({
 			data: blockData,

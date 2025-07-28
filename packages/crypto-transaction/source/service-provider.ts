@@ -1,3 +1,4 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
@@ -7,10 +8,11 @@ import { TransactionRegistry } from "./registry.js";
 import { Serializer } from "./serializer.js";
 import { Signer } from "./signer.js";
 import { TransactionTypeFactory } from "./types/index.js";
-import { Utils } from "./utils.js";
-import { makeFormats, makeKeywords, schemas } from "./validation/index.js";
+import { Utils as Utilities } from "./utilities.js";
+import { makeKeywords, schemas } from "./validation/index.js";
 import { Verifier } from "./verifier.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		this.app.bind(Identifiers.Cryptography.Transaction.TypeFactory).to(TransactionTypeFactory).inSingletonScope();
@@ -19,19 +21,13 @@ export class ServiceProvider extends Providers.ServiceProvider {
 		this.app.bind(Identifiers.Cryptography.Transaction.Registry).to(TransactionRegistry).inSingletonScope();
 		this.app.bind(Identifiers.Cryptography.Transaction.Serializer).to(Serializer).inSingletonScope();
 		this.app.bind(Identifiers.Cryptography.Transaction.Signer).to(Signer).inSingletonScope();
-		this.app.bind(Identifiers.Cryptography.Transaction.Utils).to(Utils).inSingletonScope();
+		this.app.bind(Identifiers.Cryptography.Transaction.Utils).to(Utilities).inSingletonScope();
 		this.app.bind(Identifiers.Cryptography.Transaction.Verifier).to(Verifier).inSingletonScope();
 
 		this.#registerValidation();
 	}
 
 	#registerValidation(): void {
-		for (const [name, format] of Object.entries(
-			makeFormats(this.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)),
-		)) {
-			this.app.get<Contracts.Crypto.Validator>(Identifiers.Cryptography.Validator).addFormat(name, format);
-		}
-
 		for (const keyword of Object.values(
 			makeKeywords(this.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)),
 		)) {

@@ -30,7 +30,7 @@ export class Service implements Contracts.ConsensusStorage.Service {
 		const data = await this.stateStorage.get("consensus-state");
 
 		return {
-			height: data.height,
+			blockNumber: data.blockNumber,
 			lockedRound: data.lockedRound,
 			round: data.round,
 			step: data.step,
@@ -41,7 +41,7 @@ export class Service implements Contracts.ConsensusStorage.Service {
 	public async saveState(state: Contracts.Consensus.State): Promise<void> {
 		// always overwrite existing state; we only care about state for uncommitted blocks
 		const data: Contracts.Consensus.StateData = {
-			height: state.height,
+			blockNumber: state.blockNumber,
 			lockedRound: state.lockedRound,
 			round: state.round,
 			step: state.step,
@@ -56,10 +56,7 @@ export class Service implements Contracts.ConsensusStorage.Service {
 		await this.proposalStorage.transaction(() => {
 			for (const proposal of proposals) {
 				const validator = this.validatorSet.getValidator(proposal.validatorIndex);
-				void this.proposalStorage.put(
-					`${proposal.round}-${validator.getConsensusPublicKey()}`,
-					proposal.toData(),
-				);
+				void this.proposalStorage.put(`${proposal.round}-${validator.blsPublicKey}`, proposal.toData());
 			}
 		});
 
@@ -70,7 +67,7 @@ export class Service implements Contracts.ConsensusStorage.Service {
 		await this.prevoteStorage.transaction(() => {
 			for (const prevote of prevotes) {
 				const validator = this.validatorSet.getValidator(prevote.validatorIndex);
-				void this.prevoteStorage.put(`${prevote.round}-${validator.getConsensusPublicKey()}`, prevote.toData());
+				void this.prevoteStorage.put(`${prevote.round}-${validator.blsPublicKey}`, prevote.toData());
 			}
 		});
 
@@ -81,10 +78,7 @@ export class Service implements Contracts.ConsensusStorage.Service {
 		await this.precommitStorage.transaction(() => {
 			for (const precommit of precommits) {
 				const validator = this.validatorSet.getValidator(precommit.validatorIndex);
-				void this.precommitStorage.put(
-					`${precommit.round}-${validator.getConsensusPublicKey()}`,
-					precommit.toData(),
-				);
+				void this.precommitStorage.put(`${precommit.round}-${validator.blsPublicKey}`, precommit.toData());
 			}
 		});
 

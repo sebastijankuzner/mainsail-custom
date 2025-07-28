@@ -11,12 +11,19 @@ export type EnvironmentOptions = {
 
 export type MilestoneOptions = {
 	validators: number;
+	validatorRegistrationFee: string;
 	maxBlockPayload: number;
+	maxBlockGasLimit: number;
 	maxTxPerBlock: number;
 	blockTime: number;
+	timeouts?: {
+		blockPrepareTime: number;
+		blockTime: number;
+		stageTimeout: number;
+		stageTimeoutIncrease: number;
+		tolerance: number;
+	};
 	epoch: Date;
-	vendorFieldLength: number;
-	address: { bech32m: string } | { base58: number };
 };
 
 export type NetworkOptions = {
@@ -26,6 +33,8 @@ export type NetworkOptions = {
 	explorer: string;
 	pubKeyHash: number;
 	wif: number;
+	chainId: number;
+	nethashSalt?: number;
 };
 
 export type RewardOptions = {
@@ -36,8 +45,17 @@ export type RewardOptions = {
 export type GenesisBlockOptions = {
 	distribute: boolean;
 	premine: string;
-	pubKeyHash: number;
+	chainId: number;
 	epoch: Date;
+	snapshot?: SnapshotOptions;
+	initialBlockNumber: number;
+	mockFakeValidatorBlsKeys?: boolean;
+};
+
+export type SnapshotOptions = {
+	path: string;
+	snapshotHash?: string;
+	previousGenesisBlockHash?: string;
 };
 
 export type InternalOptions = EnvironmentOptions &
@@ -59,6 +77,7 @@ export type Options = Partial<InternalOptions> & {
 	network: string;
 	token: string;
 	symbol: string;
+	chainId: number;
 };
 
 export type WriteOptions = {
@@ -68,4 +87,5 @@ export type WriteOptions = {
 	writeValidators: boolean;
 	writeGenesisBlock: boolean;
 	writeCrypto: boolean;
+	writeSnapshot: boolean;
 };

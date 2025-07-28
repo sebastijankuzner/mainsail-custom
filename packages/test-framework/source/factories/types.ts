@@ -7,11 +7,11 @@ export type FactoryFunction = ({ entity, options }: { entity?: any; options: Fac
 export type HookFunction = ({ entity, options }: { entity?: any; options: FactoryFunctionOptions }) => void;
 
 export type TransactionOptions = {
-	version?: number;
 	nonce?: string;
-	fee?: string;
+	gasPrice?: number;
 	timestamp?: number;
-	senderPublicKey?: string;
+	recipientAddress?: string;
+	senderAddress?: string;
 	passphrase?: string;
 	passphrases?: string[];
 };
@@ -19,7 +19,6 @@ export type TransactionOptions = {
 export type TransferOptions = TransactionOptions & {
 	amount?: string;
 	recipientId?: string;
-	vendorField?: string;
 };
 
 export type ValidatorRegistrationOptions = TransactionOptions & {
@@ -43,6 +42,13 @@ export type MultiPaymentOptions = TransactionOptions & {
 		amount: string;
 		recipientId: string;
 	}[];
+};
+
+export type EvmCallOptions = TransactionOptions & {
+	evmCall?: {
+		payload: string;
+		gasLimit: number;
+	};
 };
 
 export interface Identity {

@@ -22,8 +22,8 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 			validate: {
 				query: Joi.object({
 					...server.app.schemas.transactionCriteriaSchemas,
+					fullReceipt: Joi.bool().default(false),
 					orderBy: server.app.schemas.transactionsOrderBy,
-					transform: Joi.bool().default(true),
 				})
 					.concat(transactionSortingSchema)
 					.concat(Schemas.pagination),
@@ -38,32 +38,19 @@ export const register = (server: Contracts.Api.ApiServer): void => {
 		options: {
 			validate: {
 				params: Joi.object({
-					// TODO: length depends on hash size...
-					id: Joi.string().hex() /* .length(64), */,
+					hash: Joi.string().hex().length(64),
 				}),
 				query: Joi.object({
-					transform: Joi.bool().default(true),
+					fullReceipt: Joi.bool().default(false),
 				}),
 			},
 		},
-		path: "/transactions/{id}",
-	});
-
-	server.route({
-		handler: (request: Hapi.Request) => controller.types(request),
-		method: "GET",
-		path: "/transactions/types",
+		path: "/transactions/{hash}",
 	});
 
 	server.route({
 		handler: (request: Hapi.Request) => controller.schemas(request),
 		method: "GET",
 		path: "/transactions/schemas",
-	});
-
-	server.route({
-		handler: (request: Hapi.Request) => controller.fees(request),
-		method: "GET",
-		path: "/transactions/fees",
 	});
 };

@@ -38,9 +38,12 @@ export class Application implements Contracts.Kernel.Application {
 	}
 
 	public async boot(): Promise<void> {
-		await this.#bootstrapWith("serviceProviders");
-
-		this.#booted = true;
+		try {
+			await this.#bootstrapWith("serviceProviders");
+			this.#booted = true;
+		} catch (error) {
+			await this.terminate(error.name, error);
+		}
 	}
 
 	public async reboot(): Promise<void> {
@@ -158,20 +161,18 @@ export class Application implements Contracts.Kernel.Application {
 		return false;
 	}
 
-	public async terminate(reason?: string, error?: Error): Promise<void> {
+	public async terminate(reason?: string, error?: Error): Promise<never> {
 		this.#booted = false;
 
 		if (this.#terminating) {
-			this.get<Contracts.Kernel.Logger>(Identifiers.Services.Log.Service).warning(
-				"Force application termination. Graceful shutdown was interrupted.",
-			);
-			exit(1);
+			return new Promise(() => {});
 		}
 		this.#terminating = true;
 
-		const message = `reason: ${reason} error: ${error?.message}`;
-		if (reason || error) {
-			this.get<Contracts.Kernel.Logger>(Identifiers.Services.Log.Service)[error ? "error" : "warning"](message);
+		if (reason) {
+			this.get<Contracts.Kernel.Logger>(Identifiers.Services.Log.Service)[error ? "error" : "warning"](
+				`Application shutdown: ${reason}`,
+			);
 		}
 
 		if (error) {
@@ -211,22 +212,22 @@ export class Application implements Contracts.Kernel.Application {
 
 	public bind<T>(
 		serviceIdentifier: Contracts.Kernel.Container.ServiceIdentifier<T>,
-	): Contracts.Kernel.Container.BindingToSyntax<T> {
+	): Contracts.Kernel.Container.BindToFluentSyntax<T> {
 		return this.container.bind(serviceIdentifier);
 	}
 
 	public rebind<T>(
 		serviceIdentifier: Contracts.Kernel.Container.ServiceIdentifier<T>,
-	): Contracts.Kernel.Container.BindingToSyntax<T> {
+	): Contracts.Kernel.Container.BindToFluentSyntax<T> {
 		if (this.container.isBound(serviceIdentifier)) {
-			this.container.unbind(serviceIdentifier);
+			this.container.unbindSync(serviceIdentifier);
 		}
 
 		return this.container.bind(serviceIdentifier);
 	}
 
 	public unbind<T>(serviceIdentifier: Contracts.Kernel.Container.ServiceIdentifier<T>): void {
-		return this.container.unbind(serviceIdentifier);
+		return this.container.unbindSync(serviceIdentifier);
 	}
 
 	public get<T>(serviceIdentifier: Contracts.Kernel.Container.ServiceIdentifier<T>): T {
@@ -238,7 +239,7 @@ export class Application implements Contracts.Kernel.Application {
 		key: string | number | symbol,
 		value: any,
 	): T {
-		return this.container.getTagged(serviceIdentifier, key, value);
+		return this.container.get(serviceIdentifier, { tag: { key, value } });
 	}
 
 	public isBound<T>(serviceIdentifier: Contracts.Kernel.Container.ServiceIdentifier<T>): boolean {
@@ -250,11 +251,11 @@ export class Application implements Contracts.Kernel.Application {
 		key: string | number | symbol,
 		value: any,
 	): boolean {
-		return this.container.isBoundTagged(serviceIdentifier, key, value);
+		return this.container.isBound(serviceIdentifier, { tag: { key, value } });
 	}
 
 	public resolve<T>(constructorFunction: Contracts.Kernel.Container.Newable<T>): T {
-		return this.container.resolve(constructorFunction);
+		return this.container.get(constructorFunction, { autobind: true });
 	}
 
 	async #bootstrapWith(type: string): Promise<void> {

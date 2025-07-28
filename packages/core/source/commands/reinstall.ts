@@ -1,6 +1,6 @@
 import { Commands, Identifiers, Services } from "@mainsail/cli";
-import { inject, injectable } from "@mainsail/container";
-import { Utils } from "@mainsail/kernel";
+import { inject, injectable, postConstruct } from "@mainsail/container";
+import { assert } from "@mainsail/utils";
 import Joi from "joi";
 
 @injectable()
@@ -15,6 +15,7 @@ export class Command extends Commands.Command {
 
 	public description = "Reinstall the Core installation";
 
+	@postConstruct()
 	public configure(): void {
 		this.definition.setFlag("force", "Force a reinstall.", Joi.boolean());
 	}
@@ -37,7 +38,7 @@ export class Command extends Commands.Command {
 
 		spinner.start();
 
-		Utils.assert.defined<string>(this.pkg.name);
+		assert.string(this.pkg.name);
 		this.installer.install(this.pkg.name, this.pkg.version);
 
 		this.processManager.update();

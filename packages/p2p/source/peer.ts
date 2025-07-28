@@ -1,6 +1,7 @@
 import { inject, injectable } from "@mainsail/container";
-import { Contracts, Identifiers } from "@mainsail/contracts";
-import { Types, Utils } from "@mainsail/kernel";
+import { Contracts, Events, Identifiers } from "@mainsail/contracts";
+import { Types } from "@mainsail/kernel";
+import { assert } from "@mainsail/utils";
 import dayjs, { Dayjs } from "dayjs";
 
 import { getPeerUrl } from "./utils/get-peer-url.js";
@@ -9,6 +10,9 @@ import { getPeerUrl } from "./utils/get-peer-url.js";
 export class Peer implements Contracts.P2P.Peer {
 	@inject(Identifiers.Services.Queue.Factory)
 	private readonly createQueue!: Types.QueueFactory;
+
+	@inject(Identifiers.Services.EventDispatcher.Service)
+	private readonly events!: Contracts.Kernel.EventDispatcher;
 
 	public ip!: string;
 
@@ -48,13 +52,25 @@ export class Peer implements Contracts.P2P.Peer {
 
 	public get header(): Contracts.P2P.HeaderData {
 		// State can be undefined when the peer is not yet verified.
-		Utils.assert.defined<Contracts.P2P.HeaderData>(this.#header);
+		assert.defined(this.#header);
 
 		return this.#header;
 	}
 
 	public set header(header: Contracts.P2P.HeaderData) {
+		const previousHeader = this.#header;
+
 		this.#header = header;
+
+		if (previousHeader === undefined) {
+			return;
+		}
+
+		const changed =
+			previousHeader.blockNumber !== this.#header.blockNumber || previousHeader.version !== this.#header.version;
+		if (changed) {
+			void this.events.dispatch(Events.PeerEvent.Updated, this);
+		}
 	}
 
 	public recentlyPinged(): boolean {

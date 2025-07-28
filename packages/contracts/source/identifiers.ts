@@ -10,6 +10,12 @@ export const Identifiers = {
 		Thread: Symbol("Application<Thread>"),
 		Version: Symbol("Application<Version>"),
 	},
+	BlockchainUtils: {
+		FeeCalculator: Symbol("BlockchainUtils<FeeCalculator>"),
+		ProposerCalculator: Symbol("BlockchainUtils<ProposerCalculator>"),
+		RoundCalculator: Symbol("BlockchainUtils<RoundCalculator>"),
+		TimestampCalculator: Symbol("BlockchainUtils<TimestampCalculator>"),
+	},
 	Config: {
 		Flags: Symbol("Config<Flags>"),
 		Plugins: Symbol("Config<Plugins>"),
@@ -57,13 +63,14 @@ export const Identifiers = {
 		Block: {
 			Deserializer: Symbol("Crypto<Block.Deserializer>"),
 			Factory: Symbol("Crypto<Block.Factory>"),
-			IDFactory: Symbol("Crypto<Block.IDFactory>"),
+			HashFactory: Symbol("Crypto<Block.HashFactory>"),
+			HeaderSize: Symbol("Crypto<Block.HeaderSize>"),
 			Serializer: Symbol("Crypto<Block.Serializer>"),
-			Verifier: Symbol("Crypto<Block.Verifier>"),
 		},
 		Commit: {
 			Deserializer: Symbol("Crypto<Commit.Deserializer>"),
 			Factory: Symbol("Crypto<Commit.Factory>"),
+			ProofSize: Symbol("Crypto<Commit.ProofSize>"),
 			Serializer: Symbol("Crypto<Commit.Serializer>"),
 		},
 		Configuration: Symbol("Crypto<Configuration>"),
@@ -96,6 +103,13 @@ export const Identifiers = {
 				Factory: Symbol("Crypto<Identity.Wif.Factory>"),
 			},
 		},
+		Legacy: {
+			Identity: {
+				AddressFactory: Symbol("Crypto<Legacy.Identity.Address.Factory>"),
+				AddressSerializer: Symbol("Crypto<Legacy.Identity.Address.Serializer>"),
+				AddressSize: Symbol("Crypto<Legacy.Identity.Address.Size>"),
+			},
+		},
 		Message: {
 			Deserializer: Symbol("Crypto<Message.Deserializer>"),
 			Factory: Symbol("Crypto<Message.Factory>"),
@@ -119,6 +133,7 @@ export const Identifiers = {
 			Utils: Symbol("Crypto<Transaction.Utils>"),
 			Verifier: Symbol("Crypto<Transaction.Verifier>"),
 		},
+
 		Validator: Symbol("Crypto<Validator>"),
 	},
 	Database: {
@@ -129,12 +144,27 @@ export const Identifiers = {
 		Service: Symbol("Database<Service>"),
 		Storage: {
 			Block: Symbol("Database<Storage.Block>"),
+			BlockId: Symbol("Database<Storage.BlockId>"),
+			Commit: Symbol("Database<Storage.Commit>"),
+			State: Symbol("Database<Storage.State>"),
+			Transaction: Symbol("Database<Storage.Transaction>"),
+			TransactionId: Symbol("Database<Storage.TransactionId>"),
 		},
 	},
-	Fee: {
-		Matcher: Symbol("Fee<Matcher>"),
-		Registry: Symbol("Fee<Registry>"),
-		Type: Symbol("Fee<Type>"),
+	Evm: {
+		API: {
+			HTTP: Symbol.for("Evm<API.HTTP>"),
+			HTTPS: Symbol.for("Evm<API.HTTPS>"),
+		},
+		ContractService: {
+			Consensus: Symbol("Evm<ContractService.Consensus>"),
+		},
+		Instance: Symbol("Evm<Instance>"),
+		State: Symbol("Evm<State>"),
+		Worker: Symbol("Evm<Worker>"),
+		WorkerSubprocess: {
+			Factory: Symbol("Evm<WorkerSubprocess.Factory>"),
+		},
 	},
 	P2P: {
 		ApiNode: {
@@ -179,10 +209,8 @@ export const Identifiers = {
 	Processor: {
 		BlockProcessor: Symbol("Processor<Block.Processor>"),
 		BlockVerifier: Symbol("Processor<Block.Verifier>"),
+		BlockVerifierHandlers: Symbol("Processor<Block.Verifier.Handlers>"),
 		TransactionProcessor: Symbol("Processor<Transaction.Processor>"),
-	},
-	Proposer: {
-		Selector: Symbol("Proposer<Selector>"),
 	},
 	ServiceProvider: {
 		Configuration: Symbol("ServiceProvider<Configuration>"),
@@ -208,9 +236,6 @@ export const Identifiers = {
 			Manager: Symbol("Kernel<Log.Manager>"),
 			Service: Symbol("Kernel<Log.Service>"),
 		},
-		Mixin: {
-			Service: Symbol("Kernel<Mixin.Service>"),
-		},
 		Pipeline: {
 			Factory: Symbol("Kernel<Pipeline.Factory>"),
 		},
@@ -229,39 +254,14 @@ export const Identifiers = {
 			Service: Symbol("Kernel<Validation.Service>"),
 		},
 	},
+	Snapshot: {
+		Legacy: {
+			Importer: Symbol("Snapshot<Legacy.Importer>"),
+		},
+	},
 	State: {
-		AttributeRepository: Symbol("State<AttributeRepository>"),
-		Service: Symbol("State<Service>"),
-		Snapshot: {
-			Exporter: Symbol("State<Snapshot.Exporter>"),
-			Importer: Symbol("State<Snapshot.Importer>"),
-			Service: Symbol("State<Snapshot.Service>"),
-		},
 		State: Symbol("State<State>"),
-		StateRepository: {
-			Factory: Symbol("State<StateRepository<Factory>>"),
-		},
-		Store: {
-			Factory: Symbol("State<Store<Factory>>"),
-		},
-		ValidatorMutator: Symbol("State<ValidatorMutator>"),
-		ValidatorWallet: {
-			Factory: Symbol("State<ValidatorWallet<Factory>>"),
-		},
-		Verifier: Symbol("State<Verifier>"),
-		Wallet: {
-			Attributes: Symbol("State<Wallet<Attributes>>"),
-			Factory: Symbol("State<Wallet<Factory>>"),
-		},
-		WalletRepository: {
-			Base: {
-				Factory: Symbol("State<WalletRepository<Base<Factory>>>"),
-			},
-			BySender: {
-				Factory: Symbol("State<WalletRepository<BySender<Factory>>>"),
-			},
-			IndexSet: Symbol("State<WalletRepository<IndexSet>>"),
-		},
+		Store: Symbol("State<Store>"),
 	},
 	Transaction: {
 		Handler: {
@@ -276,8 +276,11 @@ export const Identifiers = {
 		},
 	},
 	TransactionPool: {
+		API: {
+			HTTP: Symbol.for("TransactionPool<API.HTTP>"),
+			HTTPS: Symbol.for("TransactionPool<API.HTTPS>"),
+		},
 		Broadcaster: Symbol("TransactionPoolBroadcaster<Broadcaster>"),
-		ExpirationService: Symbol("TransactionPool<ExpirationService>"),
 		Mempool: Symbol("TransactionPool<Mempool>"),
 		Peer: {
 			Communicator: Symbol("TransactionPoolBroadcaster<Peer.Communicator>"),

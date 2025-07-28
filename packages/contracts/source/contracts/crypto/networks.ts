@@ -1,4 +1,4 @@
-import { Fees } from "../fees.js";
+import { SpecId } from "../evm/evm.js";
 import { CommitJson } from "./commit.js";
 
 export type NetworkConfig = {
@@ -15,9 +15,9 @@ export type NetworkConfigPartial = {
 
 export type Network = {
 	name: string;
-	messagePrefix: string;
 	pubKeyHash: number;
 	nethash: string;
+	chainId: number;
 	wif: number;
 	slip44: number;
 	client: {
@@ -29,7 +29,7 @@ export type Network = {
 
 export type MilestoneBlock = {
 	maxPayload: number;
-	maxTransactions: number;
+	maxGasLimit: number;
 	version: number;
 };
 export type MilestoneSatoshi = {
@@ -44,18 +44,31 @@ export type MilestoneTimeouts = {
 	stageTimeoutIncrease: number;
 };
 
+export type MilestoneGas = {
+	minimumGasLimit: number;
+	maximumGasLimit: number;
+	minimumGasPrice: number;
+	maximumGasPrice: number;
+};
+
+export type MilestoneSnapshot = {
+	snapshotHash: string;
+	previousGenesisBlockHash: string;
+};
+
 export type Milestone = {
 	height: number;
-	activeValidators: number;
+	roundValidators: number;
 	address: Record<string, any>;
 	block: MilestoneBlock;
 	epoch: string;
-	fees: Fees;
-	multiPaymentLimit: number;
+	evmSpec: SpecId;
+	gas: MilestoneGas;
 	reward: string;
 	satoshi: MilestoneSatoshi;
 	timeouts: MilestoneTimeouts;
-	vendorFieldLength: number;
+	snapshot?: MilestoneSnapshot;
+	validatorRegistrationFee: string;
 };
 
 export type MilestonePartial = Partial<Milestone> & {

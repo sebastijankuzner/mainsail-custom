@@ -1,10 +1,22 @@
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, optional, tagged } from "@mainsail/container";
 import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
+import { assert } from "@mainsail/utils";
 
 @injectable()
 export class TransactionFactory implements Contracts.Crypto.TransactionFactory {
 	@inject(Identifiers.Cryptography.Configuration)
 	protected readonly configuration!: Contracts.Crypto.Configuration;
+
+	@inject(Identifiers.Cryptography.Identity.Address.Factory)
+	private readonly addressFactory!: Contracts.Crypto.AddressFactory;
+
+	@inject(Identifiers.Cryptography.Legacy.Identity.AddressFactory)
+	@optional()
+	private readonly legacyAddressFactory!: Contracts.Crypto.AddressFactory;
+
+	@inject(Identifiers.Cryptography.Signature.Instance)
+	@tagged("type", "wallet")
+	private readonly signatureSerializer!: Contracts.Crypto.Signature;
 
 	@inject(Identifiers.Cryptography.Transaction.Deserializer)
 	private readonly deserializer!: Contracts.Crypto.TransactionDeserializer;
@@ -13,7 +25,7 @@ export class TransactionFactory implements Contracts.Crypto.TransactionFactory {
 	private readonly serializer!: Contracts.Crypto.TransactionSerializer;
 
 	@inject(Identifiers.Cryptography.Transaction.Utils)
-	private readonly utils!: Contracts.Crypto.TransactionUtils;
+	private readonly utils!: Contracts.Crypto.TransactionUtilities;
 
 	@inject(Identifiers.Cryptography.Transaction.Verifier)
 	private readonly verifier!: Contracts.Crypto.TransactionVerifier;
@@ -30,7 +42,7 @@ export class TransactionFactory implements Contracts.Crypto.TransactionFactory {
 	}
 
 	public async fromJson(json: Contracts.Crypto.TransactionJson): Promise<Contracts.Crypto.Transaction> {
-		return this.fromData(this.transactionTypeFactory.get(json.type, json.typeGroup, json.version).getData(json));
+		return this.fromData(this.transactionTypeFactory.get(0, 0, 0).getData(json));
 	}
 
 	public async fromData(
@@ -53,7 +65,29 @@ export class TransactionFactory implements Contracts.Crypto.TransactionFactory {
 	async #fromSerialized(serialized: string, strict = true): Promise<Contracts.Crypto.Transaction> {
 		try {
 			const transaction = await this.deserializer.deserialize(serialized);
-			transaction.data.id = await this.utils.getId(transaction);
+
+			assert.number(transaction.data.v);
+			assert.string(transaction.data.r);
+			assert.string(transaction.data.s);
+
+			const hash = await this.utils.toHash(transaction.data, {
+				excludeSignature: true,
+			});
+
+			transaction.data.senderPublicKey = this.signatureSerializer.recoverPublicKey(hash, {
+				r: transaction.data.r,
+				s: transaction.data.s,
+				v: transaction.data.v,
+			});
+			transaction.data.from = await this.addressFactory.fromPublicKey(transaction.data.senderPublicKey);
+
+			if (this.legacyAddressFactory) {
+				transaction.data.senderLegacyAddress = await this.legacyAddressFactory.fromPublicKey(
+					transaction.data.senderPublicKey,
+				);
+			}
+
+			transaction.data.hash = await this.utils.getHash(transaction);
 
 			const { error } = await this.verifier.verifySchema(transaction.data, strict);
 

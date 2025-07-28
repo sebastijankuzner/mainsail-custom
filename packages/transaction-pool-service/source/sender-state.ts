@@ -1,9 +1,14 @@
 import { inject, injectable, tagged } from "@mainsail/container";
-import { Contracts, Events, Exceptions, Identifiers } from "@mainsail/contracts";
+import { Contracts, Exceptions, Identifiers } from "@mainsail/contracts";
 import { Providers, Services } from "@mainsail/kernel";
+import { Wallets } from "@mainsail/state";
+import { BigNumber } from "@mainsail/utils";
 
 @injectable()
 export class SenderState implements Contracts.TransactionPool.SenderState {
+	@inject(Identifiers.Application.Instance)
+	private readonly app!: Contracts.Kernel.Application;
+
 	@inject(Identifiers.ServiceProvider.Configuration)
 	@tagged("plugin", "transaction-pool-service")
 	private readonly configuration!: Providers.PluginConfiguration;
@@ -11,47 +16,104 @@ export class SenderState implements Contracts.TransactionPool.SenderState {
 	@inject(Identifiers.Cryptography.Configuration)
 	private readonly cryptoConfiguration!: Contracts.Crypto.Configuration;
 
+	@inject(Identifiers.Evm.Instance)
+	@tagged("instance", "transaction-pool")
+	private readonly evm!: Contracts.Evm.Instance;
+
 	@inject(Identifiers.Transaction.Handler.Registry)
 	private readonly handlerRegistry!: Contracts.Transactions.TransactionHandlerRegistry;
-
-	@inject(Identifiers.State.Service)
-	private stateService!: Contracts.State.Service;
-
-	@inject(Identifiers.TransactionPool.ExpirationService)
-	private readonly expirationService!: Contracts.TransactionPool.ExpirationService;
 
 	@inject(Identifiers.Services.Trigger.Service)
 	private readonly triggers!: Services.Triggers.Triggers;
 
-	@inject(Identifiers.Services.EventDispatcher.Service)
-	private readonly events!: Contracts.Kernel.EventDispatcher;
+	@inject(Identifiers.BlockchainUtils.FeeCalculator)
+	private readonly feeCalculator!: Contracts.BlockchainUtils.FeeCalculator;
 
-	#walletRepository!: Contracts.State.WalletRepository;
-	#corrupt = false;
+	#wallet!: Contracts.State.Wallet;
 
-	public async configure(publicKey): Promise<SenderState> {
-		this.#walletRepository = await this.stateService.createWalletRepositoryBySender(publicKey);
+	public async configure(address: string, legacyAddress?: string): Promise<SenderState> {
+		this.#wallet = await this.app.resolve(Wallets.Wallet).init(address, legacyAddress);
 		return this;
 	}
 
+	public getNonce(): BigNumber {
+		return this.#wallet.getNonce();
+	}
+
+	public async reset(): Promise<void> {
+		this.#wallet = await this.app
+			.resolve(Wallets.Wallet)
+			.init(this.#wallet.getAddress(), this.#wallet.getLegacyAddress());
+	}
+
 	public async apply(transaction: Contracts.Crypto.Transaction): Promise<void> {
+		await this.#validateTransaction(transaction);
+
+		this.#wallet.increaseNonce();
+		this.#wallet.decreaseBalance(transaction.data.value.plus(this.feeCalculator.calculate(transaction)));
+	}
+
+	public async replace(
+		oldTransaction: Contracts.Crypto.Transaction,
+		newTransaction: Contracts.Crypto.Transaction,
+		currentNonce: BigNumber,
+	): Promise<boolean> {
+		if (!oldTransaction.data.nonce.isEqualTo(newTransaction.data.nonce)) {
+			throw new Error("cannot replace transaction with mismatching nonce");
+		}
+
+		const oldTransactionCost = oldTransaction.data.value.plus(this.feeCalculator.calculate(oldTransaction));
+		const newTransactionCost = newTransaction.data.value.plus(this.feeCalculator.calculate(newTransaction));
+
+		const availableBalance = this.#wallet.getBalance().plus(oldTransactionCost);
+		if (availableBalance.isLessThan(newTransactionCost)) {
+			return false;
+		}
+
+		const nonceOffset = currentNonce.minus(newTransaction.data.nonce).times(-1);
+		await this.#validateTransaction(newTransaction, nonceOffset, oldTransactionCost);
+
+		// Nonce stays the same
+
+		this.#wallet.increaseBalance(oldTransactionCost);
+		this.#wallet.decreaseBalance(newTransactionCost);
+
+		return true;
+	}
+
+	public revert(transaction: Contracts.Crypto.Transaction): void {
+		this.#wallet.decreaseNonce();
+		this.#wallet.increaseBalance(transaction.data.value.plus(this.feeCalculator.calculate(transaction)));
+	}
+
+	async #validateTransaction(
+		transaction: Contracts.Crypto.Transaction,
+		nonceOffset = BigNumber.ZERO,
+		refund = BigNumber.ZERO,
+	): Promise<void> {
 		const maxTransactionBytes: number = this.configuration.getRequired<number>("maxTransactionBytes");
 		if (transaction.serialized.length > maxTransactionBytes) {
 			throw new Exceptions.TransactionExceedsMaximumByteSizeError(transaction, maxTransactionBytes);
 		}
 
-		const currentNetwork: number = this.cryptoConfiguration.get("network.pubKeyHash");
-		if (transaction.data.network && transaction.data.network !== currentNetwork) {
-			throw new Exceptions.TransactionFromWrongNetworkError(transaction, currentNetwork);
+		const chainId: number = this.cryptoConfiguration.get("network.chainId");
+		if (transaction.data.network && transaction.data.network !== chainId) {
+			throw new Exceptions.TransactionFromWrongNetworkError(transaction, chainId);
 		}
 
-		if (await this.expirationService.isExpired(transaction)) {
-			await this.events.dispatch(Events.TransactionEvent.Expired, transaction.data);
+		if (!this.#wallet.getNonce().plus(nonceOffset).isEqualTo(transaction.data.nonce)) {
+			throw new Exceptions.UnexpectedNonceError(transaction.data.nonce, this.#wallet);
+		}
 
-			throw new Exceptions.TransactionHasExpiredError(
-				transaction,
-				await this.expirationService.getExpirationHeight(transaction),
-			);
+		if (
+			this.#wallet
+				.getBalance()
+				.plus(refund)
+				.minus(transaction.data.value)
+				.minus(this.feeCalculator.calculate(transaction))
+				.isNegative()
+		) {
+			throw new Exceptions.InsufficientBalanceError();
 		}
 
 		const handler: Contracts.Transactions.TransactionHandler =
@@ -61,23 +123,14 @@ export class SenderState implements Contracts.TransactionPool.SenderState {
 			await this.triggers.call("verifyTransaction", {
 				handler,
 				transaction,
-				walletRepository: this.#walletRepository,
 			})
 		) {
-			if (this.#corrupt) {
-				throw new Exceptions.RetryTransactionError(transaction);
-			}
-
 			try {
-				await this.triggers.call("throwIfCannotEnterPool", {
+				await this.triggers.call("throwIfCannotBeApplied", {
+					evm: this.evm,
 					handler,
+					sender: this.#wallet,
 					transaction,
-					walletRepository: this.#walletRepository,
-				});
-				await this.triggers.call("applyTransaction", {
-					handler,
-					transaction,
-					walletRepository: this.#walletRepository,
 				});
 			} catch (error) {
 				throw new Exceptions.TransactionFailedToApplyError(transaction, error);

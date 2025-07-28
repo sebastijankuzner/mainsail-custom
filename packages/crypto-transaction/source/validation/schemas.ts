@@ -6,6 +6,12 @@ const transactionId: SchemaObject = {
 	type: "string",
 };
 
+const prefixedTransactionId: SchemaObject = {
+	$id: "prefixedTransactionId",
+	allOf: [{ maxLength: 66, minLength: 66 }, { $ref: "prefixedQuantityHex" }],
+	type: "string",
+};
+
 const networkByte: SchemaObject = {
 	$id: "networkByte",
 	network: true,
@@ -13,28 +19,40 @@ const networkByte: SchemaObject = {
 
 export const schemas = {
 	networkByte,
+	prefixedTransactionId,
 	transactionId,
 };
 
 export const transactionBaseSchema: SchemaObject = {
 	properties: {
-		amount: { bignumber: { maximum: 0, minimum: 0 } },
-		fee: { bignumber: { minimum: 0 } }, // Fee matcher checks the minimum fee
-		id: { anyOf: [{ $ref: "transactionId" }, { type: "null" }] },
-		network: { $ref: "networkByte" },
-		nonce: { bignumber: { minimum: 0 } },
-		senderPublicKey: { $ref: "publicKey" },
-		signature: { $ref: "alphanumeric" },
-		signatures: {
-			items: { allOf: [{ maxLength: 130, minLength: 130 }, { $ref: "alphanumeric" }], type: "string" },
-			maxItems: 16,
-			minItems: 1,
-			type: "array",
-			uniqueItems: true,
+		from: { $ref: "address" },
+		gasLimit: { transactionGasLimit: {} },
+		gasPrice: { transactionGasPrice: {} },
+
+		hash: { anyOf: [{ $ref: "transactionId" }, { type: "null" }] },
+
+		// Legacy
+		legacySecondSignature: {
+			allOf: [{ maxLength: 130, minLength: 130 }, { $ref: "alphanumeric" }],
+			type: "string",
 		},
-		typeGroup: { minimum: 0, type: "integer" },
-		version: { enum: [1] },
+
+		network: { $ref: "networkByte" },
+
+		nonce: { bignumber: { minimum: 0 } },
+
+		r: { type: "string" },
+
+		// TODO: prefixed hex
+		s: { type: "string" },
+
+		senderLegacyAddress: { type: "string" },
+
+		senderPublicKey: { $ref: "publicKey" },
+
+		v: { maximum: 1, minimum: 0, type: "number" },
+		value: { bignumber: { maximum: undefined, minimum: 0 } },
 	},
-	required: ["type", "senderPublicKey", "fee", "amount", "nonce"],
+	required: ["from", "senderPublicKey", "gasPrice", "gasLimit", "value", "nonce"],
 	type: "object",
 };

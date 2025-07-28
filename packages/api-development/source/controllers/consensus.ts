@@ -26,23 +26,26 @@ export class ConsensusController extends Controller {
 		const prevotes = roundStates.flatMap((roundState) => roundState.getPrevotes());
 		const precommits = roundStates.flatMap((roundState) => roundState.getPrecommits());
 
-		const validators = this.validatorSet.getActiveValidators();
+		const validators = this.validatorSet.getRoundValidators();
 
 		const collectMessages = (messages: ReadonlyArray<Contracts.Crypto.Prevote | Contracts.Crypto.Precommit>) => {
 			const collected = {
-				absent: validators.map((v) => v.toString()),
+				absent: validators,
 			};
 
 			for (const message of messages) {
 				const validator = validators[message.validatorIndex];
-				const key = `b/${message.height}/${message.round}/${message.blockId}`;
+				const key = `b/${message.blockNumber}/${message.round}/${message.blockHash}`;
 				if (!collected[key]) {
 					collected[key] = {};
 				}
 
-				const name = validator.toString();
-				collected[key][name] = message.signature;
-				collected.absent.splice(collected.absent.indexOf(name), 1);
+				const address = validator.address;
+				collected[key][address] = message.signature;
+				collected.absent.splice(
+					collected.absent.findIndex((v) => v.address === address),
+					1,
+				);
 			}
 
 			return collected;
@@ -50,14 +53,14 @@ export class ConsensusController extends Controller {
 
 		return {
 			data: {
-				height: state.height,
+				blockNumber: state.blockNumber,
 				round: state.round,
 				step: state.step,
 				// eslint-disable-next-line sort-keys-fix/sort-keys-fix
 				lockedRound: state.lockedRound,
-				lockedValue: state.lockedValue ? state.lockedValue.getProposal()?.getData().block.header.id : null,
+				lockedValue: state.lockedValue ? state.lockedValue.getProposal()?.getData().block.header.hash : null,
 				validRound: state.validRound,
-				validValue: state.validValue ? state.validValue.getProposal()?.getData().block.header.id : null,
+				validValue: state.validValue ? state.validValue.getProposal()?.getData().block.header.hash : null,
 				// eslint-disable-next-line sort-keys-fix/sort-keys-fix
 				precommits: collectMessages(precommits.sort((a, b) => b.round - a.round)),
 				prevotes: collectMessages(prevotes.sort((a, b) => b.round - a.round)),

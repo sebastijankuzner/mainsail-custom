@@ -12,7 +12,6 @@ export class Worker implements Contracts.TransactionPool.Worker {
 	private ipcSubprocess!: Contracts.TransactionPool.WorkerSubprocess;
 
 	#booted = false;
-	#failedTransactions: Contracts.Crypto.Transaction[] = [];
 
 	@postConstruct()
 	public initialize(): void {
@@ -48,29 +47,33 @@ export class Worker implements Contracts.TransactionPool.Worker {
 		return this.ipcSubprocess.getQueueSize();
 	}
 
-	public setFailedTransactions(transactions: Contracts.Crypto.Transaction[]): void {
-		this.#failedTransactions = [...this.#failedTransactions, ...transactions];
-	}
-
 	async onCommit(unit: Contracts.Processor.ProcessableUnit): Promise<void> {
-		await this.ipcSubprocess.sendRequest("commit", {
-			block: unit.getBlock().serialized,
-			failedTransactions: this.#failedTransactions.map((transaction) => transaction.id),
-			store: unit.store.changesToJson(),
-		});
+		const sendersAddresses: Set<string> = new Set();
+
+		const block = unit.getBlock();
+		for (const transaction of block.transactions) {
+			sendersAddresses.add(transaction.data.from);
+		}
+
+		await this.ipcSubprocess.sendRequest(
+			"commit",
+			unit.blockNumber,
+			[...sendersAddresses.keys()],
+			block.header.gasUsed,
+		);
 	}
 
-	public async start(): Promise<void> {
-		await this.ipcSubprocess.sendRequest("start");
-	}
-
-	public async importSnapshot(height: number): Promise<void> {
-		await this.ipcSubprocess.sendRequest("importSnapshot", height);
+	public async start(blockNumber: number): Promise<void> {
+		await this.ipcSubprocess.sendRequest("start", blockNumber);
 	}
 
 	public async getTransactionBytes(): Promise<Buffer[]> {
 		const response: string[] = await this.ipcSubprocess.sendRequest("getTransactions");
 		return response.map((transaction: string) => Buffer.from(transaction, "hex"));
+	}
+
+	public async removeTransaction(address: string, id: string): Promise<void> {
+		await this.ipcSubprocess.sendRequest("removeTransaction", address, id);
 	}
 
 	public async setPeer(ip: string): Promise<void> {

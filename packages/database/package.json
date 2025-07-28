@@ -1,6 +1,6 @@
 {
 	"name": "@mainsail/database",
-	"version": "0.0.1-alpha.20",
+	"version": "0.0.1-evm.25",
 	"description": "LMDB based database for the Mainsail blockchain",
 	"license": "GPL-3.0-only",
 	"contributors": [],
@@ -16,7 +16,7 @@
 		"clean": "del distribution",
 		"release": "pnpm publish --access public",
 		"test": "pnpm run uvu source .test.ts",
-		"test:coverage": "c8 pnpm run test",
+		"test:coverage": "c8 -r=text -r=lcov --all pnpm run test",
 		"test:coverage:html": "c8 -r html --all pnpm run test",
 		"test:file": "pnpm run uvu source",
 		"uvu": "tsx --tsconfig ../../tsconfig.test.json ./node_modules/uvu/bin.js"
@@ -25,28 +25,10 @@
 		"@mainsail/container": "workspace:*",
 		"@mainsail/contracts": "workspace:*",
 		"@mainsail/kernel": "workspace:*",
-		"lmdb": "3.0.4"
+		"@mainsail/utils": "workspace:*"
 	},
 	"devDependencies": {
-		"@mainsail/crypto-address-bech32m": "workspace:*",
-		"@mainsail/crypto-block": "workspace:*",
-		"@mainsail/crypto-commit": "workspace:*",
-		"@mainsail/crypto-config": "workspace:*",
-		"@mainsail/crypto-consensus-bls12-381": "workspace:*",
-		"@mainsail/crypto-hash-bcrypto": "workspace:*",
-		"@mainsail/crypto-key-pair-schnorr": "workspace:*",
-		"@mainsail/crypto-messages": "workspace:*",
-		"@mainsail/crypto-signature-schnorr": "workspace:*",
-		"@mainsail/crypto-transaction": "workspace:*",
-		"@mainsail/crypto-transaction-transfer": "workspace:*",
-		"@mainsail/crypto-validation": "workspace:*",
-		"@mainsail/fees": "workspace:*",
-		"@mainsail/fees-static": "workspace:*",
-		"@mainsail/serializer": "workspace:*",
-		"@mainsail/validation": "workspace:*",
-		"@types/tmp": "0.2.6",
-		"tmp": "0.2.3",
-		"uvu": "^0.5.6"
+		"uvu": "0.5.6"
 	},
 	"engines": {
 		"node": ">=20.x"

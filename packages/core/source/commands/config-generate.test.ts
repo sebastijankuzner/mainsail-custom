@@ -11,7 +11,7 @@ describe<{
 	cli: Console;
 }>("ConfigGenerateCommand", ({ beforeEach, it, stub, assert, match }) => {
 	const paths = envPaths("myn", { suffix: "core" });
-	const configCore = join(paths.config, "testnet");
+	const configCore = join(paths.config, "devnet");
 	const configCrypto = join(configCore, "crypto");
 
 	beforeEach((context) => {
@@ -32,7 +32,7 @@ describe<{
 				explorer: "myex.io",
 				maxBlockPayload: "123444",
 				maxTxPerBlock: "122",
-				network: "testnet",
+				network: "devnet",
 				premine: "12500000000000000",
 				pubKeyHash: "168",
 				rewardAmount: "200000000",
@@ -56,7 +56,7 @@ describe<{
 			match({
 				genesisBlock: {
 					block: {
-						generatorPublicKey: match.string,
+						generatorAddress: match.string,
 						height: 0,
 						id: match.string,
 						numberOfTransactions: match.number,
@@ -73,20 +73,18 @@ describe<{
 				},
 				milestones: [
 					match({
-						activeValidators: 0,
+						roundValidators: 0,
 						address: match.object,
 						block: match.object,
 						blockTime: 9000,
 						epoch: match.string,
 						height: 0,
-						multiPaymentLimit: 256,
 						reward: "0",
 						satoshi: match.object,
-						vendorFieldLength: 255,
 					}),
 					match({
 						height: 1,
-						activeValidators: 51,
+						roundValidators: 51,
 					}),
 					match({
 						height: 23_000,
@@ -95,8 +93,7 @@ describe<{
 				],
 				network: {
 					client: { explorer: "myex.io", symbol: "my", token: "myn" },
-					messagePrefix: "testnet message:\n",
-					name: "testnet",
+					name: "devnet",
 					nethash: match.string,
 					pubKeyHash: 168,
 					slip44: 1,
@@ -120,7 +117,7 @@ describe<{
 						explorer: "myex.io",
 						maxBlockPayload: "123444",
 						maxTxPerBlock: "122",
-						network: "testnet",
+						network: "devnet",
 						premine: "12500000000000000",
 						pubKeyHash: "168",
 						rewardAmount: "200000000",
@@ -150,7 +147,7 @@ describe<{
 						explorer: "myex.io",
 						maxBlockPayload: "123444",
 						maxTxPerBlock: "122",
-						network: "testnet",
+						network: "devnet",
 						premine: "120000000000",
 						pubKeyHash: "168",
 						rewardAmount: "66000",
@@ -166,7 +163,7 @@ describe<{
 
 	it("should throw if the properties are not confirmed", async ({ cli }) => {
 		prompts.inject([
-			"testnet",
+			"devnet",
 			"120000000000",
 			"47",
 			"9",
@@ -210,7 +207,7 @@ describe<{
 
 	it("should throw if numeric property is Nan", async ({ cli }) => {
 		prompts.inject([
-			"testnet",
+			"devnet",
 			"120000000000",
 			"47",
 			"9",
@@ -238,7 +235,7 @@ describe<{
 		const writeFileSync = stub(fs, "writeFileSync");
 
 		prompts.inject([
-			"testnet",
+			"devnet",
 			"12500000000000000",
 			"51",
 			"9",
@@ -273,7 +270,7 @@ describe<{
 		const writeFileSync = stub(fs, "writeFileSync");
 
 		prompts.inject([
-			"testnet",
+			"devnet",
 			"120000000000",
 			"47",
 			"9",
@@ -332,7 +329,7 @@ describe<{
 				feeStaticVote: 4,
 				maxBlockPayload: "123444",
 				maxTxPerBlock: "122",
-				network: "testnet",
+				network: "devnet",
 				peers: "127.0.0.1:4444,127.0.0.2",
 				premine: "120000000000",
 				pubKeyHash: "168",
@@ -341,7 +338,6 @@ describe<{
 				symbol: "my",
 				token: "myn",
 				validators: "47",
-				vendorFieldLength: "64",
 				wif: "27",
 			})
 			.execute(Command);
@@ -356,7 +352,7 @@ describe<{
 			match({
 				genesisBlock: {
 					block: {
-						generatorPublicKey: match.string,
+						generatorAddress: match.string,
 						height: 0,
 						id: match.string,
 						numberOfTransactions: match.number,
@@ -373,20 +369,18 @@ describe<{
 				},
 				milestones: [
 					match({
-						activeValidators: 0,
+						roundValidators: 0,
 						address: match.object,
 						block: match.object,
 						blockTime: 9000,
 						epoch: match.string,
 						height: 0,
-						multiPaymentLimit: 256,
 						reward: "0", // TODO: Check
 						satoshi: match.object,
-						vendorFieldLength: 64,
 					}),
 					match({
 						height: 1,
-						activeValidators: 47,
+						roundValidators: 47,
 					}),
 					match({
 						height: 23_000,
@@ -395,8 +389,7 @@ describe<{
 				],
 				network: {
 					client: { explorer: "myex.io", symbol: "my", token: "myn" },
-					messagePrefix: "testnet message:\n",
-					name: "testnet",
+					name: "devnet",
 					nethash: match.string,
 					pubKeyHash: 168,
 					slip44: 1,
@@ -441,7 +434,7 @@ describe<{
 				explorer: "myex.io",
 				maxBlockPayload: "123444",
 				maxTxPerBlock: "122",
-				network: "testnet",
+				network: "devnet",
 				overwriteConfig: "true",
 				premine: "12500000000000000",
 				pubKeyHash: "168",
@@ -475,7 +468,7 @@ describe<{
 				explorer: "myex.io",
 				maxBlockPayload: "123444",
 				maxTxPerBlock: "122",
-				network: "testnet",
+				network: "devnet",
 				premine: "12500000000000000",
 				pubKeyHash: "168",
 				rewardAmount: "200000000",
@@ -487,8 +480,8 @@ describe<{
 			})
 			.execute(Command);
 
-		existsSync.calledWith("/path/to/config/testnet");
-		ensureDirSync.calledWith("/path/to/config/testnet");
+		existsSync.calledWith("/path/to/config/devnet");
+		ensureDirSync.calledWith("/path/to/config/devnet");
 		writeJSONSync.calledTimes(5);
 		writeFileSync.calledOnce();
 	});
@@ -507,7 +500,7 @@ describe<{
 				explorer: "myex.io",
 				maxBlockPayload: "123444",
 				maxTxPerBlock: "122",
-				network: "testnet",
+				network: "devnet",
 				peers: "",
 				premine: "12500000000000000",
 				pubKeyHash: "168",
@@ -520,8 +513,8 @@ describe<{
 			})
 			.execute(Command);
 
-		existsSync.calledWith("/path/to/config/testnet");
-		ensureDirSync.calledWith("/path/to/config/testnet");
+		existsSync.calledWith("/path/to/config/devnet");
+		ensureDirSync.calledWith("/path/to/config/devnet");
 		writeJSONSync.calledTimes(5);
 		writeFileSync.calledOnce();
 	});

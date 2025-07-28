@@ -1,6 +1,6 @@
 import { Commands, Contracts, Identifiers as CliIdentifiers, Services } from "@mainsail/cli";
 import { ConfigurationGenerator, Identifiers, makeApplication } from "@mainsail/configuration-generator";
-import { inject, injectable } from "@mainsail/container";
+import { inject, injectable, postConstruct } from "@mainsail/container";
 import { Contracts as AppContracts, Identifiers as AppIdentifiers } from "@mainsail/contracts";
 import envPaths from "env-paths";
 import Joi from "joi";
@@ -19,7 +19,7 @@ type Flags = Omit<AppContracts.NetworkGenerator.Options, "peers" | "rewardAmount
 	peers: string;
 	rewardAmount: number | string;
 
-	address: "base58" | "bech32m";
+	address: "base58" | "bech32m" | "keccak256";
 	base58Prefix: number;
 	bech32mPrefix: string;
 };
@@ -40,7 +40,7 @@ export class Command extends Commands.Command {
 			description: "The name of the network.",
 			schema: Joi.string(),
 			promptType: "text",
-			default: "testnet",
+			default: "devnet",
 		},
 		{
 			name: "premine",
@@ -140,16 +140,10 @@ export class Command extends Commands.Command {
 			default: new Date(),
 		},
 		{
-			name: "vendorFieldLength",
-			description: "The maximum length of transaction's vendor field",
-			schema: Joi.number().min(0).max(255),
-			default: 255,
-		},
-		{
 			name: "address",
 			description: "The desired address format of the network.",
-			schema: Joi.valid("bech32m", "base58"),
-			default: "bech32m",
+			schema: Joi.valid("bech32m", "base58", "keccak256"),
+			default: "keccak256",
 		},
 		{
 			name: "base58Prefix",
@@ -188,6 +182,7 @@ export class Command extends Commands.Command {
 	];
 	/*eslint-enable */
 
+	@postConstruct()
 	public configure(): void {
 		for (const flag of this.#flagSettings) {
 			const flagSchema: Joi.Schema = flag.schema;
@@ -222,7 +217,7 @@ export class Command extends Commands.Command {
 		};
 
 		const configurationApp = await makeApplication(this.#getConfigurationPath(options), options);
-		configurationApp.bind(AppIdentifiers.Services.Log.Service).toConstantValue(this.logger);
+		configurationApp.rebind(AppIdentifiers.Services.Log.Service).toConstantValue(this.logger);
 
 		if (flags.force || allFlagsSet) {
 			return configurationApp
@@ -287,8 +282,6 @@ export class Command extends Commands.Command {
 	#convertFlags(options: Flags): AppContracts.NetworkGenerator.Options {
 		return {
 			...options,
-			address:
-				options.address === "bech32m" ? { bech32m: options.bech32mPrefix } : { base58: options.base58Prefix },
 			peers: options.peers.replace(" ", "").split(","),
 			rewardAmount: options.rewardAmount.toString(),
 		};

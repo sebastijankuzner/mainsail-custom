@@ -1,9 +1,11 @@
+import { injectable } from "@mainsail/container";
 import { Contracts, Identifiers } from "@mainsail/contracts";
 import { Providers } from "@mainsail/kernel";
 
 import { makeKeywords } from "./keywords.js";
 import { schemas } from "./schemas.js";
 
+@injectable()
 export class ServiceProvider extends Providers.ServiceProvider {
 	public async register(): Promise<void> {
 		await this.#registerKeywords();
@@ -12,7 +14,9 @@ export class ServiceProvider extends Providers.ServiceProvider {
 	}
 
 	async #registerKeywords(): Promise<void> {
-		for (const keyword of Object.values(makeKeywords())) {
+		for (const keyword of Object.values(
+			makeKeywords(this.app.get<Contracts.Crypto.Configuration>(Identifiers.Cryptography.Configuration)),
+		)) {
 			this.app.get<Contracts.Crypto.Validator>(Identifiers.Cryptography.Validator).addKeyword(keyword);
 		}
 	}

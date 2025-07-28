@@ -701,7 +701,7 @@ $root.getBlocks = (function() {
          * Properties of a GetBlocksRequest.
          * @memberof getBlocks
          * @interface IGetBlocksRequest
-         * @property {number|null} [fromHeight] GetBlocksRequest fromHeight
+         * @property {number|null} [fromBlockNumber] GetBlocksRequest fromBlockNumber
          * @property {number|null} [limit] GetBlocksRequest limit
          * @property {shared.IHeaders|null} [headers] GetBlocksRequest headers
          */
@@ -722,12 +722,12 @@ $root.getBlocks = (function() {
         }
 
         /**
-         * GetBlocksRequest fromHeight.
-         * @member {number} fromHeight
+         * GetBlocksRequest fromBlockNumber.
+         * @member {number} fromBlockNumber
          * @memberof getBlocks.GetBlocksRequest
          * @instance
          */
-        GetBlocksRequest.prototype.fromHeight = 0;
+        GetBlocksRequest.prototype.fromBlockNumber = 0;
 
         /**
          * GetBlocksRequest limit.
@@ -769,8 +769,8 @@ $root.getBlocks = (function() {
         GetBlocksRequest.encode = function encode(message, writer) {
             if (!writer)
                 writer = $Writer.create();
-            if (message.fromHeight != null && Object.hasOwnProperty.call(message, "fromHeight"))
-                writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.fromHeight);
+            if (message.fromBlockNumber != null && Object.hasOwnProperty.call(message, "fromBlockNumber"))
+                writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.fromBlockNumber);
             if (message.limit != null && Object.hasOwnProperty.call(message, "limit"))
                 writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.limit);
             if (message.headers != null && Object.hasOwnProperty.call(message, "headers"))
@@ -810,7 +810,7 @@ $root.getBlocks = (function() {
                 var tag = reader.uint32();
                 switch (tag >>> 3) {
                 case 1: {
-                        message.fromHeight = reader.uint32();
+                        message.fromBlockNumber = reader.uint32();
                         break;
                     }
                 case 2: {
@@ -856,9 +856,9 @@ $root.getBlocks = (function() {
         GetBlocksRequest.verify = function verify(message) {
             if (typeof message !== "object" || message === null)
                 return "object expected";
-            if (message.fromHeight != null && message.hasOwnProperty("fromHeight"))
-                if (!$util.isInteger(message.fromHeight))
-                    return "fromHeight: integer expected";
+            if (message.fromBlockNumber != null && message.hasOwnProperty("fromBlockNumber"))
+                if (!$util.isInteger(message.fromBlockNumber))
+                    return "fromBlockNumber: integer expected";
             if (message.limit != null && message.hasOwnProperty("limit"))
                 if (!$util.isInteger(message.limit))
                     return "limit: integer expected";
@@ -882,8 +882,8 @@ $root.getBlocks = (function() {
             if (object instanceof $root.getBlocks.GetBlocksRequest)
                 return object;
             var message = new $root.getBlocks.GetBlocksRequest();
-            if (object.fromHeight != null)
-                message.fromHeight = object.fromHeight >>> 0;
+            if (object.fromBlockNumber != null)
+                message.fromBlockNumber = object.fromBlockNumber >>> 0;
             if (object.limit != null)
                 message.limit = object.limit >>> 0;
             if (object.headers != null) {
@@ -908,12 +908,12 @@ $root.getBlocks = (function() {
                 options = {};
             var object = {};
             if (options.defaults) {
-                object.fromHeight = 0;
+                object.fromBlockNumber = 0;
                 object.limit = 0;
                 object.headers = null;
             }
-            if (message.fromHeight != null && message.hasOwnProperty("fromHeight"))
-                object.fromHeight = message.fromHeight;
+            if (message.fromBlockNumber != null && message.hasOwnProperty("fromBlockNumber"))
+                object.fromBlockNumber = message.fromBlockNumber;
             if (message.limit != null && message.hasOwnProperty("limit"))
                 object.limit = message.limit;
             if (message.headers != null && message.hasOwnProperty("headers"))
@@ -3137,10 +3137,8 @@ $root.getStatus = (function() {
              * Properties of a State.
              * @memberof getStatus.GetStatusResponse
              * @interface IState
-             * @property {number|null} [height] State height
-             * @property {boolean|null} [forgingAllowed] State forgingAllowed
-             * @property {number|null} [currentSlot] State currentSlot
-             * @property {getStatus.GetStatusResponse.State.IBlockHeader|null} [header] State header
+             * @property {number|null} [blockNumber] State blockNumber
+             * @property {string|null} [blockHash] State blockHash
              */
 
             /**
@@ -3159,36 +3157,20 @@ $root.getStatus = (function() {
             }
 
             /**
-             * State height.
-             * @member {number} height
+             * State blockNumber.
+             * @member {number} blockNumber
              * @memberof getStatus.GetStatusResponse.State
              * @instance
              */
-            State.prototype.height = 0;
+            State.prototype.blockNumber = 0;
 
             /**
-             * State forgingAllowed.
-             * @member {boolean} forgingAllowed
+             * State blockHash.
+             * @member {string} blockHash
              * @memberof getStatus.GetStatusResponse.State
              * @instance
              */
-            State.prototype.forgingAllowed = false;
-
-            /**
-             * State currentSlot.
-             * @member {number} currentSlot
-             * @memberof getStatus.GetStatusResponse.State
-             * @instance
-             */
-            State.prototype.currentSlot = 0;
-
-            /**
-             * State header.
-             * @member {getStatus.GetStatusResponse.State.IBlockHeader|null|undefined} header
-             * @memberof getStatus.GetStatusResponse.State
-             * @instance
-             */
-            State.prototype.header = null;
+            State.prototype.blockHash = "";
 
             /**
              * Creates a new State instance using the specified properties.
@@ -3214,14 +3196,10 @@ $root.getStatus = (function() {
             State.encode = function encode(message, writer) {
                 if (!writer)
                     writer = $Writer.create();
-                if (message.height != null && Object.hasOwnProperty.call(message, "height"))
-                    writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.height);
-                if (message.forgingAllowed != null && Object.hasOwnProperty.call(message, "forgingAllowed"))
-                    writer.uint32(/* id 2, wireType 0 =*/16).bool(message.forgingAllowed);
-                if (message.currentSlot != null && Object.hasOwnProperty.call(message, "currentSlot"))
-                    writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.currentSlot);
-                if (message.header != null && Object.hasOwnProperty.call(message, "header"))
-                    $root.getStatus.GetStatusResponse.State.BlockHeader.encode(message.header, writer.uint32(/* id 4, wireType 2 =*/34).fork()).ldelim();
+                if (message.blockNumber != null && Object.hasOwnProperty.call(message, "blockNumber"))
+                    writer.uint32(/* id 1, wireType 0 =*/8).uint32(message.blockNumber);
+                if (message.blockHash != null && Object.hasOwnProperty.call(message, "blockHash"))
+                    writer.uint32(/* id 2, wireType 2 =*/18).string(message.blockHash);
                 return writer;
             };
 
@@ -3257,19 +3235,11 @@ $root.getStatus = (function() {
                     var tag = reader.uint32();
                     switch (tag >>> 3) {
                     case 1: {
-                            message.height = reader.uint32();
+                            message.blockNumber = reader.uint32();
                             break;
                         }
                     case 2: {
-                            message.forgingAllowed = reader.bool();
-                            break;
-                        }
-                    case 3: {
-                            message.currentSlot = reader.uint32();
-                            break;
-                        }
-                    case 4: {
-                            message.header = $root.getStatus.GetStatusResponse.State.BlockHeader.decode(reader, reader.uint32());
+                            message.blockHash = reader.string();
                             break;
                         }
                     default:
@@ -3307,20 +3277,12 @@ $root.getStatus = (function() {
             State.verify = function verify(message) {
                 if (typeof message !== "object" || message === null)
                     return "object expected";
-                if (message.height != null && message.hasOwnProperty("height"))
-                    if (!$util.isInteger(message.height))
-                        return "height: integer expected";
-                if (message.forgingAllowed != null && message.hasOwnProperty("forgingAllowed"))
-                    if (typeof message.forgingAllowed !== "boolean")
-                        return "forgingAllowed: boolean expected";
-                if (message.currentSlot != null && message.hasOwnProperty("currentSlot"))
-                    if (!$util.isInteger(message.currentSlot))
-                        return "currentSlot: integer expected";
-                if (message.header != null && message.hasOwnProperty("header")) {
-                    var error = $root.getStatus.GetStatusResponse.State.BlockHeader.verify(message.header);
-                    if (error)
-                        return "header." + error;
-                }
+                if (message.blockNumber != null && message.hasOwnProperty("blockNumber"))
+                    if (!$util.isInteger(message.blockNumber))
+                        return "blockNumber: integer expected";
+                if (message.blockHash != null && message.hasOwnProperty("blockHash"))
+                    if (!$util.isString(message.blockHash))
+                        return "blockHash: string expected";
                 return null;
             };
 
@@ -3336,17 +3298,10 @@ $root.getStatus = (function() {
                 if (object instanceof $root.getStatus.GetStatusResponse.State)
                     return object;
                 var message = new $root.getStatus.GetStatusResponse.State();
-                if (object.height != null)
-                    message.height = object.height >>> 0;
-                if (object.forgingAllowed != null)
-                    message.forgingAllowed = Boolean(object.forgingAllowed);
-                if (object.currentSlot != null)
-                    message.currentSlot = object.currentSlot >>> 0;
-                if (object.header != null) {
-                    if (typeof object.header !== "object")
-                        throw TypeError(".getStatus.GetStatusResponse.State.header: object expected");
-                    message.header = $root.getStatus.GetStatusResponse.State.BlockHeader.fromObject(object.header);
-                }
+                if (object.blockNumber != null)
+                    message.blockNumber = object.blockNumber >>> 0;
+                if (object.blockHash != null)
+                    message.blockHash = String(object.blockHash);
                 return message;
             };
 
@@ -3364,19 +3319,13 @@ $root.getStatus = (function() {
                     options = {};
                 var object = {};
                 if (options.defaults) {
-                    object.height = 0;
-                    object.forgingAllowed = false;
-                    object.currentSlot = 0;
-                    object.header = null;
+                    object.blockNumber = 0;
+                    object.blockHash = "";
                 }
-                if (message.height != null && message.hasOwnProperty("height"))
-                    object.height = message.height;
-                if (message.forgingAllowed != null && message.hasOwnProperty("forgingAllowed"))
-                    object.forgingAllowed = message.forgingAllowed;
-                if (message.currentSlot != null && message.hasOwnProperty("currentSlot"))
-                    object.currentSlot = message.currentSlot;
-                if (message.header != null && message.hasOwnProperty("header"))
-                    object.header = $root.getStatus.GetStatusResponse.State.BlockHeader.toObject(message.header, options);
+                if (message.blockNumber != null && message.hasOwnProperty("blockNumber"))
+                    object.blockNumber = message.blockNumber;
+                if (message.blockHash != null && message.hasOwnProperty("blockHash"))
+                    object.blockHash = message.blockHash;
                 return object;
             };
 
@@ -3405,486 +3354,6 @@ $root.getStatus = (function() {
                 }
                 return typeUrlPrefix + "/getStatus.GetStatusResponse.State";
             };
-
-            State.BlockHeader = (function() {
-
-                /**
-                 * Properties of a BlockHeader.
-                 * @memberof getStatus.GetStatusResponse.State
-                 * @interface IBlockHeader
-                 * @property {string|null} [id] BlockHeader id
-                 * @property {number|null} [version] BlockHeader version
-                 * @property {number|null} [timestamp] BlockHeader timestamp
-                 * @property {string|null} [previousBlock] BlockHeader previousBlock
-                 * @property {number|null} [height] BlockHeader height
-                 * @property {number|null} [numberOfTransactions] BlockHeader numberOfTransactions
-                 * @property {string|null} [totalAmount] BlockHeader totalAmount
-                 * @property {string|null} [totalFee] BlockHeader totalFee
-                 * @property {string|null} [reward] BlockHeader reward
-                 * @property {number|null} [payloadLength] BlockHeader payloadLength
-                 * @property {string|null} [payloadHash] BlockHeader payloadHash
-                 * @property {string|null} [generatorPublicKey] BlockHeader generatorPublicKey
-                 * @property {string|null} [blockSignature] BlockHeader blockSignature
-                 */
-
-                /**
-                 * Constructs a new BlockHeader.
-                 * @memberof getStatus.GetStatusResponse.State
-                 * @classdesc Represents a BlockHeader.
-                 * @implements IBlockHeader
-                 * @constructor
-                 * @param {getStatus.GetStatusResponse.State.IBlockHeader=} [properties] Properties to set
-                 */
-                function BlockHeader(properties) {
-                    if (properties)
-                        for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                            if (properties[keys[i]] != null)
-                                this[keys[i]] = properties[keys[i]];
-                }
-
-                /**
-                 * BlockHeader id.
-                 * @member {string} id
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.id = "";
-
-                /**
-                 * BlockHeader version.
-                 * @member {number} version
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.version = 0;
-
-                /**
-                 * BlockHeader timestamp.
-                 * @member {number} timestamp
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.timestamp = 0;
-
-                /**
-                 * BlockHeader previousBlock.
-                 * @member {string} previousBlock
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.previousBlock = "";
-
-                /**
-                 * BlockHeader height.
-                 * @member {number} height
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.height = 0;
-
-                /**
-                 * BlockHeader numberOfTransactions.
-                 * @member {number} numberOfTransactions
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.numberOfTransactions = 0;
-
-                /**
-                 * BlockHeader totalAmount.
-                 * @member {string} totalAmount
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.totalAmount = "";
-
-                /**
-                 * BlockHeader totalFee.
-                 * @member {string} totalFee
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.totalFee = "";
-
-                /**
-                 * BlockHeader reward.
-                 * @member {string} reward
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.reward = "";
-
-                /**
-                 * BlockHeader payloadLength.
-                 * @member {number} payloadLength
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.payloadLength = 0;
-
-                /**
-                 * BlockHeader payloadHash.
-                 * @member {string} payloadHash
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.payloadHash = "";
-
-                /**
-                 * BlockHeader generatorPublicKey.
-                 * @member {string} generatorPublicKey
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.generatorPublicKey = "";
-
-                /**
-                 * BlockHeader blockSignature.
-                 * @member {string} blockSignature
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 */
-                BlockHeader.prototype.blockSignature = "";
-
-                /**
-                 * Creates a new BlockHeader instance using the specified properties.
-                 * @function create
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {getStatus.GetStatusResponse.State.IBlockHeader=} [properties] Properties to set
-                 * @returns {getStatus.GetStatusResponse.State.BlockHeader} BlockHeader instance
-                 */
-                BlockHeader.create = function create(properties) {
-                    return new BlockHeader(properties);
-                };
-
-                /**
-                 * Encodes the specified BlockHeader message. Does not implicitly {@link getStatus.GetStatusResponse.State.BlockHeader.verify|verify} messages.
-                 * @function encode
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {getStatus.GetStatusResponse.State.IBlockHeader} message BlockHeader message or plain object to encode
-                 * @param {$protobuf.Writer} [writer] Writer to encode to
-                 * @returns {$protobuf.Writer} Writer
-                 */
-                BlockHeader.encode = function encode(message, writer) {
-                    if (!writer)
-                        writer = $Writer.create();
-                    if (message.id != null && Object.hasOwnProperty.call(message, "id"))
-                        writer.uint32(/* id 1, wireType 2 =*/10).string(message.id);
-                    if (message.version != null && Object.hasOwnProperty.call(message, "version"))
-                        writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.version);
-                    if (message.timestamp != null && Object.hasOwnProperty.call(message, "timestamp"))
-                        writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.timestamp);
-                    if (message.previousBlock != null && Object.hasOwnProperty.call(message, "previousBlock"))
-                        writer.uint32(/* id 4, wireType 2 =*/34).string(message.previousBlock);
-                    if (message.height != null && Object.hasOwnProperty.call(message, "height"))
-                        writer.uint32(/* id 5, wireType 0 =*/40).uint32(message.height);
-                    if (message.numberOfTransactions != null && Object.hasOwnProperty.call(message, "numberOfTransactions"))
-                        writer.uint32(/* id 6, wireType 0 =*/48).uint32(message.numberOfTransactions);
-                    if (message.totalAmount != null && Object.hasOwnProperty.call(message, "totalAmount"))
-                        writer.uint32(/* id 7, wireType 2 =*/58).string(message.totalAmount);
-                    if (message.totalFee != null && Object.hasOwnProperty.call(message, "totalFee"))
-                        writer.uint32(/* id 8, wireType 2 =*/66).string(message.totalFee);
-                    if (message.reward != null && Object.hasOwnProperty.call(message, "reward"))
-                        writer.uint32(/* id 9, wireType 2 =*/74).string(message.reward);
-                    if (message.payloadLength != null && Object.hasOwnProperty.call(message, "payloadLength"))
-                        writer.uint32(/* id 10, wireType 0 =*/80).uint32(message.payloadLength);
-                    if (message.payloadHash != null && Object.hasOwnProperty.call(message, "payloadHash"))
-                        writer.uint32(/* id 11, wireType 2 =*/90).string(message.payloadHash);
-                    if (message.generatorPublicKey != null && Object.hasOwnProperty.call(message, "generatorPublicKey"))
-                        writer.uint32(/* id 12, wireType 2 =*/98).string(message.generatorPublicKey);
-                    if (message.blockSignature != null && Object.hasOwnProperty.call(message, "blockSignature"))
-                        writer.uint32(/* id 13, wireType 2 =*/106).string(message.blockSignature);
-                    return writer;
-                };
-
-                /**
-                 * Encodes the specified BlockHeader message, length delimited. Does not implicitly {@link getStatus.GetStatusResponse.State.BlockHeader.verify|verify} messages.
-                 * @function encodeDelimited
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {getStatus.GetStatusResponse.State.IBlockHeader} message BlockHeader message or plain object to encode
-                 * @param {$protobuf.Writer} [writer] Writer to encode to
-                 * @returns {$protobuf.Writer} Writer
-                 */
-                BlockHeader.encodeDelimited = function encodeDelimited(message, writer) {
-                    return this.encode(message, writer).ldelim();
-                };
-
-                /**
-                 * Decodes a BlockHeader message from the specified reader or buffer.
-                 * @function decode
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-                 * @param {number} [length] Message length if known beforehand
-                 * @returns {getStatus.GetStatusResponse.State.BlockHeader} BlockHeader
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                BlockHeader.decode = function decode(reader, length) {
-                    if (!(reader instanceof $Reader))
-                        reader = $Reader.create(reader);
-                    var end = length === undefined ? reader.len : reader.pos + length, message = new $root.getStatus.GetStatusResponse.State.BlockHeader();
-                    while (reader.pos < end) {
-                        var tag = reader.uint32();
-                        switch (tag >>> 3) {
-                        case 1: {
-                                message.id = reader.string();
-                                break;
-                            }
-                        case 2: {
-                                message.version = reader.uint32();
-                                break;
-                            }
-                        case 3: {
-                                message.timestamp = reader.uint32();
-                                break;
-                            }
-                        case 4: {
-                                message.previousBlock = reader.string();
-                                break;
-                            }
-                        case 5: {
-                                message.height = reader.uint32();
-                                break;
-                            }
-                        case 6: {
-                                message.numberOfTransactions = reader.uint32();
-                                break;
-                            }
-                        case 7: {
-                                message.totalAmount = reader.string();
-                                break;
-                            }
-                        case 8: {
-                                message.totalFee = reader.string();
-                                break;
-                            }
-                        case 9: {
-                                message.reward = reader.string();
-                                break;
-                            }
-                        case 10: {
-                                message.payloadLength = reader.uint32();
-                                break;
-                            }
-                        case 11: {
-                                message.payloadHash = reader.string();
-                                break;
-                            }
-                        case 12: {
-                                message.generatorPublicKey = reader.string();
-                                break;
-                            }
-                        case 13: {
-                                message.blockSignature = reader.string();
-                                break;
-                            }
-                        default:
-                            reader.skipType(tag & 7);
-                            break;
-                        }
-                    }
-                    return message;
-                };
-
-                /**
-                 * Decodes a BlockHeader message from the specified reader or buffer, length delimited.
-                 * @function decodeDelimited
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {$protobuf.Reader|Uint8Array} reader Reader or buffer to decode from
-                 * @returns {getStatus.GetStatusResponse.State.BlockHeader} BlockHeader
-                 * @throws {Error} If the payload is not a reader or valid buffer
-                 * @throws {$protobuf.util.ProtocolError} If required fields are missing
-                 */
-                BlockHeader.decodeDelimited = function decodeDelimited(reader) {
-                    if (!(reader instanceof $Reader))
-                        reader = new $Reader(reader);
-                    return this.decode(reader, reader.uint32());
-                };
-
-                /**
-                 * Verifies a BlockHeader message.
-                 * @function verify
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {Object.<string,*>} message Plain object to verify
-                 * @returns {string|null} `null` if valid, otherwise the reason why it is not
-                 */
-                BlockHeader.verify = function verify(message) {
-                    if (typeof message !== "object" || message === null)
-                        return "object expected";
-                    if (message.id != null && message.hasOwnProperty("id"))
-                        if (!$util.isString(message.id))
-                            return "id: string expected";
-                    if (message.version != null && message.hasOwnProperty("version"))
-                        if (!$util.isInteger(message.version))
-                            return "version: integer expected";
-                    if (message.timestamp != null && message.hasOwnProperty("timestamp"))
-                        if (!$util.isInteger(message.timestamp))
-                            return "timestamp: integer expected";
-                    if (message.previousBlock != null && message.hasOwnProperty("previousBlock"))
-                        if (!$util.isString(message.previousBlock))
-                            return "previousBlock: string expected";
-                    if (message.height != null && message.hasOwnProperty("height"))
-                        if (!$util.isInteger(message.height))
-                            return "height: integer expected";
-                    if (message.numberOfTransactions != null && message.hasOwnProperty("numberOfTransactions"))
-                        if (!$util.isInteger(message.numberOfTransactions))
-                            return "numberOfTransactions: integer expected";
-                    if (message.totalAmount != null && message.hasOwnProperty("totalAmount"))
-                        if (!$util.isString(message.totalAmount))
-                            return "totalAmount: string expected";
-                    if (message.totalFee != null && message.hasOwnProperty("totalFee"))
-                        if (!$util.isString(message.totalFee))
-                            return "totalFee: string expected";
-                    if (message.reward != null && message.hasOwnProperty("reward"))
-                        if (!$util.isString(message.reward))
-                            return "reward: string expected";
-                    if (message.payloadLength != null && message.hasOwnProperty("payloadLength"))
-                        if (!$util.isInteger(message.payloadLength))
-                            return "payloadLength: integer expected";
-                    if (message.payloadHash != null && message.hasOwnProperty("payloadHash"))
-                        if (!$util.isString(message.payloadHash))
-                            return "payloadHash: string expected";
-                    if (message.generatorPublicKey != null && message.hasOwnProperty("generatorPublicKey"))
-                        if (!$util.isString(message.generatorPublicKey))
-                            return "generatorPublicKey: string expected";
-                    if (message.blockSignature != null && message.hasOwnProperty("blockSignature"))
-                        if (!$util.isString(message.blockSignature))
-                            return "blockSignature: string expected";
-                    return null;
-                };
-
-                /**
-                 * Creates a BlockHeader message from a plain object. Also converts values to their respective internal types.
-                 * @function fromObject
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {Object.<string,*>} object Plain object
-                 * @returns {getStatus.GetStatusResponse.State.BlockHeader} BlockHeader
-                 */
-                BlockHeader.fromObject = function fromObject(object) {
-                    if (object instanceof $root.getStatus.GetStatusResponse.State.BlockHeader)
-                        return object;
-                    var message = new $root.getStatus.GetStatusResponse.State.BlockHeader();
-                    if (object.id != null)
-                        message.id = String(object.id);
-                    if (object.version != null)
-                        message.version = object.version >>> 0;
-                    if (object.timestamp != null)
-                        message.timestamp = object.timestamp >>> 0;
-                    if (object.previousBlock != null)
-                        message.previousBlock = String(object.previousBlock);
-                    if (object.height != null)
-                        message.height = object.height >>> 0;
-                    if (object.numberOfTransactions != null)
-                        message.numberOfTransactions = object.numberOfTransactions >>> 0;
-                    if (object.totalAmount != null)
-                        message.totalAmount = String(object.totalAmount);
-                    if (object.totalFee != null)
-                        message.totalFee = String(object.totalFee);
-                    if (object.reward != null)
-                        message.reward = String(object.reward);
-                    if (object.payloadLength != null)
-                        message.payloadLength = object.payloadLength >>> 0;
-                    if (object.payloadHash != null)
-                        message.payloadHash = String(object.payloadHash);
-                    if (object.generatorPublicKey != null)
-                        message.generatorPublicKey = String(object.generatorPublicKey);
-                    if (object.blockSignature != null)
-                        message.blockSignature = String(object.blockSignature);
-                    return message;
-                };
-
-                /**
-                 * Creates a plain object from a BlockHeader message. Also converts values to other types if specified.
-                 * @function toObject
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {getStatus.GetStatusResponse.State.BlockHeader} message BlockHeader
-                 * @param {$protobuf.IConversionOptions} [options] Conversion options
-                 * @returns {Object.<string,*>} Plain object
-                 */
-                BlockHeader.toObject = function toObject(message, options) {
-                    if (!options)
-                        options = {};
-                    var object = {};
-                    if (options.defaults) {
-                        object.id = "";
-                        object.version = 0;
-                        object.timestamp = 0;
-                        object.previousBlock = "";
-                        object.height = 0;
-                        object.numberOfTransactions = 0;
-                        object.totalAmount = "";
-                        object.totalFee = "";
-                        object.reward = "";
-                        object.payloadLength = 0;
-                        object.payloadHash = "";
-                        object.generatorPublicKey = "";
-                        object.blockSignature = "";
-                    }
-                    if (message.id != null && message.hasOwnProperty("id"))
-                        object.id = message.id;
-                    if (message.version != null && message.hasOwnProperty("version"))
-                        object.version = message.version;
-                    if (message.timestamp != null && message.hasOwnProperty("timestamp"))
-                        object.timestamp = message.timestamp;
-                    if (message.previousBlock != null && message.hasOwnProperty("previousBlock"))
-                        object.previousBlock = message.previousBlock;
-                    if (message.height != null && message.hasOwnProperty("height"))
-                        object.height = message.height;
-                    if (message.numberOfTransactions != null && message.hasOwnProperty("numberOfTransactions"))
-                        object.numberOfTransactions = message.numberOfTransactions;
-                    if (message.totalAmount != null && message.hasOwnProperty("totalAmount"))
-                        object.totalAmount = message.totalAmount;
-                    if (message.totalFee != null && message.hasOwnProperty("totalFee"))
-                        object.totalFee = message.totalFee;
-                    if (message.reward != null && message.hasOwnProperty("reward"))
-                        object.reward = message.reward;
-                    if (message.payloadLength != null && message.hasOwnProperty("payloadLength"))
-                        object.payloadLength = message.payloadLength;
-                    if (message.payloadHash != null && message.hasOwnProperty("payloadHash"))
-                        object.payloadHash = message.payloadHash;
-                    if (message.generatorPublicKey != null && message.hasOwnProperty("generatorPublicKey"))
-                        object.generatorPublicKey = message.generatorPublicKey;
-                    if (message.blockSignature != null && message.hasOwnProperty("blockSignature"))
-                        object.blockSignature = message.blockSignature;
-                    return object;
-                };
-
-                /**
-                 * Converts this BlockHeader to JSON.
-                 * @function toJSON
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @instance
-                 * @returns {Object.<string,*>} JSON object
-                 */
-                BlockHeader.prototype.toJSON = function toJSON() {
-                    return this.constructor.toObject(this, $protobuf.util.toJSONOptions);
-                };
-
-                /**
-                 * Gets the default type url for BlockHeader
-                 * @function getTypeUrl
-                 * @memberof getStatus.GetStatusResponse.State.BlockHeader
-                 * @static
-                 * @param {string} [typeUrlPrefix] your custom typeUrlPrefix(default "type.googleapis.com")
-                 * @returns {string} The default type url
-                 */
-                BlockHeader.getTypeUrl = function getTypeUrl(typeUrlPrefix) {
-                    if (typeUrlPrefix === undefined) {
-                        typeUrlPrefix = "type.googleapis.com";
-                    }
-                    return typeUrlPrefix + "/getStatus.GetStatusResponse.State.BlockHeader";
-                };
-
-                return BlockHeader;
-            })();
 
             return State;
         })();
@@ -6370,10 +5839,10 @@ $root.shared = (function() {
          * @memberof shared
          * @interface IHeaders
          * @property {string|null} [version] Headers version
-         * @property {number|null} [height] Headers height
+         * @property {number|null} [blockNumber] Headers blockNumber
          * @property {number|null} [round] Headers round
          * @property {number|null} [step] Headers step
-         * @property {string|null} [proposedBlockId] Headers proposedBlockId
+         * @property {string|null} [proposedBlockHash] Headers proposedBlockHash
          * @property {Array.<boolean>|null} [validatorsSignedPrevote] Headers validatorsSignedPrevote
          * @property {Array.<boolean>|null} [validatorsSignedPrecommit] Headers validatorsSignedPrecommit
          */
@@ -6404,12 +5873,12 @@ $root.shared = (function() {
         Headers.prototype.version = "";
 
         /**
-         * Headers height.
-         * @member {number} height
+         * Headers blockNumber.
+         * @member {number} blockNumber
          * @memberof shared.Headers
          * @instance
          */
-        Headers.prototype.height = 0;
+        Headers.prototype.blockNumber = 0;
 
         /**
          * Headers round.
@@ -6428,12 +5897,12 @@ $root.shared = (function() {
         Headers.prototype.step = 0;
 
         /**
-         * Headers proposedBlockId.
-         * @member {string|null|undefined} proposedBlockId
+         * Headers proposedBlockHash.
+         * @member {string|null|undefined} proposedBlockHash
          * @memberof shared.Headers
          * @instance
          */
-        Headers.prototype.proposedBlockId = null;
+        Headers.prototype.proposedBlockHash = null;
 
         /**
          * Headers validatorsSignedPrevote.
@@ -6454,14 +5923,9 @@ $root.shared = (function() {
         // OneOf field names bound to virtual getters and setters
         var $oneOfFields;
 
-        /**
-         * Headers _proposedBlockId.
-         * @member {"proposedBlockId"|undefined} _proposedBlockId
-         * @memberof shared.Headers
-         * @instance
-         */
-        Object.defineProperty(Headers.prototype, "_proposedBlockId", {
-            get: $util.oneOfGetter($oneOfFields = ["proposedBlockId"]),
+        // Virtual OneOf for proto3 optional field
+        Object.defineProperty(Headers.prototype, "_proposedBlockHash", {
+            get: $util.oneOfGetter($oneOfFields = ["proposedBlockHash"]),
             set: $util.oneOfSetter($oneOfFields)
         });
 
@@ -6491,14 +5955,14 @@ $root.shared = (function() {
                 writer = $Writer.create();
             if (message.version != null && Object.hasOwnProperty.call(message, "version"))
                 writer.uint32(/* id 1, wireType 2 =*/10).string(message.version);
-            if (message.height != null && Object.hasOwnProperty.call(message, "height"))
-                writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.height);
+            if (message.blockNumber != null && Object.hasOwnProperty.call(message, "blockNumber"))
+                writer.uint32(/* id 2, wireType 0 =*/16).uint32(message.blockNumber);
             if (message.round != null && Object.hasOwnProperty.call(message, "round"))
                 writer.uint32(/* id 3, wireType 0 =*/24).uint32(message.round);
             if (message.step != null && Object.hasOwnProperty.call(message, "step"))
                 writer.uint32(/* id 4, wireType 0 =*/32).uint32(message.step);
-            if (message.proposedBlockId != null && Object.hasOwnProperty.call(message, "proposedBlockId"))
-                writer.uint32(/* id 5, wireType 2 =*/42).string(message.proposedBlockId);
+            if (message.proposedBlockHash != null && Object.hasOwnProperty.call(message, "proposedBlockHash"))
+                writer.uint32(/* id 5, wireType 2 =*/42).string(message.proposedBlockHash);
             if (message.validatorsSignedPrevote != null && message.validatorsSignedPrevote.length) {
                 writer.uint32(/* id 6, wireType 2 =*/50).fork();
                 for (var i = 0; i < message.validatorsSignedPrevote.length; ++i)
@@ -6550,7 +6014,7 @@ $root.shared = (function() {
                         break;
                     }
                 case 2: {
-                        message.height = reader.uint32();
+                        message.blockNumber = reader.uint32();
                         break;
                     }
                 case 3: {
@@ -6562,7 +6026,7 @@ $root.shared = (function() {
                         break;
                     }
                 case 5: {
-                        message.proposedBlockId = reader.string();
+                        message.proposedBlockHash = reader.string();
                         break;
                     }
                 case 6: {
@@ -6626,19 +6090,19 @@ $root.shared = (function() {
             if (message.version != null && message.hasOwnProperty("version"))
                 if (!$util.isString(message.version))
                     return "version: string expected";
-            if (message.height != null && message.hasOwnProperty("height"))
-                if (!$util.isInteger(message.height))
-                    return "height: integer expected";
+            if (message.blockNumber != null && message.hasOwnProperty("blockNumber"))
+                if (!$util.isInteger(message.blockNumber))
+                    return "blockNumber: integer expected";
             if (message.round != null && message.hasOwnProperty("round"))
                 if (!$util.isInteger(message.round))
                     return "round: integer expected";
             if (message.step != null && message.hasOwnProperty("step"))
                 if (!$util.isInteger(message.step))
                     return "step: integer expected";
-            if (message.proposedBlockId != null && message.hasOwnProperty("proposedBlockId")) {
-                properties._proposedBlockId = 1;
-                if (!$util.isString(message.proposedBlockId))
-                    return "proposedBlockId: string expected";
+            if (message.proposedBlockHash != null && message.hasOwnProperty("proposedBlockHash")) {
+                properties._proposedBlockHash = 1;
+                if (!$util.isString(message.proposedBlockHash))
+                    return "proposedBlockHash: string expected";
             }
             if (message.validatorsSignedPrevote != null && message.hasOwnProperty("validatorsSignedPrevote")) {
                 if (!Array.isArray(message.validatorsSignedPrevote))
@@ -6671,14 +6135,14 @@ $root.shared = (function() {
             var message = new $root.shared.Headers();
             if (object.version != null)
                 message.version = String(object.version);
-            if (object.height != null)
-                message.height = object.height >>> 0;
+            if (object.blockNumber != null)
+                message.blockNumber = object.blockNumber >>> 0;
             if (object.round != null)
                 message.round = object.round >>> 0;
             if (object.step != null)
                 message.step = object.step >>> 0;
-            if (object.proposedBlockId != null)
-                message.proposedBlockId = String(object.proposedBlockId);
+            if (object.proposedBlockHash != null)
+                message.proposedBlockHash = String(object.proposedBlockHash);
             if (object.validatorsSignedPrevote) {
                 if (!Array.isArray(object.validatorsSignedPrevote))
                     throw TypeError(".shared.Headers.validatorsSignedPrevote: array expected");
@@ -6715,22 +6179,22 @@ $root.shared = (function() {
             }
             if (options.defaults) {
                 object.version = "";
-                object.height = 0;
+                object.blockNumber = 0;
                 object.round = 0;
                 object.step = 0;
             }
             if (message.version != null && message.hasOwnProperty("version"))
                 object.version = message.version;
-            if (message.height != null && message.hasOwnProperty("height"))
-                object.height = message.height;
+            if (message.blockNumber != null && message.hasOwnProperty("blockNumber"))
+                object.blockNumber = message.blockNumber;
             if (message.round != null && message.hasOwnProperty("round"))
                 object.round = message.round;
             if (message.step != null && message.hasOwnProperty("step"))
                 object.step = message.step;
-            if (message.proposedBlockId != null && message.hasOwnProperty("proposedBlockId")) {
-                object.proposedBlockId = message.proposedBlockId;
+            if (message.proposedBlockHash != null && message.hasOwnProperty("proposedBlockHash")) {
+                object.proposedBlockHash = message.proposedBlockHash;
                 if (options.oneofs)
-                    object._proposedBlockId = "proposedBlockId";
+                    object._proposedBlockHash = "proposedBlockHash";
             }
             if (message.validatorsSignedPrevote && message.validatorsSignedPrevote.length) {
                 object.validatorsSignedPrevote = [];

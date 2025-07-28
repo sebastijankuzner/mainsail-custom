@@ -1,6 +1,7 @@
 import { Contracts } from "@mainsail/contracts";
 import { Sandbox } from "@mainsail/test-framework";
 import { BigNumber } from "@mainsail/utils";
+import { BigNumberish } from "ethers";
 
 export interface Context {
 	sandbox: Sandbox;
@@ -13,7 +14,7 @@ export interface Context {
 
 export interface TransactionOptions {
 	sender?: Contracts.Crypto.KeyPair;
-	fee?: number | string | BigNumber;
+	gasPrice?: number;
 	signature?: string;
 	omitParticipantSignatures?: number[];
 	nonceOffset?: number;
@@ -37,20 +38,23 @@ export interface ValidatorRegistrationOptions extends TransactionOptions {
 	validatorPublicKey?: string;
 }
 
-export interface ValidatorResignationOptions extends TransactionOptions {}
+export type ValidatorResignationOptions = TransactionOptions;
 
 export interface UsernameRegistrationOptions extends TransactionOptions {
 	username?: string;
 }
 
-export interface UsernameResignationOptions extends TransactionOptions {}
-
-export interface MultiPaymentOptions extends TransactionOptions {
-	payments?: Contracts.Crypto.MultiPaymentItem[];
-}
+export type UsernameResignationOptions = TransactionOptions;
 
 export interface MultiSignatureOptions extends TransactionOptions {
 	participants: Contracts.Crypto.KeyPair[];
 	min?: number;
 	participantSignatureOverwrite?: { [index: number]: string };
+}
+
+export interface EvmCallOptions extends TransactionOptions {
+	gasLimit?: number;
+	payload?: string;
+	recipient?: string;
+	value?: BigNumberish;
 }

@@ -1,9 +1,11 @@
-import { CommitHandler } from "./crypto/commit.js";
-import { Store, ValidatorWallet } from "./state/index.js";
+import { CommitHandler } from "./crypto/commit-handler.js";
+import { ValidatorWallet } from "./state/index.js";
 
 export interface Service extends CommitHandler {
-	restore(store: Store): void;
-	getActiveValidators(): ValidatorWallet[];
+	restore(): Promise<void>;
+	getRoundValidators(): ValidatorWallet[];
+	getAllValidators(): ValidatorWallet[];
+	getDirtyValidators(): ValidatorWallet[];
 	getValidator(validatorIndex: number): ValidatorWallet;
-	getValidatorIndexByWalletPublicKey(walletPublicKey: string): number;
+	getValidatorIndexByWalletAddress(walletAddress: string): number;
 }

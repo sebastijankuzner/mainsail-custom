@@ -1,17 +1,17 @@
 export const assertBlockData = (assert, data1, data2) => {
 	const blockFields = [
-		"id",
+		"hash",
 		"timestamp",
 		"version",
-		"height",
-		"previousBlock",
-		"numberOfTransactions",
-		"totalAmount",
-		"totalFee",
+		"number",
+		"parentHash",
+		"transactionsCount",
+		"gasUsed",
+		"fee",
 		"reward",
-		"payloadLength",
-		"payloadHash",
-		"generatorPublicKey",
+		"payloadSize",
+		"transactionsRoot",
+		"proposer",
 	];
 	for (const field of blockFields) {
 		assert.equal(data1[field].toString(), data2[field].toString());
@@ -19,7 +19,19 @@ export const assertBlockData = (assert, data1, data2) => {
 };
 
 export const assertTransactionData = (assert, transactionData1, transactionData2) => {
-	const transactionFields = ["id", "type", "senderPublicKey", "fee", "amount", "recipientId", "signature"];
+	const transactionFields = [
+		"hash",
+		"senderPublicKey",
+		"from",
+		"gasPrice",
+		"gasLimit",
+		"network",
+		"value",
+		"to",
+		"v",
+		"r",
+		"s",
+	];
 
 	for (const field of transactionFields) {
 		assert.equal(transactionData1[field].toString(), transactionData2[field].toString());

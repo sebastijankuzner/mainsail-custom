@@ -13,14 +13,14 @@ export class NodeController extends Controller {
 	private readonly configuration!: Contracts.Crypto.Configuration;
 
 	public async status(request: Hapi.Request, h: Hapi.ResponseToolkit) {
-		const lastBlock = this.stateService.getStore().getLastBlock();
-		const networkHeight = this.p2pService.getNetworkHeight();
+		const lastBlock = this.stateStore.getLastBlock();
+		const networkBlockNumber = this.p2pService.getNetworkBlockNumber();
 
 		return {
 			data: {
-				height: lastBlock.data.height,
-				networkHeight: networkHeight - 1, // Use -1 to determine last block state. Consensus state is provided.
-				synced: lastBlock.data.height + 1 >= networkHeight,
+				blockNumber: lastBlock.data.number,
+				networkBlockNumber: networkBlockNumber - 1, // Use -1 to determine last block state. Consensus state is provided.
+				synced: lastBlock.data.number + 1 >= networkBlockNumber,
 			},
 		};
 	}
@@ -30,7 +30,7 @@ export class NodeController extends Controller {
 
 		return {
 			data: {
-				constants: this.configuration.getMilestone(this.stateService.getStore().getLastHeight()),
+				constants: this.configuration.getMilestone(this.stateStore.getBlockNumber()),
 				core: {
 					version: this.app.version(),
 				},
